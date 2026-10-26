@@ -15,19 +15,6 @@
     }
   });
 
-  // Следим за изменением нативного полноэкранного режима (чтобы иконка менялась при Esc)
-  $effect(() => {
-    function onFullscreenChange() {
-      if (!document.fullscreenElement) {
-        isMaximized = false;
-        const container = document.querySelector('.pdf-main-container');
-        if (container) container.classList.remove('pdf-maximized');
-      }
-    }
-    document.addEventListener('fullscreenchange', onFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
-  });
-
   function goToPage() {
     const p = parseInt(pageInput, 10);
     if (!isNaN(p) && p >= 1 && p <= pdfContext.state.totalPages) {
@@ -44,24 +31,13 @@
     }
   }
 
-  async function toggleFullscreen() {
-    const container = document.querySelector('.pdf-main-container');
-    if (!container) return;
-
+  function toggleMaximize() {
     isMaximized = !isMaximized;
-
+    
     if (isMaximized) {
-      container.classList.add('pdf-maximized');
-      try {
-        await container.requestFullscreen();
-      } catch (e) {
-        console.warn('Native fullscreen failed, using CSS fallback', e);
-      }
+      document.body.classList.add('pdf-is-maximized');
     } else {
-      container.classList.remove('pdf-maximized');
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-      }
+      document.body.classList.remove('pdf-is-maximized');
     }
   }
 </script>
@@ -95,12 +71,7 @@
 
   <div class="spacer"></div>
 
-  <button 
-    class="tool-btn" 
-    type="button"
-    onclick={toggleFullscreen}
-    title={strings.datasheets.labels.fullscreen}
-  >
+  <button class="tool-btn" type="button" onclick={toggleMaximize} title={strings.datasheets.labels.fullscreen}>
     {#if isMaximized}
       <Minimize size={16} />
     {:else}

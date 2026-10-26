@@ -1,7 +1,7 @@
 # Canifol
 
-**Electronics repair toolkit: component calculators and datasheet search.**
-**Инструмент ремонтника: калькуляторы компонентов и поиск даташитов.**
+**Cross-platform electronics repair toolkit: component calculators and datasheet search.**
+**Кросс-платформенный инструмент ремонтника: калькуляторы компонентов и поиск даташитов.**
 
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](../../releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -16,6 +16,8 @@
 ## English
 
 Canifol is a free tool for electronics repair technicians. Component calculators, datasheet search and a PDF viewer right inside the app. Works fully offline after the first launch.
+
+**Available on Windows and Android.** The desktop build ships as a standard Windows installer (`.exe`), and the mobile build ships as a standalone Android APK (`.apk`). Both are attached to every release.
 
 ### Features
 
@@ -35,7 +37,7 @@ Tauri 2 · Svelte 5 (runes) · Rust · Vite · `svelte-pdf-view`.
 
 ### Install
 
-**Windows:** Download the installer from [Releases](../../releases), run it, install.
+**Windows:** Download the installer (`Canifol Setup ...exe`) from [Releases](../../releases), run it, install.
 
 **Android:** Download the `.apk` from [Releases](../../releases), allow installation from unknown sources, install.
 
@@ -68,6 +70,8 @@ INV.LVL · [@invisiblelevel](https://github.com/invisiblelevel)
 
 Canifol — бесплатный инструмент для ремонтников электроники. Калькуляторы компонентов, поиск даташитов и просмотр PDF прямо в приложении. После первого запуска работает полностью оффлайн.
 
+**Доступно на Windows и Android.** Десктопная версия поставляется как обычный установщик (`.exe`), мобильная — как отдельный APK (`.apk`). Оба файла прикрепляются к каждому релизу.
+
 ### Что умеет
 
 - **Резисторы** — SMD-код, цвета, закон Ома, соединения, делитель, подбор.
@@ -86,7 +90,7 @@ Tauri 2 · Svelte 5 (руны) · Rust · Vite · `svelte-pdf-view`.
 
 ### Установка
 
-**Windows:** Скачай установщик из [Releases](../../releases), запусти, установи.
+**Windows:** Скачай установщик (`Canifol Setup ...exe`) из [Releases](../../releases), запусти, установи.
 
 **Android:** Скачай `.apk` из [Releases](../../releases), разреши установку из неизвестных источников, установи.
 

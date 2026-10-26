@@ -251,3 +251,34 @@ select option {
 .glow {
   box-shadow: var(--shadow-accent);
 }
+/* --- Жёсткий полноэкранный режим для PDF --- */
+body.pdf-is-maximized {
+  overflow: hidden !important;
+}
+
+body.pdf-is-maximized #app {
+  overflow: visible !important;
+}
+
+/* Заставляем все родительские контейнеры пропускать элемент */
+body.pdf-is-maximized .content,
+body.pdf-is-maximized .shell,
+body.pdf-is-maximized .card {
+  overflow: visible !important;
+  transform: none !important;
+}
+
+/* Растягиваем сам контейнер с PDF */
+body.pdf-is-maximized .pdf-main-container {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 999999 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  background: var(--bg-base) !important;
+}
