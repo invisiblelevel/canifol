@@ -1,0 +1,253 @@
+/* ============================================================
+   Canifol — глобальные стили и дизайн-переменные
+   Версия 5: тёплый уголь + янтарный акцент ("мастерская")
+   ============================================================ */
+
+:root {
+  /* --- Палитра (тёмная тема, v5 — "мастерская") --- */
+  --bg-base: #1c1b1a;
+  --bg-elevated: #262321;
+  --bg-elevated-2: #2d2926;
+  --bg-elevated-3: #363130;
+  --bg-overlay: rgba(0, 0, 0, 0.65);
+
+  --border-subtle: #3a332e;
+  --border-strong: #4a423b;
+
+  --text-primary: #f0e9e0;
+  --text-secondary: #bdb2a6;
+  --text-muted: #857b70;
+
+  /* =========================================================
+     АКЦЕНТ — ЯНТАРЬ
+     ========================================================= */
+  --accent: #f5b83d;
+  --accent-strong: #e6a420;
+  --accent-dim: rgba(245, 184, 61, 0.14);
+  --accent-glow: rgba(245, 184, 61, 0.35);
+  --grad-primary: linear-gradient(180deg, #f7c55c 0%, #e6a420 100%);
+
+  /* --- Вариант: Красный (закомментирован) --- */
+  /* 
+  --accent: #ef5350;
+  --accent-strong: #d32f2f;
+  --accent-dim: rgba(239, 83, 80, 0.14);
+  --accent-glow: rgba(239, 83, 80, 0.35);
+  --grad-primary: linear-gradient(180deg, #f26a6a 0%, #d32f2f 100%);
+  */
+
+  /* ========================================================= */
+
+  /* Статусы — подогнаны под тёплую палитру */
+  --danger: #e85a5a;
+  --success: #8bc47a;
+  --warning: #e6a420;
+
+  /* --- Отступы (адаптивные) --- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
+  --space-5: 2rem;
+  --space-6: 3rem;
+
+  /* --- Радиусы --- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+
+  /* --- Размеры --- */
+  --touch-target: 44px;
+  --sidebar-width: 240px;
+  --header-height: 56px;
+
+  /* --- Шрифты --- */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Courier New', monospace;
+
+  --font-size-sm: 0.8125rem;
+  --font-size-base: 0.9375rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.375rem;
+  --font-size-2xl: 1.75rem;
+
+  /* --- Переходы --- */
+  --transition-fast: 140ms cubic-bezier(0.2, 0.6, 0.3, 1);
+  --transition-base: 220ms cubic-bezier(0.2, 0.6, 0.3, 1);
+
+  /* --- Тени --- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.25);
+  --shadow-accent: 0 0 0 1px var(--accent-glow), 0 0 20px var(--accent-dim);
+
+  --grad-elevated: linear-gradient(180deg, #2b2825 0%, #262321 100%);
+}
+
+@media (max-width: 768px) {
+  :root {
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+    --space-6: 1.75rem;
+  }
+}
+
+/* ============================================================
+   Ресеты
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--bg-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  
+  /* Безопасные зоны для Android */
+  padding-top: env(safe-area-inset-top, 24px);
+  padding-bottom: env(safe-area-inset-bottom, 48px);
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
+}
+
+#app {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+
+h1, h2, h3, h4 {
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ============================================================
+   Скроллбары
+   ============================================================ */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+  background-clip: content-box;
+}
+
+.scroll-hidden::-webkit-scrollbar {
+  display: none;
+}
+.scroll-hidden {
+  scrollbar-width: none;
+}
+
+/* ============================================================
+   Автозаполнение
+   ============================================================ */
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text-primary) !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-elevated-2) inset !important;
+  box-shadow: 0 0 0 1000px var(--bg-elevated-2) inset !important;
+  transition: background-color 9999s ease-in-out 0s;
+  caret-color: var(--text-primary);
+}
+
+select option {
+  background-color: var(--bg-elevated-2);
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   Утилиты
+   ============================================================ */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation: fadeInUp var(--transition-base) both;
+}
+
+.glow {
+  box-shadow: var(--shadow-accent);
+}
