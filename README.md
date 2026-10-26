@@ -1,5 +1,6 @@
 # Canifol
 
+**Electronics repair toolkit: component calculators and datasheet search.**
 **Инструмент ремонтника: калькуляторы компонентов и поиск даташитов.**
 
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](../../releases)
@@ -14,7 +15,7 @@
 
 ## English
 
-Canifol is a free tool for electronics repair technicians. Component calculators, datasheet search and PDF viewer right inside the app. Works offline after the first launch.
+Canifol is a free tool for electronics repair technicians. Component calculators, datasheet search and a PDF viewer right inside the app. Works fully offline after the first launch.
 
 ### Features
 
@@ -40,71 +41,74 @@ Tauri 2 · Svelte 5 (runes) · Rust · Vite · `svelte-pdf-view`.
 
 > **Note:** On first launch the app needs internet to fetch datasheets and analog data. After that, calculators work fully offline.
 
-### Build from source
+### Build from Source
 
 Requirements: [Node.js](https://nodejs.org/) 18+, [Rust](https://rustup.rs/) 1.75+, Windows 10/11 (WebView2) or Android SDK + NDK.
 
-```bash
-git clone https://github.com/invisiblelevel/canifol.git
-cd canifol
-npm install
-npm run tauri dev          # development (desktop)
-npm run tauri build        # release build (Windows)
-npm run tauri android build -- --apk   # release build (Android APK)
-The Windows installer will appear in src-tauri/target/release/bundle/nsis/. The Android APK will appear in src-tauri/gen/android/app/build/outputs/apk/universal/release/.
+1. `git clone https://github.com/invisiblelevel/canifol.git`
+2. `cd canifol`
+3. `npm install`
+4. `npm run tauri dev` — development (desktop)
+5. `npm run tauri build` — release build (Windows)
+6. `npm run tauri android build -- --apk` — release build (Android APK)
 
-License
-MIT — see LICENSE.
+The Windows installer will appear in `src-tauri/target/release/bundle/nsis/`. The Android APK will appear in `src-tauri/gen/android/app/build/outputs/apk/universal/release/`.
 
-Author
-INV.LVL · @invisiblelevel
+### License
 
-Русский
+MIT — see [LICENSE](LICENSE).
+
+### Author
+
+INV.LVL · [@invisiblelevel](https://github.com/invisiblelevel)
+
+---
+
+## Русский
+
 Canifol — бесплатный инструмент для ремонтников электроники. Калькуляторы компонентов, поиск даташитов и просмотр PDF прямо в приложении. После первого запуска работает полностью оффлайн.
 
-Что умеет
-Резисторы — SMD-код, цвета, закон Ома, соединения, делитель, подбор.
+### Что умеет
 
-Конденсаторы — маркировка, SMD, реактивное сопротивление (Xc), соединения.
+- **Резисторы** — SMD-код, цвета, закон Ома, соединения, делитель, подбор.
+- **Конденсаторы** — маркировка, SMD, реактивное сопротивление (Xc), соединения.
+- **Катушки** — маркировка, реактивное сопротивление (Xl), соединения, геометрия (Уилер).
+- **BMS** — балансир, S/P сборка, шунт, защита на MOSFET.
+- **Транзисторы** — поиск аналога (DigiKey + LCSC + советская база), подбор по параметрам, расчёт базового резистора.
+- **Даташиты** — поиск через DigiKey и LCSC, скачивание PDF с локальным кэшем, встроенный просмотрщик.
+- **Локализация** — русский и английский, с автоопределением языка системы.
+- **Настройки** — масштаб интерфейса (70–150%), размер кэша даташитов и его очистка.
+- **Тёмная тема** по умолчанию.
 
-Катушки — маркировка, реактивное сопротивление (Xl), соединения, геометрия (Уилер).
+### Стек
 
-BMS — балансир, S/P сборка, шунт, защита на MOSFET.
+Tauri 2 · Svelte 5 (руны) · Rust · Vite · `svelte-pdf-view`.
 
-Транзисторы — поиск аналога (DigiKey + LCSC + советская база), подбор по параметрам, расчёт базового резистора.
+### Установка
 
-Даташиты — поиск через DigiKey и LCSC, скачивание PDF с локальным кэшем, встроенный просмотрщик.
+**Windows:** Скачай установщик из [Releases](../../releases), запусти, установи.
 
-Локализация — русский и английский, с автоопределением языка системы.
+**Android:** Скачай `.apk` из [Releases](../../releases), разреши установку из неизвестных источников, установи.
 
-Настройки — масштаб интерфейса (70–150%), размер кэша даташитов и его очистка.
+> **Важно:** При первом запуске нужен интернет, чтобы загрузить даташиты и базу аналогов. После этого калькуляторы работают полностью оффлайн.
 
-Тёмная тема по умолчанию.
+### Сборка из исходников
 
-Стек
-Tauri 2 · Svelte 5 (руны) · Rust · Vite · svelte-pdf-view.
+Требования: [Node.js](https://nodejs.org/) 18+, [Rust](https://rustup.rs/) 1.75+, Windows 10/11 (WebView2) или Android SDK + NDK.
 
-Установка
-Windows: Скачай установщик из Releases, запусти, установи.
+1. `git clone https://github.com/invisiblelevel/canifol.git`
+2. `cd canifol`
+3. `npm install`
+4. `npm run tauri dev` — dev-режим (десктоп)
+5. `npm run tauri build` — релиз (Windows)
+6. `npm run tauri android build -- --apk` — релиз (Android APK)
 
-Android: Скачай .apk из Releases, разреши установку из неизвестных источников, установи.
+Windows-установщик появится в `src-tauri/target/release/bundle/nsis/`. Android APK — в `src-tauri/gen/android/app/build/outputs/apk/universal/release/`.
 
-Важно: При первом запуске нужен интернет, чтобы загрузить даташиты и базу аналогов. После этого калькуляторы работают полностью оффлайн.
+### Лицензия
 
-Сборка из исходников
-Требования: Node.js 18+, Rust 1.75+, Windows 10/11 (WebView2) или Android SDK + NDK.
+MIT — см. [LICENSE](LICENSE).
 
-bash
-git clone https://github.com/invisiblelevel/canifol.git
-cd canifol
-npm install
-npm run tauri dev          # dev-режим (десктоп)
-npm run tauri build        # релиз (Windows)
-npm run tauri android build -- --apk   # релиз (Android APK)
-Windows-установщик появится в src-tauri/target/release/bundle/nsis/. Android APK — в src-tauri/gen/android/app/build/outputs/apk/universal/release/.
+### Автор
 
-Лицензия
-MIT — см. LICENSE.
-
-Автор
-INV.LVL · @invisiblelevel
+INV.LVL · [@invisiblelevel](https://github.com/invisiblelevel)
