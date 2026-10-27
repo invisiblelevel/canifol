@@ -13,6 +13,8 @@
   import TransistorsView from './lib/views/TransistorsView.svelte';
   import DatasheetsView from './lib/views/DatasheetsView.svelte';
   import SettingsView from './lib/views/SettingsView.svelte';
+  import PinoutsView from './lib/views/PinoutsView.svelte';
+  import SmdSearchView from './lib/views/SmdSearchView.svelte'; // <-- НОВЫЙ ИМПОРТ
 
   let showAbout = $state(false);
   let showSupport = $state(false);
@@ -24,7 +26,9 @@
     bms:        BmsView,
     transistors: TransistorsView,
     datasheets: DatasheetsView,
-    settings:   SettingsView
+    settings:   SettingsView,
+    pinouts:    PinoutsView,
+    smd:        SmdSearchView // <-- НОВЫЙ РАЗДЕЛ
   };
 
   const currentView = $derived(views[navStore.current]);
@@ -47,6 +51,10 @@
     <TransistorsView />
   {:else if currentView === SettingsView}
     <SettingsView />
+  {:else if currentView === PinoutsView}
+    <PinoutsView />
+  {:else if currentView === SmdSearchView}  <!-- <-- НОВОЕ УСЛОВИЕ -->
+    <SmdSearchView />
   {:else}
     <DatasheetsView />
   {/if}

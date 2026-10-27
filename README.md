@@ -1,9 +1,9 @@
 # Canifol
 
-**Cross-platform electronics repair toolkit: component calculators and datasheet search.**
-**Кросс-платформенный инструмент ремонтника: калькуляторы компонентов и поиск даташитов.**
+**Cross-platform electronics repair toolkit: component calculators, datasheet search, pinouts and SMD code database.**
+**Кросс-платформенный инструмент ремонтника: калькуляторы компонентов, поиск даташитов, распиновки и база SMD-кодов.**
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](../../releases)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](../../releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android-0078D6.svg)](#install)
 [![Tauri](https://img.shields.io/badge/tauri-2-24C8DB.svg)](https://tauri.app/)
@@ -15,9 +15,15 @@
 
 ## English
 
-Canifol is a free tool for electronics repair technicians. Component calculators, datasheet search and a PDF viewer right inside the app. Works fully offline after the first launch.
+Canifol is a free tool for electronics repair technicians. Component calculators, datasheet search, pinouts and an SMD code database right inside the app. Works fully offline after the first launch.
 
 **Available on Windows and Android.** The desktop build ships as a standard Windows installer (`.exe`), and the mobile build ships as a standalone Android APK (`.apk`). Both are attached to every release.
+
+### What's new in 1.1.0
+
+- **Pinouts** — visual SVG diagrams for connectors (USB, HDMI, DisplayPort, VGA, ATX, SATA, Jack 3.5), imported ICs (LM, NE, TDA, 74HC, etc.) and Soviet microchips (K155, K561, KR142, etc.).
+- **SMD Code Search** — database of **270 974 components** with **119 290 unique codes**. Search by the code printed on the package and get the model, type, package and parameters instantly.
+- **Extended SMD database** — parsed from the SMD-CODES DATABOOK 2023 EDITION.
 
 ### Features
 
@@ -26,7 +32,9 @@ Canifol is a free tool for electronics repair technicians. Component calculators
 - **Inductors** — marking, reactance (Xl), connections, Wheeler geometry.
 - **BMS** — balancing resistor, S/P pack, current shunt, MOSFET protection.
 - **Transistors** — analog search (DigiKey + LCSC + Soviet database), parametric search, base resistor calculator.
-- **Datasheets** — search via DigiKey and LCSC, download PDFs with local caching, built-in PDF viewer.
+- **Datasheets** — search via DigiKey and LCSC, download PDFs with local caching, built-in PDF viewer with fullscreen mode.
+- **Pinouts** — connectors (USB Type-A, USB Type-C, USB 3.0, HDMI, DisplayPort, VGA, Jack 3.5 TRS/TRRS, ATX 24-pin, SATA Power), imported ICs (LM358, NE555, LM7805, LM317, LM7812, IRFZ44N, TL494, NE5532, 74HC595, ATmega328P, TDA2030, TDA7294, TDA2822, LM386, PC817, MC34063, 74HC14), Soviet microchips (К155ЛА3, К155ТМ2, К155ИД3, К155ИР1, К155АГ3, К155КП1, К155ИЕ7, К561ЛА7, К561ТМ2, К561ИЕ10, КР142ЕН5А, КР142ЕН8Б, К140УД6, К140УД7, КР1006ВИ1, КР1533ИР22, КР580ВМ80А, КР580ВВ55А, КР580ВИ53).
+- **SMD Code Search** — database of 270 974 components, instant search by code, with model, type, package and parameters.
 - **Localization** — English and Russian, with automatic system language detection.
 - **Settings** — interface zoom (70–150%), datasheet cache size and cleanup.
 - **Dark theme** by default.
@@ -68,9 +76,15 @@ INV.LVL · [@invisiblelevel](https://github.com/invisiblelevel)
 
 ## Русский
 
-Canifol — бесплатный инструмент для ремонтников электроники. Калькуляторы компонентов, поиск даташитов и просмотр PDF прямо в приложении. После первого запуска работает полностью оффлайн.
+Canifol — бесплатный инструмент для ремонтников электроники. Калькуляторы компонентов, поиск даташитов, распиновки и база SMD-кодов прямо в приложении. После первого запуска работает полностью оффлайн.
 
 **Доступно на Windows и Android.** Десктопная версия поставляется как обычный установщик (`.exe`), мобильная — как отдельный APK (`.apk`). Оба файла прикрепляются к каждому релизу.
+
+### Что нового в 1.1.0
+
+- **Распиновки** — визуальные SVG-схемы для разъёмов (USB, HDMI, DisplayPort, VGA, ATX, SATA, Jack 3.5), импортных микросхем (LM, NE, TDA, 74HC и т.д.) и советских микросхем (К155, К561, КР142 и т.д.).
+- **Поиск по SMD-кодам** — база на **270 974 компонента** с **119 290 уникальными кодами**. Ищешь по коду с корпуса — получаешь модель, тип, корпус и параметры мгновенно.
+- **Расширенная SMD-база** — распарсена из SMD-CODES DATABOOK 2023 EDITION.
 
 ### Что умеет
 
@@ -79,7 +93,9 @@ Canifol — бесплатный инструмент для ремонтник�
 - **Катушки** — маркировка, реактивное сопротивление (Xl), соединения, геометрия (Уилер).
 - **BMS** — балансир, S/P сборка, шунт, защита на MOSFET.
 - **Транзисторы** — поиск аналога (DigiKey + LCSC + советская база), подбор по параметрам, расчёт базового резистора.
-- **Даташиты** — поиск через DigiKey и LCSC, скачивание PDF с локальным кэшем, встроенный просмотрщик.
+- **Даташиты** — поиск через DigiKey и LCSC, скачивание PDF с локальным кэшем, встроенный просмотрщик с полноэкранным режимом.
+- **Распиновки** — разъёмы (USB Type-A, USB Type-C, USB 3.0, HDMI, DisplayPort, VGA, Jack 3.5 TRS/TRRS, ATX 24-pin, SATA Power), импортные микросхемы (LM358, NE555, LM7805, LM317, LM7812, IRFZ44N, TL494, NE5532, 74HC595, ATmega328P, TDA2030, TDA7294, TDA2822, LM386, PC817, MC34063, 74HC14), советские микросхемы (К155ЛА3, К155ТМ2, К155ИД3, К155ИР1, К155АГ3, К155КП1, К155ИЕ7, К561ЛА7, К561ТМ2, К561ИЕ10, КР142ЕН5А, КР142ЕН8Б, К140УД6, К140УД7, КР1006ВИ1, КР1533ИР22, КР580ВМ80А, КР580ВВ55А, КР580ВИ53).
+- **Поиск по SMD-кодам** — база на 270 974 компонента, мгновенный поиск по коду, с моделью, типом, корпусом и параметрами.
 - **Локализация** — русский и английский, с автоопределением языка системы.
 - **Настройки** — масштаб интерфейса (70–150%), размер кэша даташитов и его очистка.
 - **Тёмная тема** по умолчанию.

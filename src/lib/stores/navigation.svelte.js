@@ -1,4 +1,4 @@
-import { Zap, Battery, Cable, FileText, CircuitBoard, Cpu } from '@lucide/svelte';
+import { Zap, Battery, Cable, FileText, CircuitBoard, Cpu, Network, ScanLine } from '@lucide/svelte';
 
 export const SECTIONS = [
   { id: 'transistors', icon: Cpu },
@@ -6,7 +6,9 @@ export const SECTIONS = [
   { id: 'capacitors',  icon: Battery },
   { id: 'inductors',   icon: Cable },
   { id: 'bms',         icon: CircuitBoard },
-  { id: 'datasheets',  icon: FileText }
+  { id: 'datasheets',  icon: FileText },
+  { id: 'pinouts',     icon: Network },
+  { id: 'smd',         icon: ScanLine }   // <-- новый раздел
 ];
 
 let current = $state('transistors');
@@ -16,7 +18,6 @@ export const navStore = {
   set current(value) {
     if (SECTIONS.some((s) => s.id === value)) current = value;
   },
-  // Отдельный метод для настроек, чтобы не добавлять их в SECTIONS
   setSettings() {
     current = 'settings';
   },
