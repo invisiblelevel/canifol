@@ -19,12 +19,9 @@
       --accent: #f5b83d;
       --accent-strong: #e6a420;
       --accent-dim: rgba(245, 184, 61, 0.14);
-      --danger: #e85a5a;
-      --success: #8bc47a;
       --radius-md: 10px;
       --radius-lg: 16px;
       --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
@@ -39,6 +36,20 @@
     a:hover { color: var(--accent-strong); }
     .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
     
+    /* --- ЛОГИКА ЯЗЫКОВ --- */
+    /* По умолчанию скрываем все элементы с классом show-* */
+    .show-ru, .show-en, .show-zh { display: none !important; }
+    
+    /* Показываем только те, что соответствуют классу на body */
+    body.lang-ru .show-ru { display: block !important; }
+    body.lang-en .show-en { display: block !important; }
+    body.lang-zh .show-zh { display: block !important; }
+
+    /* Для инлайн-элементов (спаны в заголовке) */
+    body.lang-ru span.show-ru { display: inline !important; }
+    body.lang-en span.show-en { display: inline !important; }
+    body.lang-zh span.show-zh { display: inline !important; }
+
     /* Header */
     header {
       position: sticky; top: 0; z-index: 100;
@@ -69,9 +80,9 @@
       pointer-events: none; z-index: -1;
     }
     .hero h1 { font-size: clamp(2.5rem, 8vw, 4.5rem); font-weight: 800; letter-spacing: -0.03em; margin-bottom: 16px; line-height: 1.1; }
-    .hero h1 span { color: var(--accent); }
-    .hero p.subtitle { font-size: clamp(1.1rem, 3vw, 1.4rem); color: var(--text-secondary); max-width: 700px; margin: 0 auto 40px; }
-    .hero .cta { display: inline-flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+    .hero h1 span.accent { color: var(--accent); }
+    .hero .subtitle { font-size: clamp(1.1rem, 3vw, 1.4rem); color: var(--text-secondary); max-width: 700px; margin: 0 auto 40px; }
+    .hero .cta { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
     .btn {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 14px 28px; border-radius: var(--radius-md);
@@ -85,7 +96,7 @@
     /* Features */
     .features { padding: 80px 0; }
     .features h2 { text-align: center; font-size: 2.2rem; margin-bottom: 60px; }
-    .features h2 span { color: var(--accent); }
+    .features h2 span.accent { color: var(--accent); }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
     .card {
       background: var(--bg-elevated); border: 1px solid var(--border-subtle);
@@ -100,7 +111,7 @@
     /* Screenshots */
     .screenshots { padding: 80px 0; }
     .screenshots h2 { text-align: center; font-size: 2.2rem; margin-bottom: 60px; }
-    .screenshots h2 span { color: var(--accent); }
+    .screenshots h2 span.accent { color: var(--accent); }
     .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
     .shot {
       background: var(--bg-elevated); border: 1px solid var(--border-subtle);
@@ -121,14 +132,6 @@
     footer { border-top: 1px solid var(--border-subtle); padding: 40px 0; text-align: center; color: var(--text-muted); font-size: 0.9rem; }
     footer a { color: var(--accent); }
     footer .links { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px; }
-
-    /* Language visibility */
-    [data-lang] { display: none; }
-    .lang-ru .show-ru, .lang-en .show-en, .lang-zh .show-zh { display: block; }
-    .hero .show-ru, .hero .show-en, .hero .show-zh { display: none; }
-    .lang-ru .hero .show-ru, .lang-en .hero .show-en, .lang-zh .hero .show-zh { display: block; }
-    .hero h1 .show-ru, .hero h1 .show-en, .hero h1 .show-zh { display: none; }
-    .lang-ru .hero h1 .show-ru, .lang-en .hero h1 .show-en, .lang-zh .hero h1 .show-zh { display: inline; }
 
     @media (max-width: 768px) {
       .hero { padding: 60px 0 40px; }
@@ -154,9 +157,9 @@
   <section class="hero">
     <div class="container">
       <h1>
-        <span class="show-ru">Инструмент <span style="color:var(--accent)">ремонтника</span></span>
-        <span class="show-en"><span style="color:var(--accent)">Repairman's</span> toolkit</span>
-        <span class="show-zh"><span style="color:var(--accent)">维修师傅</span>的工具箱</span>
+        <span class="show-ru">Инструмент <span class="accent">ремонтника</span></span>
+        <span class="show-en"><span class="accent">Repairman's</span> toolkit</span>
+        <span class="show-zh"><span class="accent">维修师傅</span>的工具箱</span>
       </h1>
       <p class="subtitle show-ru">Калькуляторы компонентов, поиск даташитов, распиновки и база SMD-кодов. Всё в одном приложении. Бесплатно. Офлайн.</p>
       <p class="subtitle show-en">Component calculators, datasheet search, pinouts and an SMD code database. All in one app. Free. Offline.</p>
@@ -175,9 +178,9 @@
 
   <section class="features">
     <div class="container">
-      <h2 class="show-ru">Что <span>внутри</span></h2>
-      <h2 class="show-en">What's <span>inside</span></h2>
-      <h2 class="show-zh">包含<span>什么</span></h2>
+      <h2 class="show-ru">Что <span class="accent">внутри</span></h2>
+      <h2 class="show-en">What's <span class="accent">inside</span></h2>
+      <h2 class="show-zh">包含<span class="accent">什么</span></h2>
       
       <div class="grid">
         <div class="card">
@@ -222,28 +225,22 @@
 
   <section class="screenshots">
     <div class="container">
-      <h2 class="show-ru">Как это <span>выглядит</span></h2>
-      <h2 class="show-en">How it <span>looks</span></h2>
-      <h2 class="show-zh">界面<span>预览</span></h2>
+      <h2 class="show-ru">Как это <span class="accent">выглядит</span></h2>
+      <h2 class="show-en">How it <span class="accent">looks</span></h2>
+      <h2 class="show-zh">界面<span class="accent">预览</span></h2>
       <div class="shots">
-        <div class="shot show-ru">Скриншот 1 (Resistors)</div>
-        <div class="shot show-en">Screenshot 1 (Resistors)</div>
-        <div class="shot show-zh">截图 1 (Resistors)</div>
-        <div class="shot show-ru">Скриншот 2 (SMD)</div>
-        <div class="shot show-en">Screenshot 2 (SMD)</div>
-        <div class="shot show-zh">截图 2 (SMD)</div>
-        <div class="shot show-ru">Скриншот 3 (Pinouts)</div>
-        <div class="shot show-en">Screenshot 3 (Pinouts)</div>
-        <div class="shot show-zh">截图 3 (Pinouts)</div>
+        <div class="shot"><img src="screenshot1.png" alt="Screenshot 1" onerror="this.style.display='none'; this.parentElement.innerHTML='Screenshot 1'"></div>
+        <div class="shot"><img src="screenshot2.png" alt="Screenshot 2" onerror="this.style.display='none'; this.parentElement.innerHTML='Screenshot 2'"></div>
+        <div class="shot"><img src="screenshot3.png" alt="Screenshot 3" onerror="this.style.display='none'; this.parentElement.innerHTML='Screenshot 3'"></div>
       </div>
     </div>
   </section>
 
   <section class="download">
     <div class="container">
-      <h2 class="show-ru">Скачай и <span style="color:var(--accent)">попробуй</span></h2>
-      <h2 class="show-en">Download and <span style="color:var(--accent)">try it</span></h2>
-      <h2 class="show-zh">下载<span style="color:var(--accent)">试用</span></h2>
+      <h2 class="show-ru">Скачай и <span class="accent">попробуй</span></h2>
+      <h2 class="show-en">Download and <span class="accent">try it</span></h2>
+      <h2 class="show-zh">下载<span class="accent">试用</span></h2>
       
       <p class="show-ru">Windows и Android. Бесплатно. Без рекламы.</p>
       <p class="show-en">Windows and Android. Free. No ads.</p>
