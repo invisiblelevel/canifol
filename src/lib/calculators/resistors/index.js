@@ -6,10 +6,10 @@ import VoltageDivider from './VoltageDivider.svelte';
 import ResistorPick from './ResistorPick.svelte';
 
 export const RESISTOR_CALCULATORS = [
-  { id: 'smd',         label: 'SMD-код',    component: SmdCode },
-  { id: 'color',       label: 'Цвета',      component: ColorCode },
-  { id: 'ohm',         label: 'Закон Ома',  component: OhmLaw },
-  { id: 'connections', label: 'Соединения', component: Connections },
-  { id: 'divider',     label: 'Делитель',   component: VoltageDivider },
-  { id: 'pick',        label: 'Подбор',     component: ResistorPick }
+  { id: 'smd',         component: SmdCode },
+  { id: 'color',       component: ColorCode },
+  { id: 'ohm',         component: OhmLaw },
+  { id: 'connections', component: Connections },
+  { id: 'divider',     component: VoltageDivider },
+  { id: 'pick',        component: ResistorPick }
 ];

@@ -20,7 +20,7 @@
   <nav class="subtabs no-select">
     {#each RESISTOR_CALCULATORS as calc (calc.id)}
       <button type="button" class="subtabs__item" class:active={activeId === calc.id} onclick={() => (activeId = calc.id)}>
-        {calc.label}
+        {strings.resistors.sub[calc.id] ?? calc.id}
       </button>
     {/each}
   </nav>

@@ -1,8 +1,11 @@
 <script>
   import Input from '../../components/Input.svelte';
   import Button from '../../components/Button.svelte';
+  import { getStrings } from '../../strings.svelte.js';
   import { solveOhmLaw, formatVoltage, formatCurrent, formatPower } from '../../utils/formulas.js';
   import { formatOhm } from '../../utils/resistorCodes.js';
+
+  const strings = $derived(getStrings());
 
   let uStr = $state(''), iStr = $state(''), rStr = $state(''), pStr = $state('');
 
@@ -27,7 +30,12 @@
   function fmtInput(n) { return n == null ? '' : String(Math.round(n * 1000) / 1000); }
   function reset() { uStr = ''; iStr = ''; rStr = ''; pStr = ''; }
 
-  const statusText = $derived(filled === 0 ? 'Введи любые две величины' : filled === 1 ? 'Введи ещё одну величину' : filled === 2 ? (result ? 'Готово' : 'Не удалось рассчитать') : 'Введи ровно две величины');
+  const statusText = $derived(
+    filled === 0 ? strings.resistors.labels.enterTwo
+    : filled === 1 ? strings.resistors.labels.enterOneMore
+    : filled === 2 ? (result ? strings.resistors.labels.ready : strings.resistors.labels.calcFailed)
+    : strings.resistors.labels.enterExactlyTwo
+  );
   const statusKind = $derived(filled < 2 ? 'hint' : filled === 2 ? (result ? 'ok' : 'error') : 'warning');
 
   const resultLines = $derived.by(() => {
@@ -49,21 +57,21 @@
 
 <div class="ohm">
   <div class="ohm__fields">
-    <Input bind:value={uStr} label="Напряжение (U)" placeholder="12" suffix="В" inputmode="decimal" computed={computed.u} />
-    <Input bind:value={iStr} label="Ток (I)" placeholder="0.5" suffix="А" inputmode="decimal" computed={computed.i} />
-    <Input bind:value={rStr} label="Сопротивление (R)" placeholder="1000" suffix="Ом" inputmode="decimal" computed={computed.r} />
-    <Input bind:value={pStr} label="Мощность (P)" placeholder="0.25" suffix="Вт" inputmode="decimal" computed={computed.p} />
+    <Input bind:value={uStr} label={strings.resistors.labels.voltage} placeholder="12" suffix="В" inputmode="decimal" computed={computed.u} />
+    <Input bind:value={iStr} label={strings.resistors.labels.current} placeholder="0.5" suffix="А" inputmode="decimal" computed={computed.i} />
+    <Input bind:value={rStr} label={strings.resistors.labels.resistance} placeholder="1000" suffix="Ом" inputmode="decimal" computed={computed.r} />
+    <Input bind:value={pStr} label={strings.resistors.labels.power} placeholder="0.25" suffix="Вт" inputmode="decimal" computed={computed.p} />
   </div>
 
   <div class="status status--{statusKind}">{statusText}</div>
 
   {#if result && resultLines.length > 0}
     <div class="result">
-      <div class="result__header">Результат</div>
+      <div class="result__header">{strings.resistors.labels.result}</div>
       <ul class="result__list">{#each resultLines as line, idx (idx)}<li>{line}</li>{/each}</ul>
       <div class="result__actions">
-        <Button variant="secondary" size="sm" onclick={copyResult}>{copied ? 'Скопировано' : 'Копировать'}</Button>
-        <Button variant="ghost" size="sm" onclick={reset}>Сброс</Button>
+        <Button variant="secondary" size="sm" onclick={copyResult}>{copied ? strings.buttons.copied : strings.buttons.copy}</Button>
+        <Button variant="ghost" size="sm" onclick={reset}>{strings.buttons.reset}</Button>
       </div>
     </div>
   {/if}

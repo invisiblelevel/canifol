@@ -1,7 +1,10 @@
 <script>
   import Input from '../../components/Input.svelte';
   import Button from '../../components/Button.svelte';
+  import { getStrings } from '../../strings.svelte.js';
   import { parseSmd, formatOhm, formatOhmCompact } from '../../utils/resistorCodes.js';
+
+  const strings = $derived(getStrings());
 
   let raw = $state('');
   let copied = $state(false);
@@ -13,7 +16,12 @@
   const parsed = $derived(normalized ? parseSmd(normalized) : null);
   const hasError = $derived(!!normalized && !parsed);
 
-  const standardLabel = $derived(parsed ? { '3digit': '3-значный код', '4digit': '4-значный код', eia96: 'EIA-96 (1%)' }[parsed.standard] : '');
+  const standardLabel = $derived(parsed ? {
+    '3digit': strings.resistors.labels.standard3,
+    '4digit': strings.resistors.labels.standard4,
+    eia96: strings.resistors.labels.eia96
+  }[parsed.standard] : '');
+
   const copyText = $derived(parsed ? formatOhm(parsed.value) : '');
 
   async function copyResult() {
@@ -25,7 +33,15 @@
 </script>
 
 <div class="smd">
-  <Input bind:value={raw} bind:this={inputEl} label="SMD-код" placeholder="103, 1002, 4R7, 01C" hint="3, 4 знака, R-нотация или EIA-96" error={hasError ? 'Код не распознан' : ''} maxlength={4} />
+  <Input
+    bind:value={raw}
+    bind:this={inputEl}
+    label={strings.resistors.labels.smd}
+    placeholder={strings.resistors.labels.smdPlaceholder}
+    hint={strings.resistors.labels.smdHint}
+    error={hasError ? strings.resistors.labels.smdError : ''}
+    maxlength={4}
+  />
   {#if parsed}
     <div class="result">
       <div class="result__main">
@@ -37,8 +53,8 @@
         {#if parsed.tolerance != null}<span class="badge">±{parsed.tolerance}%</span>{/if}
       </div>
       <div class="result__actions">
-        <Button variant="secondary" size="sm" onclick={copyResult}>{copied ? 'Скопировано' : 'Копировать'}</Button>
-        <Button variant="ghost" size="sm" onclick={clearAll}>Очистить</Button>
+        <Button variant="secondary" size="sm" onclick={copyResult}>{copied ? strings.buttons.copied : strings.buttons.copy}</Button>
+        <Button variant="ghost" size="sm" onclick={clearAll}>{strings.buttons.clear}</Button>
       </div>
     </div>
   {/if}

@@ -1,13 +1,13 @@
 /**
- * Fixitron — парсеры и форматтеры для резисторов.
+ * Canifol — парсеры и форматтеры для резисторов.
  *
  * Чистая логика без Svelte. Компоненты только вызывают эти функции.
  *
  * Основные экспорты:
  *  - parseSmd(code)              — SMD-код (3, 4 знака, EIA-96, R-нотация)
  *  - parseColorBands(colors)     — цветовая маркировка (3-6 полос)
- *  - formatOhm(value)            — "10 кОм", "4.7 кОм", "1 МОм"
- *  - formatOhmCompact(value)     — "10к", "4.7к", "1М"
+ *  - formatOhm(value, units)     — "10 кОм", "4.7 кОм", "1 МОм"
+ *  - formatOhmCompact(value, units) — "10к", "4.7к", "1М"
  *  - parseOhm(string)            — "10к" → 10000
  *  - RESISTOR_COLORS             — список цветов с метаданными
  *  - EIA96_CODES                 — таблица EIA-96 (код → значение)
@@ -26,18 +26,18 @@
  *  - hex:       цвет для UI
  */
 export const RESISTOR_COLORS = [
-  { id: 'black',  name: 'Чёрный',       digit: 0, multiplier: 1e0,  tolerance: null, tcr: 250,  hex: '#0f0f0f' },
-  { id: 'brown',  name: 'Коричневый',   digit: 1, multiplier: 1e1,  tolerance: 1,    tcr: 100,  hex: '#7a4a1e' },
-  { id: 'red',    name: 'Красный',      digit: 2, multiplier: 1e2,  tolerance: 2,    tcr: 50,   hex: '#d32f2f' },
-  { id: 'orange', name: 'Оранжевый',    digit: 3, multiplier: 1e3,  tolerance: null, tcr: 15,   hex: '#f57c00' },
-  { id: 'yellow', name: 'Жёлтый',       digit: 4, multiplier: 1e4,  tolerance: null, tcr: 25,   hex: '#fbc02d' },
-  { id: 'green',  name: 'Зелёный',      digit: 5, multiplier: 1e5,  tolerance: 0.5,  tcr: null, hex: '#388e3c' },
-  { id: 'blue',   name: 'Синий',        digit: 6, multiplier: 1e6,  tolerance: 0.25, tcr: 10,   hex: '#1976d2' },
-  { id: 'violet', name: 'Фиолетовый',   digit: 7, multiplier: 1e7,  tolerance: 0.1,  tcr: 5,    hex: '#7b1fa2' },
-  { id: 'gray',   name: 'Серый',        digit: 8, multiplier: 1e8,  tolerance: 0.05, tcr: 1,    hex: '#757575' },
-  { id: 'white',  name: 'Белый',        digit: 9, multiplier: 1e9,  tolerance: null, tcr: null, hex: '#f5f5f5' },
-  { id: 'gold',   name: 'Золотой',      digit: null, multiplier: 1e-1, tolerance: 5, tcr: null, hex: '#c9a227' },
-  { id: 'silver', name: 'Серебряный',   digit: null, multiplier: 1e-2, tolerance: 10, tcr: null, hex: '#b0b0b0' }
+  { id: 'black',  name: 'Black',       digit: 0, multiplier: 1e0,  tolerance: null, tcr: 250,  hex: '#0f0f0f' },
+  { id: 'brown',  name: 'Brown',       digit: 1, multiplier: 1e1,  tolerance: 1,    tcr: 100,  hex: '#7a4a1e' },
+  { id: 'red',    name: 'Red',         digit: 2, multiplier: 1e2,  tolerance: 2,    tcr: 50,   hex: '#d32f2f' },
+  { id: 'orange', name: 'Orange',      digit: 3, multiplier: 1e3,  tolerance: null, tcr: 15,   hex: '#f57c00' },
+  { id: 'yellow', name: 'Yellow',      digit: 4, multiplier: 1e4,  tolerance: null, tcr: 25,   hex: '#fbc02d' },
+  { id: 'green',  name: 'Green',       digit: 5, multiplier: 1e5,  tolerance: 0.5,  tcr: null, hex: '#388e3c' },
+  { id: 'blue',   name: 'Blue',        digit: 6, multiplier: 1e6,  tolerance: 0.25, tcr: 10,   hex: '#1976d2' },
+  { id: 'violet', name: 'Violet',      digit: 7, multiplier: 1e7,  tolerance: 0.1,  tcr: 5,    hex: '#7b1fa2' },
+  { id: 'gray',   name: 'Gray',        digit: 8, multiplier: 1e8,  tolerance: 0.05, tcr: 1,    hex: '#757575' },
+  { id: 'white',  name: 'White',       digit: 9, multiplier: 1e9,  tolerance: null, tcr: null, hex: '#f5f5f5' },
+  { id: 'gold',   name: 'Gold',        digit: null, multiplier: 1e-1, tolerance: 5, tcr: null, hex: '#c9a227' },
+  { id: 'silver', name: 'Silver',      digit: null, multiplier: 1e-2, tolerance: 10, tcr: null, hex: '#b0b0b0' }
 ];
 
 const COLOR_BY_ID = new Map(RESISTOR_COLORS.map((c) => [c.id, c]));
@@ -89,34 +89,45 @@ const EIA96_MULTIPLIERS = {
  *  1000000  → "1 МОм"
  *  0.22     → "220 мОм"
  *  0        → "0 Ом"
+ *
+ * @param {number} value - значение в Омах
+ * @param {object} [units] - объект с единицами измерения (например, strings.units)
  */
-export function formatOhm(value) {
+export function formatOhm(value, units) {
   if (value == null || isNaN(value)) return '—';
-  if (value === 0) return '0 Ом';
+  
+  // Если единицы не переданы, используем дефолтные русские (для обратной совместимости)
+  const u = units || { ohm: 'Ом', kohm: 'кОм', mohm: 'МОм' };
+
+  if (value === 0) return `0 ${u.ohm}`;
 
   const abs = Math.abs(value);
 
-  if (abs >= 1e6) return `${trimNum(value / 1e6)} МОм`;
-  if (abs >= 1e3) return `${trimNum(value / 1e3)} кОм`;
-  if (abs >= 1)   return `${trimNum(value)} Ом`;
-  if (abs >= 1e-3) return `${trimNum(value * 1e3)} мОм`;
-  return `${trimNum(value)} Ом`;
+  if (abs >= 1e6) return `${trimNum(value / 1e6)} ${u.mohm}`;
+  if (abs >= 1e3) return `${trimNum(value / 1e3)} ${u.kohm}`;
+  if (abs >= 1)   return `${trimNum(value)} ${u.ohm}`;
+  if (abs >= 1e-3) return `${trimNum(value * 1e3)} ${u.ohm}`; // временно, если нет миллиомов
+  return `${trimNum(value)} ${u.ohm}`;
 }
 
 /**
  * Компактный формат: 10к, 4.7к, 1М, 220м, 0R22.
  */
-export function formatOhmCompact(value) {
+export function formatOhmCompact(value, units) {
   if (value == null || isNaN(value)) return '—';
-  if (value === 0) return '0R';
+  
+  // Если единицы не переданы, используем дефолтные русские
+  const u = units || { ohm: 'R', kohm: 'к', mohm: 'М' };
+
+  if (value === 0) return `0${u.ohm}`;
 
   const abs = Math.abs(value);
 
-  if (abs >= 1e6) return `${trimNum(value / 1e6)}М`;
-  if (abs >= 1e3) return `${trimNum(value / 1e3)}к`;
-  if (abs >= 1)   return `${trimNum(value)}R`;
-  if (abs >= 1e-3) return `${trimNum(value * 1e3)}м`;
-  return `${trimNum(value)}R`;
+  if (abs >= 1e6) return `${trimNum(value / 1e6)}${u.mohm}`;
+  if (abs >= 1e3) return `${trimNum(value / 1e3)}${u.kohm}`;
+  if (abs >= 1)   return `${trimNum(value)}${u.ohm}`;
+  if (abs >= 1e-3) return `${trimNum(value * 1e3)}м`; // временно
+  return `${trimNum(value)}${u.ohm}`;
 }
 
 /**

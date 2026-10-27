@@ -2,16 +2,30 @@
   import Input from '../../components/Input.svelte';
   import Select from '../../components/Select.svelte';
   import Button from '../../components/Button.svelte';
-  import { solveResistorPower, formatVoltage, formatPower } from '../../utils/formulas.js';
+  import { getStrings } from '../../strings.svelte.js';
+  import { solveResistorPower, formatVoltage, formatPower, nearestE24 } from '../../utils/formulas.js';
   import { formatOhm, formatOhmCompact } from '../../utils/resistorCodes.js';
-  import { nearestE24 } from '../../utils/formulas.js';
+
+  const strings = $derived(getStrings());
 
   let uStr = $state(''), iStr = $state(''), rStr = $state('');
   let uUnit = $state('v'), iUnit = $state('a'), rUnit = $state('ohm');
 
-  const voltageUnits = [{ value: 'v', label: 'В' }, { value: 'mv', label: 'мВ' }, { value: 'kv', label: 'кВ' }];
-  const currentUnits = [{ value: 'a', label: 'А' }, { value: 'ma', label: 'мА' }, { value: 'ua', label: 'мкА' }];
-  const ohmUnits = [{ value: 'ohm', label: 'Ом' }, { value: 'kohm', label: 'кОм' }, { value: 'mohm', label: 'МОм' }];
+  const voltageUnits = $derived([
+    { value: 'v', label: strings.units.v },
+    { value: 'mv', label: strings.units.mv },
+    { value: 'kv', label: strings.units.kv }
+  ]);
+  const currentUnits = $derived([
+    { value: 'a', label: strings.units.a },
+    { value: 'ma', label: strings.units.ma },
+    { value: 'ua', label: strings.units.ua }
+  ]);
+  const ohmUnits = $derived([
+    { value: 'ohm', label: strings.units.ohm },
+    { value: 'kohm', label: strings.units.kohm },
+    { value: 'mohm', label: strings.units.mohm }
+  ]);
   const uFactor = { v: 1, mv: 1e-3, kv: 1e3 };
   const iFactor = { a: 1, ma: 1e-3, ua: 1e-6 };
   const rFactor = { ohm: 1, kohm: 1e3, mohm: 1e6 };
@@ -36,7 +50,12 @@
   function fmtNum(n) { return n == null ? '' : String(Math.round(n * 10000) / 10000); }
   function reset() { uStr = ''; iStr = ''; rStr = ''; }
 
-  const statusText = $derived(filledCount === 0 ? 'Введи две величины' : filledCount === 1 ? 'Введи ещё одну' : filledCount === 2 ? (result ? 'Готово' : 'Не удалось') : 'Введи ровно две');
+  const statusText = $derived(
+    filledCount === 0 ? strings.resistors.labels.enterTwo
+    : filledCount === 1 ? strings.resistors.labels.enterOneMore
+    : filledCount === 2 ? (result ? strings.resistors.labels.ready : strings.resistors.labels.calcFailed)
+    : strings.resistors.labels.enterExactlyTwo
+  );
   const statusKind = $derived(filledCount < 2 ? 'hint' : filledCount === 2 ? (result ? 'ok' : 'error') : 'warning');
 
   const e24 = $derived(result?.r != null ? nearestE24(result.r, 3) : []);
@@ -44,8 +63,8 @@
   const warnings = $derived.by(() => {
     if (!result) return [];
     const list = [];
-    if (result.p > 5) list.push('Мощность больше 5 Вт — нужен мощный резистор');
-    if (result.i > 1) list.push('Ток больше 1 А — проверь проводники');
+    if (result.p > 5) list.push(strings.resistors.labels.warnPowerHigh);
+    if (result.i > 1) list.push(strings.resistors.labels.warnCurrentHigh);
     return list;
   });
 
@@ -53,7 +72,7 @@
   const copyText = $derived.by(() => {
     if (!result) return '';
     const parts = [`R = ${formatOhm(result.r)}`, `P = ${formatPower(result.p)}`];
-    if (result.recommendedPower) parts.push(`Рекомендуемая мощность: ${result.recommendedPower} Вт`);
+    if (result.recommendedPower) parts.push(`${strings.resistors.labels.recommendedPower}: ${result.recommendedPower} ${strings.units.w}`);
     return parts.join('\n');
   });
   async function copyResult() { if (!copyText) return; try { await navigator.clipboard.writeText(copyText); copied = true; setTimeout(() => (copied = false), 1200); } catch {} }
@@ -62,15 +81,15 @@
 <div class="pick">
   <div class="fields">
     <div class="field-row">
-      <div class="field-row__input"><Input bind:value={uStr} label="Напряжение (U)" placeholder="12" inputmode="decimal" computed={computed.u} /></div>
+      <div class="field-row__input"><Input bind:value={uStr} label={strings.resistors.labels.voltage} placeholder="12" inputmode="decimal" computed={computed.u} /></div>
       <Select bind:value={uUnit} options={voltageUnits} compact />
     </div>
     <div class="field-row">
-      <div class="field-row__input"><Input bind:value={iStr} label="Ток (I)" placeholder="0.02" inputmode="decimal" computed={computed.i} /></div>
+      <div class="field-row__input"><Input bind:value={iStr} label={strings.resistors.labels.current} placeholder="0.02" inputmode="decimal" computed={computed.i} /></div>
       <Select bind:value={iUnit} options={currentUnits} compact />
     </div>
     <div class="field-row">
-      <div class="field-row__input"><Input bind:value={rStr} label="Сопротивление (R)" placeholder="600" inputmode="decimal" computed={computed.r} /></div>
+      <div class="field-row__input"><Input bind:value={rStr} label={strings.resistors.labels.resistance} placeholder="600" inputmode="decimal" computed={computed.r} /></div>
       <Select bind:value={rUnit} options={ohmUnits} compact />
     </div>
   </div>
@@ -79,18 +98,18 @@
 
   {#if result}
     <div class="result">
-      <div class="result__header">Результат</div>
+      <div class="result__header">{strings.resistors.labels.result}</div>
       <div class="result__main">
         <div class="result__value">{formatOhm(result.r)}</div>
         <div class="result__compact">{formatOhmCompact(result.r)}</div>
       </div>
-      <div class="result__power">Выделяемая мощность: <strong>{formatPower(result.p)}</strong></div>
+      <div class="result__power">{strings.resistors.labels.power}: <strong>{formatPower(result.p)}</strong></div>
       {#if result.recommendedPower}
-        <div class="result__recommend">Рекомендуемый резистор: <strong>{result.recommendedPower} Вт</strong></div>
+        <div class="result__recommend">{strings.resistors.labels.recommendedPower}: <strong>{result.recommendedPower} {strings.units.w}</strong></div>
       {/if}
       {#if e24.length > 0}
         <div class="e24">
-          <div class="e24__label">Ближайшие E24:</div>
+          <div class="e24__label">{strings.resistors.labels.nearestE24}:</div>
           <div class="e24__list">
             {#each e24 as val, idx (idx)}<span class="chip" class:chip--nearest={idx === 0}>{formatOhmCompact(val)}</span>{/each}
           </div>
@@ -100,8 +119,8 @@
         <ul class="warnings">{#each warnings as w, idx (idx)}<li>{w}</li>{/each}</ul>
       {/if}
       <div class="result__actions">
-        <Button variant="secondary" size="sm" onclick={copyResult}>{copied ? 'Скопировано' : 'Копировать'}</Button>
-        <Button variant="ghost" size="sm" onclick={reset}>Сброс</Button>
+        <Button variant="secondary" size="sm" onclick={copyResult}>{copied ? strings.buttons.copied : strings.buttons.copy}</Button>
+        <Button variant="ghost" size="sm" onclick={reset}>{strings.buttons.reset}</Button>
       </div>
     </div>
   {/if}

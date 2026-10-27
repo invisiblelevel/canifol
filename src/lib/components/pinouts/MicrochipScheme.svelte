@@ -2,7 +2,7 @@
   let { activeId = '' } = $props();
 </script>
 
-{#if ['lm358', 'ne555', 'lm386', 'mc34063', 'tda2822', 'ne5532', 'k140ud6', 'k140ud7', 'kr1006vi1'].includes(activeId)}
+{#if ['lm358', 'ne555', 'lm386', 'mc34063', 'tda2822', 'ne5532', 'k140ud6', 'k140ud7', 'kr1006vi1', 'kr140ud1208'].includes(activeId)}
   <!-- DIP-8 -->
   <svg viewBox="0 0 240 100" width="100%" height="auto" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect x="60" y="20" width="120" height="60" rx="4" fill="var(--bg-elevated)" stroke="var(--text-muted)" stroke-width="2"/>
@@ -48,7 +48,7 @@
     <text x="120" y="40" fill="var(--text-primary)" font-size="12" font-family="var(--font-sans)" text-anchor="middle" font-weight="bold">{activeId.toUpperCase()}</text>
   </svg>
 
-{:else if ['tl494', '74hc595', 'l293d', 'uln2003', 'k155ir1', 'k155ag3', 'k155kp1', 'k155ie7', 'k561ie10'].includes(activeId)}
+{:else if ['tl494', '74hc595', 'l293d', 'uln2003', 'k155ir1', 'k155ag3', 'k155kp1', 'k155ie7', 'k561ie10', 'ch340g', 'max232', 'ds3231', 'k561ie11'].includes(activeId)}
   <!-- DIP-16 -->
   <svg viewBox="0 0 280 120" width="100%" height="auto" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect x="60" y="10" width="160" height="100" rx="4" fill="var(--bg-elevated)" stroke="var(--text-muted)" stroke-width="2"/>
@@ -68,7 +68,7 @@
     <text x="140" y="65" fill="var(--text-primary)" font-size="14" font-family="var(--font-sans)" text-anchor="middle" font-weight="bold">{activeId.toUpperCase()}</text>
   </svg>
 
-{:else if ['74hc14', 'k155la3', 'k155tm2', 'k561la7', 'k561tm2'].includes(activeId)}
+{:else if ['74hc14', 'k155la3', 'k155tm2', 'k561la7', 'k561tm2', 'kr1533la3', 'kr1533tm2', 'k561kt3'].includes(activeId)}
   <!-- DIP-14 -->
   <svg viewBox="0 0 260 140" width="100%" height="auto" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect x="60" y="10" width="140" height="120" rx="4" fill="var(--bg-elevated)" stroke="var(--text-muted)" stroke-width="2"/>
@@ -199,6 +199,65 @@
       <text x="395" y="19">40</text><text x="395" y="29">39</text><text x="395" y="39">38</text><text x="395" y="49">37</text><text x="395" y="59">36</text><text x="395" y="69">35</text><text x="395" y="79">34</text><text x="395" y="89">33</text><text x="395" y="99">32</text><text x="395" y="109">31</text><text x="395" y="119">30</text><text x="395" y="129">29</text><text x="395" y="139">28</text><text x="395" y="149">27</text><text x="395" y="159">26</text><text x="395" y="169">25</text><text x="395" y="179">24</text><text x="395" y="189">23</text><text x="395" y="199">22</text><text x="395" y="209">21</text>
     </g>
     <text x="220" y="105" fill="var(--text-primary)" font-size="14" font-family="var(--font-sans)" text-anchor="middle" font-weight="bold">{activeId.toUpperCase()}</text>
+  </svg>
+
+{:else if activeId === 'lm2596'}
+  <!-- TO-220-5 -->
+  <svg viewBox="0 0 240 100" width="100%" height="auto" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="80" y="10" width="80" height="50" rx="4" fill="var(--bg-elevated)" stroke="var(--text-muted)" stroke-width="2"/>
+    <g fill="var(--text-secondary)">
+      <rect x="90" y="60" width="6" height="20" rx="1" /><rect x="102" y="60" width="6" height="20" rx="1" /><rect x="114" y="60" width="6" height="20" rx="1" /><rect x="126" y="60" width="6" height="20" rx="1" /><rect x="138" y="60" width="6" height="20" rx="1" />
+    </g>
+    <g fill="var(--accent)" font-size="7" font-family="var(--font-mono)" text-anchor="middle">
+      <text x="93" y="90">1</text><text x="105" y="90">2</text><text x="117" y="90">3</text><text x="129" y="90">4</text><text x="141" y="90">5</text>
+    </g>
+    <text x="120" y="40" fill="var(--text-primary)" font-size="12" font-family="var(--font-sans)" text-anchor="middle" font-weight="bold">{activeId.toUpperCase()}</text>
+  </svg>
+
+{:else if activeId === 'ams1117'}
+  <!-- SOT-223 -->
+  <svg viewBox="0 0 240 120" width="100%" height="auto" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="70" y="20" width="100" height="60" rx="4" fill="var(--bg-elevated)" stroke="var(--text-muted)" stroke-width="2"/>
+    <g fill="var(--text-secondary)">
+      <rect x="85" y="80" width="8" height="15" rx="1" /><rect x="116" y="80" width="8" height="15" rx="1" /><rect x="147" y="80" width="8" height="15" rx="1" />
+    </g>
+    <g fill="var(--accent)" font-size="7" font-family="var(--font-mono)" text-anchor="middle">
+      <text x="89" y="105">1</text><text x="120" y="105">2</text><text x="151" y="105">3</text>
+    </g>
+    <rect x="100" y="8" width="40" height="12" rx="2" fill="var(--text-secondary)"/>
+    <text x="120" y="105" fill="var(--text-muted)" font-size="7" font-family="var(--font-sans)" text-anchor="middle">TAB</text>
+    <text x="120" y="55" fill="var(--text-primary)" font-size="12" font-family="var(--font-sans)" text-anchor="middle" font-weight="bold">{activeId.toUpperCase()}</text>
+  </svg>
+
+{:else if activeId === 'esp01'}
+  <!-- ESP-01 (2x4) ИСПРАВЛЕНО -->
+  <svg viewBox="0 0 240 120" width="100%" height="auto" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Корпус -->
+    <rect x="60" y="30" width="120" height="60" rx="4" fill="var(--bg-elevated)" stroke="var(--text-muted)" stroke-width="2"/>
+    
+    <!-- Верхний ряд (Пины 1-4) -->
+    <g fill="var(--text-secondary)">
+      <rect x="75" y="20" width="6" height="10" rx="1" />
+      <rect x="95" y="20" width="6" height="10" rx="1" />
+      <rect x="115" y="20" width="6" height="10" rx="1" />
+      <rect x="135" y="20" width="6" height="10" rx="1" />
+    </g>
+    <g fill="var(--accent)" font-size="7" font-family="var(--font-mono)" text-anchor="middle">
+      <text x="78" y="15">1</text><text x="98" y="15">2</text><text x="118" y="15">3</text><text x="138" y="15">4</text>
+    </g>
+
+    <!-- Нижний ряд (Пины 5-8) -->
+    <g fill="var(--text-secondary)">
+      <rect x="75" y="90" width="6" height="10" rx="1" />
+      <rect x="95" y="90" width="6" height="10" rx="1" />
+      <rect x="115" y="90" width="6" height="10" rx="1" />
+      <rect x="135" y="90" width="6" height="10" rx="1" />
+    </g>
+    <g fill="var(--accent)" font-size="7" font-family="var(--font-mono)" text-anchor="middle">
+      <text x="78" y="108">5</text><text x="98" y="108">6</text><text x="118" y="108">7</text><text x="138" y="108">8</text>
+    </g>
+
+    <text x="120" y="65" fill="var(--text-primary)" font-size="12" font-family="var(--font-sans)" text-anchor="middle" font-weight="bold">ESP-01</text>
   </svg>
 
 {:else}

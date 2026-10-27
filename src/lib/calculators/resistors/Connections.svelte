@@ -2,14 +2,21 @@
   import Input from '../../components/Input.svelte';
   import Select from '../../components/Select.svelte';
   import Button from '../../components/Button.svelte';
+  import { getStrings } from '../../strings.svelte.js';
   import { formatOhm, formatOhmCompact } from '../../utils/resistorCodes.js';
   import { sumSeries, sumParallel } from '../../utils/formulas.js';
+
+  const strings = $derived(getStrings());
 
   let mode = $state('series');
   let nextId = 1;
   let rows = $state([{ id: nextId++, value: '', unit: 'ohm' }, { id: nextId++, value: '', unit: 'ohm' }]);
 
-  const unitOptions = [{ value: 'ohm', label: 'Ом' }, { value: 'kohm', label: 'кОм' }, { value: 'mohm', label: 'МОм' }];
+  const unitOptions = $derived([
+    { value: 'ohm', label: strings.units.ohm },
+    { value: 'kohm', label: strings.units.kohm },
+    { value: 'mohm', label: strings.units.mohm }
+  ]);
   const unitFactor = { ohm: 1, kohm: 1e3, mohm: 1e6 };
 
   function parseValue(str) { if (str == null) return null; const t = String(str).trim().replace(',', '.'); if (!t) return null; const n = parseFloat(t); return isNaN(n) ? null : n; }
@@ -24,7 +31,7 @@
   });
 
   const formulaText = $derived(mode === 'series' ? 'R = R₁ + R₂ + …' : '1/R = 1/R₁ + 1/R₂ + …');
-  const modeLabel = $derived(mode === 'series' ? 'Последовательное' : 'Параллельное');
+  const modeLabel = $derived(mode === 'series' ? strings.resistors.labels.series : strings.resistors.labels.parallel);
 
   function addRow() { rows = [...rows, { id: nextId++, value: '', unit: 'ohm' }]; }
   function removeRow(id) { if (rows.length <= 1) return; rows = rows.filter((r) => r.id !== id); }
@@ -34,14 +41,19 @@
   let copied = $state(false);
   async function copyResult() { if (!copyText) return; try { await navigator.clipboard.writeText(copyText); copied = true; setTimeout(() => (copied = false), 1200); } catch {} }
 
-  const statusText = $derived(validOhms.length === 0 ? 'Введи хотя бы одно сопротивление' : hasShort ? 'Один из резисторов = 0 Ом' : result != null ? 'Готово' : 'Проверь значения');
+  const statusText = $derived(
+    validOhms.length === 0 ? strings.resistors.labels.enterTwo
+    : hasShort ? strings.resistors.labels.invalidColors
+    : result != null ? strings.resistors.labels.ready
+    : strings.resistors.labels.calcFailed
+  );
   const statusKind = $derived(validOhms.length === 0 ? 'hint' : hasShort ? 'warning' : result != null ? 'ok' : 'error');
 </script>
 
 <div class="conn">
   <div class="mode-switch no-select">
-    <button type="button" class="mode-switch__item" class:active={mode === 'series'} onclick={() => (mode = 'series')}>Последовательное</button>
-    <button type="button" class="mode-switch__item" class:active={mode === 'parallel'} onclick={() => (mode = 'parallel')}>Параллельное</button>
+    <button type="button" class="mode-switch__item" class:active={mode === 'series'} onclick={() => (mode = 'series')}>{strings.resistors.labels.series}</button>
+    <button type="button" class="mode-switch__item" class:active={mode === 'parallel'} onclick={() => (mode = 'parallel')}>{strings.resistors.labels.parallel}</button>
   </div>
 
   <div class="rows">
@@ -56,12 +68,12 @@
   </div>
 
   <div class="controls">
-    <Button variant="secondary" size="sm" onclick={addRow}>+ Добавить резистор</Button>
-    <Button variant="ghost" size="sm" onclick={reset}>Сброс</Button>
+    <Button variant="secondary" size="sm" onclick={addRow}>{strings.resistors.labels.addResistor}</Button>
+    <Button variant="ghost" size="sm" onclick={reset}>{strings.buttons.reset}</Button>
   </div>
 
   <div class="formula">
-    <div class="formula__label">{modeLabel} соединение</div>
+    <div class="formula__label">{modeLabel} {strings.resistors.labels.formula}</div>
     <div class="formula__expr">{formulaText}</div>
   </div>
 
@@ -74,7 +86,7 @@
         <div class="result__compact">{formatOhmCompact(result)}</div>
       </div>
       <div class="result__actions">
-        <Button variant="secondary" size="sm" onclick={copyResult}>{copied ? 'Скопировано' : 'Копировать'}</Button>
+        <Button variant="secondary" size="sm" onclick={copyResult}>{copied ? strings.buttons.copied : strings.buttons.copy}</Button>
       </div>
     </div>
   {/if}

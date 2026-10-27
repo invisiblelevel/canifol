@@ -2,7 +2,10 @@
   import Select from '../../components/Select.svelte';
   import Button from '../../components/Button.svelte';
   import ResistorVisual from '../../components/ResistorVisual.svelte';
+  import { getStrings } from '../../strings.svelte.js';
   import { RESISTOR_COLORS, parseColorBands, formatOhm, formatOhmCompact } from '../../utils/resistorCodes.js';
+
+  const strings = $derived(getStrings());
 
   const DIGIT_COLORS = RESISTOR_COLORS.filter((c) => c.digit != null);
   const MULTIPLIER_COLORS = RESISTOR_COLORS.filter((c) => c.multiplier != null);
@@ -22,7 +25,12 @@
   });
 
   const parsed = $derived(parseColorBands(activeColors));
-  const copyText = $derived(parsed ? formatOhm(parsed.value) + (parsed.tolerance != null ? ` ±${parsed.tolerance}%` : '') + (parsed.tcr != null ? ` ${parsed.tcr} ppm/°C` : '') : '');
+
+  // ФИКС: Передаем strings.units внутрь форматтера, чтобы "1 кОм" становилось "1 kΩ"
+  const formattedOhm = $derived(parsed ? formatOhm(parsed.value, strings.units) : '');
+  const formattedCompact = $derived(parsed ? formatOhmCompact(parsed.value, strings.units) : '');
+  
+  const copyText = $derived(parsed ? formattedOhm + (parsed.tolerance != null ? ` ±${parsed.tolerance}%` : '') + (parsed.tcr != null ? ` ${parsed.tcr} ppm/°C` : '') : '');
   let copied = $state(false);
 
   async function copyResult() {
@@ -32,9 +40,16 @@
 
   function reset() { bandCount = 4; b1 = 'brown'; b2 = 'black'; b3 = 'black'; mult = 'red'; tol = 'gold'; tcr = 'brown'; }
 
-  function colorOptions(list) { return list.map((c) => ({ value: c.id, label: c.name })); }
+  // ФИКС: берем перевод из strings.colors, если его нет — берем name из базы
+  function colorOptions(list) { 
+    return list.map((c) => ({ 
+      value: c.id, 
+      label: strings.colors[c.id] ?? c.name 
+    })); 
+  }
 
-  const standardLabel = $derived(({ 3: '3 полосы', 4: '4 полосы', 5: '5 полос', 6: '6 полос' })[bandCount] ?? '');
+  // ФИКС: правильный перевод бейджа (4 полосы / 4 bands)
+  const bandLabel = $derived(`${bandCount} ${strings.resistors.labels.bandCount.toLowerCase()}`);
 </script>
 
 <div class="cc">
@@ -47,33 +62,35 @@
   <div class="preview"><ResistorVisual bands={activeColors} width={420} height={90} /></div>
 
   <div class="selects">
-    <Select bind:value={b1} label="Полоса 1" options={colorOptions(DIGIT_COLORS)} />
-    <Select bind:value={b2} label="Полоса 2" options={colorOptions(DIGIT_COLORS)} />
-    {#if bandCount >= 5}<Select bind:value={b3} label="Цифра 3" options={colorOptions(DIGIT_COLORS)} />{/if}
-    <Select bind:value={mult} label="Множитель" options={colorOptions(MULTIPLIER_COLORS)} />
-    {#if bandCount >= 4}<Select bind:value={tol} label="Допуск" options={colorOptions(TOLERANCE_COLORS)} />{/if}
-    {#if bandCount >= 6}<Select bind:value={tcr} label="ТКС" options={colorOptions(TCR_COLORS)} />{/if}
+    <Select bind:value={b1} label={strings.resistors.labels.band1} options={colorOptions(DIGIT_COLORS)} />
+    <Select bind:value={b2} label={strings.resistors.labels.band2} options={colorOptions(DIGIT_COLORS)} />
+    {#if bandCount >= 5}<Select bind:value={b3} label={strings.resistors.labels.digit3} options={colorOptions(DIGIT_COLORS)} />{/if}
+    <Select bind:value={mult} label={strings.resistors.labels.multiplier} options={colorOptions(MULTIPLIER_COLORS)} />
+    {#if bandCount >= 4}<Select bind:value={tol} label={strings.resistors.labels.tolerance} options={colorOptions(TOLERANCE_COLORS)} />{/if}
+    {#if bandCount >= 6}<Select bind:value={tcr} label={strings.resistors.labels.tcr} options={colorOptions(TCR_COLORS)} />{/if}
   </div>
 
   {#if parsed}
     <div class="result">
       <div class="result__main">
-        <div class="result__value">{formatOhm(parsed.value)}</div>
-        <div class="result__compact">{formatOhmCompact(parsed.value)}</div>
+        <div class="result__value">{formattedOhm}</div>
+        <div class="result__compact">{formattedCompact}</div>
       </div>
       <div class="result__meta">
-        <span class="badge">{standardLabel}</span>
+        <span class="badge">{bandLabel}</span>
         {#if parsed.tolerance != null}<span class="badge">±{parsed.tolerance}%</span>{/if}
         {#if parsed.tcr != null}<span class="badge">{parsed.tcr} ppm/°C</span>{/if}
       </div>
       <div class="result__actions">
-        <Button variant="secondary" size="sm" onclick={copyResult}>{copied ? 'Скопировано' : 'Копировать'}</Button>
-        <Button variant="ghost" size="sm" onclick={reset}>Сброс</Button>
+        <Button variant="secondary" size="sm" onclick={copyResult}>{copied ? strings.buttons.copied : strings.buttons.copy}</Button>
+        <Button variant="ghost" size="sm" onclick={reset}>{strings.buttons.reset}</Button>
       </div>
     </div>
   {:else}
-    <div class="error-note">Выбранная комбинация цветов некорректна</div>
+    <div class="error-note">{strings.resistors.labels.invalidColors}</div>
   {/if}
+
+  <div class="hint">{strings.resistors.labels.color_interpretation}</div>
 </div>
 
 <style>
@@ -91,4 +108,5 @@
   .badge { padding: 4px 10px; font-size: var(--font-size-sm); color: var(--text-secondary); background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 999px; }
   .result__actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
   .error-note { padding: var(--space-3); color: var(--danger); background: rgba(239, 83, 80, 0.08); border: 1px solid rgba(239, 83, 80, 0.25); border-radius: var(--radius-md); font-size: var(--font-size-sm); }
+  .hint { font-size: var(--font-size-sm); color: var(--text-muted); text-align: center; margin-top: var(--space-2); }
 </style>
