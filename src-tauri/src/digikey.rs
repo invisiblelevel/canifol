@@ -1,12 +1,17 @@
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::env;
 use std::fs;
 use std::path::PathBuf;
 use tauri::Manager;
 
-const CLIENT_ID: &str = "MmdeQPn52lzXUMNRcekRZJbBpZaTzpUwD6aTVJ8FAYlxzUOn";
-const CLIENT_SECRET: &str = "f5BUbmzVH9nPbbfpfZaWBhsRrc0AzLlNO5Q03z8aCdbxM7qbsCiejgz9UmU9W0tG";
+// Ключи читаются из .env (или переменных окружения)
+fn get_credentials() -> (String, String) {
+    let id = env::var("DIGIKEY_CLIENT_ID").expect("DIGIKEY_CLIENT_ID must be set in .env");
+    let secret = env::var("DIGIKEY_CLIENT_SECRET").expect("DIGIKEY_CLIENT_SECRET must be set in .env");
+    (id, secret)
+}
 
 const TOKEN_URL: &str = "https://api.digikey.com/v1/oauth2/token";
 const SEARCH_URL: &str = "https://api.digikey.com/products/v4/search/keyword";
@@ -93,10 +98,11 @@ pub fn read_pdf(app: tauri::AppHandle, filename: String) -> Result<Vec<u8>, Stri
 }
 
 async fn get_token() -> Result<String, String> {
+    let (client_id, client_secret) = get_credentials();
     let client = Client::new();
     let params = [
-        ("client_id", CLIENT_ID),
-        ("client_secret", CLIENT_SECRET),
+        ("client_id", client_id.as_str()),
+        ("client_secret", client_secret.as_str()),
         ("grant_type", "client_credentials"),
     ];
 
@@ -113,6 +119,7 @@ async fn get_token() -> Result<String, String> {
 
 #[tauri::command]
 pub async fn search_datasheets(query: String) -> Result<Vec<DatasheetResult>, String> {
+    let (client_id, _) = get_credentials();
     let token = get_token().await?;
     let client = Client::new();
 
@@ -126,7 +133,7 @@ pub async fn search_datasheets(query: String) -> Result<Vec<DatasheetResult>, St
     let res = client
         .post(SEARCH_URL)
         .header("Authorization", format!("Bearer {}", token))
-        .header("X-DIGIKEY-Client-Id", CLIENT_ID)
+        .header("X-DIGIKEY-Client-Id", client_id)
         .header("Content-Type", "application/json")
         .header("Accept", "application/json")
         .json(&body)
@@ -217,6 +224,7 @@ fn parse_digikey_params(product: &Value, _tr_type: &str) -> Option<(Option<f64>,
 
 #[tauri::command]
 pub async fn find_analogs_digikey(query: String, tr_type: String) -> Result<Vec<AnalogResult>, String> {
+    let (client_id, _) = get_credentials();
     let token = get_token().await?;
     let client = Client::new();
 
@@ -229,7 +237,7 @@ pub async fn find_analogs_digikey(query: String, tr_type: String) -> Result<Vec<
     let res = client
         .post(SEARCH_URL)
         .header("Authorization", format!("Bearer {}", token))
-        .header("X-DIGIKEY-Client-Id", CLIENT_ID)
+        .header("X-DIGIKEY-Client-Id", client_id.clone()) // <-- ФИКС: clone()
         .header("Content-Type", "application/json")
         .header("Accept", "application/json")
         .json(&body)
@@ -254,7 +262,7 @@ pub async fn find_analogs_digikey(query: String, tr_type: String) -> Result<Vec<
     let res = client
         .post(SEARCH_URL)
         .header("Authorization", format!("Bearer {}", token))
-        .header("X-DIGIKEY-Client-Id", CLIENT_ID)
+        .header("X-DIGIKEY-Client-Id", client_id) // <-- второй раз, уже без clone
         .header("Content-Type", "application/json")
         .header("Accept", "application/json")
         .json(&body)
@@ -287,6 +295,7 @@ pub async fn find_analogs_digikey(query: String, tr_type: String) -> Result<Vec<
 
 #[tauri::command]
 pub async fn find_by_params_digikey(params: serde_json::Value) -> Result<Vec<AnalogResult>, String> {
+    let (client_id, _) = get_credentials();
     let tr_type = params.get("type").and_then(|v| v.as_str()).unwrap_or("mosfet");
     let vds_min = params.get("vds").and_then(|v| v.as_f64());
     let id_min = params.get("id").and_then(|v| v.as_f64());
@@ -308,7 +317,7 @@ pub async fn find_by_params_digikey(params: serde_json::Value) -> Result<Vec<Ana
     let res = client
         .post(SEARCH_URL)
         .header("Authorization", format!("Bearer {}", token))
-        .header("X-DIGIKEY-Client-Id", CLIENT_ID)
+        .header("X-DIGIKEY-Client-Id", client_id)
         .header("Content-Type", "application/json")
         .header("Accept", "application/json")
         .json(&body)

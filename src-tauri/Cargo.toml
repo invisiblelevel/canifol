@@ -1,6 +1,6 @@
 [package]
 name = "canifol"
-version = "1.1.1"
+version = "1.1.2"
 description = "Canifol — Repairman's toolkit"
 authors = ["you"]
 edition = "2021"
@@ -26,6 +26,7 @@ urlencoding = "2"
 tauri-plugin-fs = "2"
 dirs = "5"
 sys-locale = "0.3"
+dotenvy = "0.15"
 
 # Добавленные зависимости для HTTP-запросов к DigiKey
 tauri-plugin-http = "2"
