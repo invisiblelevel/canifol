@@ -11,6 +11,8 @@
 
 [English](#english) · [Русский](#русский)
 
+🌐 **Landing page:** [invisiblelevel.github.io/canifol](https://invisiblelevel.github.io/canifol/)
+
 ---
 
 ## English
@@ -72,6 +74,8 @@ MIT — see [LICENSE](LICENSE).
 
 INV.LVL · [@invisiblelevel](https://github.com/invisiblelevel)
 
+🌐 [Landing page](https://invisiblelevel.github.io/canifol/)
+
 ---
 
 ## Русский
@@ -132,3 +136,5 @@ MIT — см. [LICENSE](LICENSE).
 ### Автор
 
 INV.LVL · [@invisiblelevel](https://github.com/invisiblelevel)
+
+🌐 [Лендинг](https://invisiblelevel.github.io/canifol/)
