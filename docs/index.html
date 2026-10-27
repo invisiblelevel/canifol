@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canifol — Repairman's toolkit</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <meta name="description" content="Canifol — бесплатный инструмент ремонтника. Калькуляторы, даташиты, распиновки и SMD-база.">
+  <style>
+    :root {
+      --bg-base: #1c1b1a;
+      --bg-elevated: #262321;
+      --bg-elevated-2: #2d2926;
+      --border-subtle: #3a332e;
+      --border-strong: #4a423b;
+      --text-primary: #f0e9e0;
+      --text-secondary: #bdb2a6;
+      --text-muted: #857b70;
+      --accent: #f5b83d;
+      --accent-strong: #e6a420;
+      --accent-dim: rgba(245, 184, 61, 0.14);
+      --danger: #e85a5a;
+      --success: #8bc47a;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-base);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    a { color: var(--accent); text-decoration: none; transition: color 0.2s; }
+    a:hover { color: var(--accent-strong); }
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    
+    /* Header */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(28, 27, 26, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 16px 0;
+    }
+    header .container { display: flex; align-items: center; justify-content: space-between; }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo img { width: 40px; height: 40px; }
+    .logo span { font-size: 1.4rem; font-weight: 700; color: var(--accent); letter-spacing: 0.5px; }
+    .lang-switch { display: flex; gap: 4px; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 4px; }
+    .lang-switch button {
+      padding: 6px 12px; background: transparent; border: none;
+      color: var(--text-secondary); font-weight: 600; font-size: 0.85rem;
+      border-radius: 6px; cursor: pointer; transition: 0.2s;
+    }
+    .lang-switch button.active { background: var(--accent-dim); color: var(--accent); }
+    .lang-switch button:hover:not(.active) { color: var(--text-primary); }
+
+    /* Hero */
+    .hero { padding: 100px 0 80px; text-align: center; position: relative; }
+    .hero::before {
+      content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, var(--accent-dim) 0%, transparent 70%);
+      pointer-events: none; z-index: -1;
+    }
+    .hero h1 { font-size: clamp(2.5rem, 8vw, 4.5rem); font-weight: 800; letter-spacing: -0.03em; margin-bottom: 16px; line-height: 1.1; }
+    .hero h1 span { color: var(--accent); }
+    .hero p.subtitle { font-size: clamp(1.1rem, 3vw, 1.4rem); color: var(--text-secondary); max-width: 700px; margin: 0 auto 40px; }
+    .hero .cta { display: inline-flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 28px; border-radius: var(--radius-md);
+      font-weight: 700; font-size: 1rem; transition: 0.2s; border: none; cursor: pointer;
+    }
+    .btn-primary { background: var(--accent); color: var(--bg-base); }
+    .btn-primary:hover { background: var(--accent-strong); color: var(--bg-base); transform: translateY(-2px); }
+    .btn-secondary { background: var(--bg-elevated); color: var(--text-primary); border: 1px solid var(--border-strong); }
+    .btn-secondary:hover { background: var(--bg-elevated-2); color: var(--text-primary); transform: translateY(-2px); }
+
+    /* Features */
+    .features { padding: 80px 0; }
+    .features h2 { text-align: center; font-size: 2.2rem; margin-bottom: 60px; }
+    .features h2 span { color: var(--accent); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+    .card {
+      background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg); padding: 28px;
+      transition: 0.2s;
+    }
+    .card:hover { border-color: var(--accent); transform: translateY(-4px); }
+    .card .icon { font-size: 2rem; margin-bottom: 16px; display: inline-block; }
+    .card h3 { font-size: 1.15rem; margin-bottom: 8px; color: var(--text-primary); }
+    .card p { font-size: 0.95rem; color: var(--text-secondary); }
+
+    /* Screenshots */
+    .screenshots { padding: 80px 0; }
+    .screenshots h2 { text-align: center; font-size: 2.2rem; margin-bottom: 60px; }
+    .screenshots h2 span { color: var(--accent); }
+    .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+    .shot {
+      background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg); overflow: hidden; aspect-ratio: 9 / 16;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted); font-size: 0.9rem; padding: 20px; text-align: center;
+    }
+    .shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    /* Download */
+    .download { padding: 80px 0; text-align: center; }
+    .download h2 { font-size: 2.2rem; margin-bottom: 20px; }
+    .download p { color: var(--text-secondary); margin-bottom: 40px; font-size: 1.1rem; }
+    .download .cta { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .download .btn { font-size: 1.05rem; padding: 16px 32px; }
+
+    /* Footer */
+    footer { border-top: 1px solid var(--border-subtle); padding: 40px 0; text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+    footer a { color: var(--accent); }
+    footer .links { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px; }
+
+    /* Language visibility */
+    [data-lang] { display: none; }
+    .lang-ru .show-ru, .lang-en .show-en, .lang-zh .show-zh { display: block; }
+    .hero .show-ru, .hero .show-en, .hero .show-zh { display: none; }
+    .lang-ru .hero .show-ru, .lang-en .hero .show-en, .lang-zh .hero .show-zh { display: block; }
+    .hero h1 .show-ru, .hero h1 .show-en, .hero h1 .show-zh { display: none; }
+    .lang-ru .hero h1 .show-ru, .lang-en .hero h1 .show-en, .lang-zh .hero h1 .show-zh { display: inline; }
+
+    @media (max-width: 768px) {
+      .hero { padding: 60px 0 40px; }
+      .features, .screenshots, .download { padding: 50px 0; }
+    }
+  </style>
+</head>
+<body class="lang-ru">
+  <header>
+    <div class="container">
+      <div class="logo">
+        <img src="logo.png" alt="Canifol" onerror="this.style.display='none'">
+        <span>Canifol</span>
+      </div>
+      <div class="lang-switch">
+        <button data-lang-btn="ru" class="active">RU</button>
+        <button data-lang-btn="en">EN</button>
+        <button data-lang-btn="zh">中文</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="container">
+      <h1>
+        <span class="show-ru">Инструмент <span style="color:var(--accent)">ремонтника</span></span>
+        <span class="show-en"><span style="color:var(--accent)">Repairman's</span> toolkit</span>
+        <span class="show-zh"><span style="color:var(--accent)">维修师傅</span>的工具箱</span>
+      </h1>
+      <p class="subtitle show-ru">Калькуляторы компонентов, поиск даташитов, распиновки и база SMD-кодов. Всё в одном приложении. Бесплатно. Офлайн.</p>
+      <p class="subtitle show-en">Component calculators, datasheet search, pinouts and an SMD code database. All in one app. Free. Offline.</p>
+      <p class="subtitle show-zh">元器件计算器、数据手册搜索、引脚图和SMD代码数据库。一站式应用。免费。离线。</p>
+      <div class="cta">
+        <a href="https://github.com/invisiblelevel/canifol/releases/latest" class="btn btn-primary show-ru">Скачать для Windows</a>
+        <a href="https://github.com/invisiblelevel/canifol/releases/latest" class="btn btn-primary show-en">Download for Windows</a>
+        <a href="https://github.com/invisiblelevel/canifol/releases/latest" class="btn btn-primary show-zh">下载 Windows 版</a>
+        
+        <a href="https://github.com/invisiblelevel/canifol/releases/latest" class="btn btn-secondary show-ru">Скачать APK</a>
+        <a href="https://github.com/invisiblelevel/canifol/releases/latest" class="btn btn-secondary show-en">Download APK</a>
+        <a href="https://github.com/invisiblelevel/canifol/releases/latest" class="btn btn-secondary show-zh">下载 APK</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="container">
+      <h2 class="show-ru">Что <span>внутри</span></h2>
+      <h2 class="show-en">What's <span>inside</span></h2>
+      <h2 class="show-zh">包含<span>什么</span></h2>
+      
+      <div class="grid">
+        <div class="card">
+          <div class="icon">⚡</div>
+          <h3 class="show-ru">Калькуляторы</h3>
+          <h3 class="show-en">Calculators</h3>
+          <h3 class="show-zh">计算器</h3>
+          <p class="show-ru">Резисторы, конденсаторы, катушки, BMS, транзисторы. Все нужные расчёты в одном месте.</p>
+          <p class="show-en">Resistors, capacitors, inductors, BMS, transistors. All the calculations you need in one place.</p>
+          <p class="show-zh">电阻、电容、电感、BMS、晶体管。所有需要的计算一应俱全。</p>
+        </div>
+        <div class="card">
+          <div class="icon">📄</div>
+          <h3 class="show-ru">Даташиты</h3>
+          <h3 class="show-en">Datasheets</h3>
+          <h3 class="show-zh">数据手册</h3>
+          <p class="show-ru">Поиск через DigiKey и LCSC. Встроенный PDF-вьюер с кэшем. Нашёл — открыл.</p>
+          <p class="show-en">Search via DigiKey and LCSC. Built-in PDF viewer with cache. Found it — opened it.</p>
+          <p class="show-zh">通过 DigiKey 和 LCSC 搜索。内置 PDF 阅读器与缓存。找到即打开。</p>
+        </div>
+        <div class="card">
+          <div class="icon">🔌</div>
+          <h3 class="show-ru">Распиновки</h3>
+          <h3 class="show-en">Pinouts</h3>
+          <h3 class="show-zh">引脚图</h3>
+          <p class="show-ru">Разъёмы, импортные и советские микросхемы. Визуальные SVG-схемы с подписями.</p>
+          <p class="show-en">Connectors, imported and Soviet ICs. Visual SVG diagrams with labels.</p>
+          <p class="show-zh">连接器、进口和苏联芯片。带标签的 SVG 可视化图表。</p>
+        </div>
+        <div class="card">
+          <div class="icon">🔎</div>
+          <h3 class="show-ru">SMD-поиск</h3>
+          <h3 class="show-en">SMD Search</h3>
+          <h3 class="show-zh">SMD 搜索</h3>
+          <p class="show-ru">База на 270 000+ компонентов. Вводишь код с корпуса — получаешь модель и параметры.</p>
+          <p class="show-en">Database of 270,000+ components. Enter the package code — get the model and parameters.</p>
+          <p class="show-zh">270,000+ 元器件数据库。输入封装代码 — 获取型号和参数。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screenshots">
+    <div class="container">
+      <h2 class="show-ru">Как это <span>выглядит</span></h2>
+      <h2 class="show-en">How it <span>looks</span></h2>
+      <h2 class="show-zh">界面<span>预览</span></h2>
+      <div class="shots">
+        <div class="shot show-ru">Скриншот 1 (Resistors)</div>
+        <div class="shot show-en">Screenshot 1 (Resistors)</div>
+        <div class="shot show-zh">截图 1 (Resistors)</div>
+        <div class="shot show-ru">Скриншот 2 (SMD)</div>
+        <div class="shot show-en">Screenshot 2 (SMD)</div>
+        <div class="shot show-zh">截图 2 (SMD)</div>
+        <div class="shot show-ru">Скриншот 3 (Pinouts)</div>
+        <div class="shot show-en">Screenshot 3 (Pinouts)</div>
+        <div class="shot show-zh">截图 3 (Pinouts)</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="download">
+    <div class="container">
+      <h2 class="show-ru">Скачай и <span style="color:var(--accent)">попробуй</span></h2>
+      <h2 class="show-en">Download and <span style="color:var(--accent)">try it</span></h2>
+      <h2 class="show-zh">下载<span style="color:var(--accent)">试用</span></h2>
+      
+      <p class="show-ru">Windows и Android. Бесплатно. Без рекламы.</p>
+      <p class="show-en">Windows and Android. Free. No ads.</p>
+      <p class="show-zh">Windows 和 Android。免费。无广告。</p>
+      
+      <div class="cta">
+        <a href="https://github.com/invisiblelevel/canifol/releases/latest" class="btn btn-primary">Windows .exe</a>
+        <a href="https://github.com/invisiblelevel/canifol/releases/latest" class="btn btn-primary">Android .apk</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <div class="links">
+        <a href="https://github.com/invisiblelevel/canifol">GitHub</a>
+        <a href="https://github.com/invisiblelevel/canifol/releases">Releases</a>
+        <a href="https://inv.lvl.itch.io/canifol">itch.io</a>
+      </div>
+      <p>© 2026 Canifol · Made by INV.LVL</p>
+    </div>
+  </footer>
+
+  <script>
+    const buttons = document.querySelectorAll('[data-lang-btn]');
+    const body = document.body;
+
+    function setLang(lang) {
+      body.classList.remove('lang-ru', 'lang-en', 'lang-zh');
+      body.classList.add('lang-' + lang);
+      buttons.forEach(b => b.classList.toggle('active', b.dataset.langBtn === lang));
+      localStorage.setItem('canifol_landing_lang', lang);
+    }
+
+    buttons.forEach(b => {
+      b.addEventListener('click', () => setLang(b.dataset.langBtn));
+    });
+
+    // Автоопределение
+    const saved = localStorage.getItem('canifol_landing_lang');
+    if (saved) {
+      setLang(saved);
+    } else {
+      const browserLang = (navigator.language || 'en').slice(0, 2);
+      if (browserLang === 'zh') setLang('zh');
+      else if (browserLang === 'ru' || browserLang === 'uk' || browserLang === 'be') setLang('ru');
+      else setLang('en');
+    }
+  </script>
+</body>
+</html>
