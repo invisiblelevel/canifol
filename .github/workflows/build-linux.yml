@@ -3,13 +3,13 @@ name: Build Linux
 on:
   push:
     tags:
-      - 'v*' # Запускается при пуше тега, например v1.1.2
+      - 'v*'
 
 jobs:
   build-linux:
-    runs-on: ubuntu-22.04 # Используем 22.04, чтобы не словить проблемы с glibc на старых системах [citation:5]
+    runs-on: ubuntu-22.04
     permissions:
-      contents: write # Нужно для создания релиза и загрузки файлов
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -48,20 +48,26 @@ jobs:
       - name: Build Tauri app (Linux)
         run: npm run tauri build
         env:
-          # Если у тебя в .env ключи, здесь их можно продублировать как секреты,
-          # но так как мы вшили дефолты в код, это не обязательно.
-          # DIGIKEY_CLIENT_ID: ${{ secrets.DIGIKEY_CLIENT_ID }}
-          # DIGIKEY_CLIENT_SECRET: ${{ secrets.DIGIKEY_CLIENT_SECRET }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Linux artifacts to release
+      - name: Create Draft Release and Upload Linux Artifacts
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }} # Например, v1.1.2
+          tagName: ${{ github.ref_name }}
           releaseName: 'Canifol ${{ github.ref_name }}'
-          releaseBody: 'Linux build (deb, rpm, AppImage)'
-          releaseDraft: false
+          releaseBody: |
+            **Hotfix v1.1.2**
+
+            - Improved API configuration handling.
+            - No functional changes — search and datasheets work as before.
+
+            **Important:** If you're using an older version (1.1.1 or below), please update to 1.1.2 for the best experience.
+
+            **Downloads:**
+            - Windows: `.exe` (NSIS installer) — *attach manually*
+            - Android: `.apk` (Universal) — *attach manually*
+            - Linux: `.deb`, `.rpm`, `.AppImage` — *auto-built*
+          releaseDraft: true  # <--- ВОТ ЭТО ДЕЛАЕТ ЕГО ЧЕРНОВИКОМ
           prerelease: false
-          args: '' # Сборка под x86_64 Linux по умолчанию
