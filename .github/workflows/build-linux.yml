@@ -69,5 +69,5 @@ jobs:
             - Windows: `.exe` (NSIS installer) — *attach manually*
             - Android: `.apk` (Universal) — *attach manually*
             - Linux: `.deb`, `.rpm`, `.AppImage` — *auto-built*
-          releaseDraft: true  # <--- ВОТ ЭТО ДЕЛАЕТ ЕГО ЧЕРНОВИКОМ
+          releaseDraft: true
           prerelease: false
