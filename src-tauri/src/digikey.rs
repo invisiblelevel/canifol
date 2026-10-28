@@ -1,20 +1,24 @@
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::env;
 use std::fs;
 use std::path::PathBuf;
 use tauri::Manager;
 
-// Ключи читаются из .env (или переменных окружения)
-fn get_credentials() -> (String, String) {
-    let id = env::var("DIGIKEY_CLIENT_ID").expect("DIGIKEY_CLIENT_ID must be set in .env");
-    let secret = env::var("DIGIKEY_CLIENT_SECRET").expect("DIGIKEY_CLIENT_SECRET must be set in .env");
-    (id, secret)
-}
-
 const TOKEN_URL: &str = "https://api.digikey.com/v1/oauth2/token";
 const SEARCH_URL: &str = "https://api.digikey.com/products/v4/search/keyword";
+
+// Ключи зашиты как дефолтные. Если есть .env — подхватится оттуда.
+const DEFAULT_CLIENT_ID: &str = "MmdeQPn52lzXUMNRcekRZJbBpZaTzpUwD6aTVJ8FAYlxzUOn";
+const DEFAULT_CLIENT_SECRET: &str = "f5BUbmzVH9nPbbfpfZaWBhsRrc0AzLlNO5Q03z8aCdbxM7qbsCiejgz9UmU9W0tG";
+
+fn get_credentials() -> (String, String) {
+    // Пробуем из .env
+    dotenvy::dotenv().ok();
+    let id = std::env::var("DIGIKEY_CLIENT_ID").unwrap_or_else(|_| DEFAULT_CLIENT_ID.to_string());
+    let secret = std::env::var("DIGIKEY_CLIENT_SECRET").unwrap_or_else(|_| DEFAULT_CLIENT_SECRET.to_string());
+    (id, secret)
+}
 
 #[derive(Deserialize)]
 struct TokenResponse {
@@ -43,7 +47,6 @@ pub struct AnalogResult {
     pub tr_type: Option<String>,
 }
 
-// Универсальная функция для получения пути к кэшу
 fn get_cache_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     let mut path = app.path().app_data_dir().map_err(|e| format!("Не удалось найти папку данных: {}", e))?;
     path.push("datasheets");
@@ -237,7 +240,7 @@ pub async fn find_analogs_digikey(query: String, tr_type: String) -> Result<Vec<
     let res = client
         .post(SEARCH_URL)
         .header("Authorization", format!("Bearer {}", token))
-        .header("X-DIGIKEY-Client-Id", client_id.clone()) // <-- ФИКС: clone()
+        .header("X-DIGIKEY-Client-Id", client_id.clone())
         .header("Content-Type", "application/json")
         .header("Accept", "application/json")
         .json(&body)
@@ -262,7 +265,7 @@ pub async fn find_analogs_digikey(query: String, tr_type: String) -> Result<Vec<
     let res = client
         .post(SEARCH_URL)
         .header("Authorization", format!("Bearer {}", token))
-        .header("X-DIGIKEY-Client-Id", client_id) // <-- второй раз, уже без clone
+        .header("X-DIGIKEY-Client-Id", client_id)
         .header("Content-Type", "application/json")
         .header("Accept", "application/json")
         .json(&body)
