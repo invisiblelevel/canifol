@@ -1,0 +1,67 @@
+name: Build Linux
+
+on:
+  push:
+    tags:
+      - 'v*' # Запускается при пуше тега, например v1.1.2
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-22.04 # Используем 22.04, чтобы не словить проблемы с glibc на старых системах [citation:5]
+    permissions:
+      contents: write # Нужно для создания релиза и загрузки файлов
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Build Tauri app (Linux)
+        run: npm run tauri build
+        env:
+          # Если у тебя в .env ключи, здесь их можно продублировать как секреты,
+          # но так как мы вшили дефолты в код, это не обязательно.
+          # DIGIKEY_CLIENT_ID: ${{ secrets.DIGIKEY_CLIENT_ID }}
+          # DIGIKEY_CLIENT_SECRET: ${{ secrets.DIGIKEY_CLIENT_SECRET }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Linux artifacts to release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }} # Например, v1.1.2
+          releaseName: 'Canifol ${{ github.ref_name }}'
+          releaseBody: 'Linux build (deb, rpm, AppImage)'
+          releaseDraft: false
+          prerelease: false
+          args: '' # Сборка под x86_64 Linux по умолчанию
