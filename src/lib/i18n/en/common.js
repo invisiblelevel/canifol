@@ -5,7 +5,8 @@ export const common = {
     resistors: 'Resistors', capacitors: 'Capacitors', inductors: 'Inductors',
     bms: 'BMS', transistors: 'Transistors', datasheets: 'Datasheets',
     pinouts: 'Pinouts',
-    smd: 'SMD Codes'
+    smd: 'SMD Codes',
+    boardview: 'BoardView'
   },
   common: {
     comingSoon: 'Calculator coming soon',
@@ -36,5 +37,32 @@ export const common = {
     v: 'V', a: 'A', w: 'W', mm: 'mm',
     ah: 'Ah', wh: 'Wh', ma: 'mA', uv: 'µV', mv: 'mV',
     b: 'B', kb: 'KB', mb: 'MB', gb: 'GB'
+  },
+  boardview: {
+    openFile: 'Open local file',
+    noFile: 'Select a .fz or .cad file to view',
+    loading: 'Loading...',
+    error: 'Loading error',
+    pinsCount: 'Pins',
+    zoom: 'Zoom',
+    showPins: 'Pins',
+    showLines: 'Traces',
+    showComponents: 'Components',
+    showRoutes: 'Routing',
+	    helpTitle: 'BoardView Help',
+    helpFormatsTitle: 'Supported formats',
+    helpFormats: [
+      { name: 'FZ / CAE', desc: 'ASUS / ASRock. Pins and components.' },
+      { name: 'CAD (GenCAD)', desc: 'Pins, components, traces, pads.' },
+      { name: 'BDV / ASC', desc: 'eM-Test Expert. Pins and components (native outlines).' }
+    ],
+    helpFeaturesTitle: 'Features',
+    helpFeatures: [
+      'Click a pin to highlight the entire net.',
+      'Search by component (e.g., Q21).',
+      'Layers: pins, traces, components, routing.',
+      'Zoom and pan.',
+      'Fullscreen mode.'
+    ]
   }
 };

@@ -1,6 +1,8 @@
 mod digikey;
 mod lcsc;
 mod transistors;
+mod boardview;
+mod gencad_parser;
 
 use std::fs;
 use tauri::Manager;
@@ -15,18 +17,12 @@ fn get_cache_size(app: tauri::AppHandle) -> Result<u64, String> {
     let cache_dir = app.path().app_data_dir()
         .map_err(|e| format!("No data dir: {}", e))?
         .join("datasheets");
-
-    if !cache_dir.exists() {
-        return Ok(0);
-    }
-
+    if !cache_dir.exists() { return Ok(0); }
     let mut total_size = 0;
     if let Ok(entries) = fs::read_dir(&cache_dir) {
         for entry in entries.flatten() {
             if let Ok(meta) = entry.metadata() {
-                if meta.is_file() {
-                    total_size += meta.len();
-                }
+                if meta.is_file() { total_size += meta.len(); }
             }
         }
     }
@@ -38,19 +34,23 @@ fn clear_cache(app: tauri::AppHandle) -> Result<(), String> {
     let cache_dir = app.path().app_data_dir()
         .map_err(|e| format!("No data dir: {}", e))?
         .join("datasheets");
-
-    if cache_dir.exists() {
-        fs::remove_dir_all(&cache_dir).map_err(|e| e.to_string())?;
-    }
+    if cache_dir.exists() { fs::remove_dir_all(&cache_dir).map_err(|e| e.to_string())?; }
     Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_dialog::init());
+
+    #[cfg(target_os = "android")]
+    {
+        builder = builder.plugin(tauri_plugin_android_fs::init());
+    }
+
+    builder
         .invoke_handler(tauri::generate_handler![
             digikey::search_datasheets,
             digikey::download_pdf,
@@ -63,7 +63,10 @@ pub fn run() {
             transistors::search_soviet_analog,
             get_system_locale,
             get_cache_size,
-            clear_cache
+            clear_cache,
+            boardview::read_boardview,
+            #[cfg(target_os = "android")]
+            boardview::read_boardview_uri
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

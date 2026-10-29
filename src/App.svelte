@@ -14,7 +14,8 @@
   import DatasheetsView from './lib/views/DatasheetsView.svelte';
   import SettingsView from './lib/views/SettingsView.svelte';
   import PinoutsView from './lib/views/PinoutsView.svelte';
-  import SmdSearchView from './lib/views/SmdSearchView.svelte'; // <-- НОВЫЙ ИМПОРТ
+  import SmdSearchView from './lib/views/SmdSearchView.svelte';
+  import BoardViewView from './lib/views/BoardViewView.svelte'; // <-- НОВЫЙ ИМПОРТ
 
   let showAbout = $state(false);
   let showSupport = $state(false);
@@ -28,7 +29,8 @@
     datasheets: DatasheetsView,
     settings:   SettingsView,
     pinouts:    PinoutsView,
-    smd:        SmdSearchView // <-- НОВЫЙ РАЗДЕЛ
+    smd:        SmdSearchView,
+    boardview:  BoardViewView // <-- НОВЫЙ РАЗДЕЛ
   };
 
   const currentView = $derived(views[navStore.current]);
@@ -53,8 +55,10 @@
     <SettingsView />
   {:else if currentView === PinoutsView}
     <PinoutsView />
-  {:else if currentView === SmdSearchView}  <!-- <-- НОВОЕ УСЛОВИЕ -->
+  {:else if currentView === SmdSearchView}
     <SmdSearchView />
+  {:else if currentView === BoardViewView}
+    <BoardViewView />
   {:else}
     <DatasheetsView />
   {/if}

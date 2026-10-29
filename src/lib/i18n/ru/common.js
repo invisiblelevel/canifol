@@ -5,7 +5,8 @@ export const common = {
     resistors: 'Резисторы', capacitors: 'Конденсаторы', inductors: 'Катушки',
     bms: 'BMS', transistors: 'Транзисторы', datasheets: 'Даташиты',
     pinouts: 'Распиновки',
-    smd: 'SMD-коды'
+    smd: 'SMD-коды',
+    boardview: 'BoardView'
   },
   common: {
     comingSoon: 'Скоро здесь будет калькулятор',
@@ -38,5 +39,32 @@ export const common = {
     v: 'В', a: 'А', w: 'Вт', mm: 'мм',
     ah: 'А·ч', wh: 'Вт·ч', ma: 'мА', uv: 'мкВ', mv: 'мВ',
     b: 'Б', kb: 'КБ', mb: 'МБ', gb: 'ГБ'
+  },
+  boardview: {
+    openFile: 'Открыть свой файл',
+    noFile: 'Выберите файл .fz или .cad для просмотра',
+    loading: 'Загрузка...',
+    error: 'Ошибка загрузки',
+    pinsCount: 'Пинов',
+    zoom: 'Масштаб',
+    showPins: 'Пины',
+    showLines: 'Дорожки',
+    showComponents: 'Компоненты',
+    showRoutes: 'Трассировка',
+    helpTitle: 'Справка по BoardView',
+    helpFormatsTitle: 'Поддерживаемые форматы',
+    helpFormats: [
+      { name: 'FZ / CAE', desc: 'ASUS / ASRock. Пины и компоненты.' },
+      { name: 'CAD (GenCAD)', desc: 'Пины, компоненты, дорожки, пады.' },
+      { name: 'BDV / ASC', desc: 'eM-Test Expert. Пины и компоненты (родные контуры).' }
+    ],
+    helpFeaturesTitle: 'Возможности',
+    helpFeatures: [
+      'Клик по пину — подсветка всей цепи (нет-листа).',
+      'Поиск по компонентам (например, Q21).',
+      'Слои: пины, дорожки, компоненты, трассировка.',
+      'Масштабирование и панорамирование.',
+      'Полноэкранный режим.'
+    ]
   }
 };

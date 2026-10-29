@@ -1,6 +1,6 @@
 [package]
 name = "canifol"
-version = "1.1.2"
+version = "1.2.0"
 description = "Canifol — Repairman's toolkit"
 authors = ["you"]
 edition = "2021"
@@ -27,8 +27,15 @@ tauri-plugin-fs = "2"
 dirs = "5"
 sys-locale = "0.3"
 dotenvy = "0.15"
+tauri-plugin-android-fs = "27"
 
-# Добавленные зависимости для HTTP-запросов к DigiKey
+# BoardView
+pcbrepair = "0.4"
+gencad = "0.2"
+num-traits = "0.2.19"
+flate2 = "1"
+
+# HTTP-запросы к DigiKey
 tauri-plugin-http = "2"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 tauri-plugin-dialog = "2.8.3"
