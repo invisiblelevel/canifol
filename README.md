@@ -1,11 +1,11 @@
 # Canifol
 
-**Cross-platform electronics repair toolkit: component calculators, datasheet search, pinouts and SMD code database.**
-**Кросс-платформенный инструмент ремонтника: калькуляторы компонентов, поиск даташитов, распиновки и база SMD-кодов.**
+**Cross-platform electronics repair toolkit: component calculators, datasheet search, pinouts, SMD code database and BoardView.**
+**Кросс-платформенный инструмент ремонтника: калькуляторы компонентов, поиск даташитов, распиновки, база SMD-кодов и BoardView.**
 
-[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](../../releases)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](../../releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android-0078D6.svg)](#install)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android%20%7C%20Linux-0078D6.svg)](#install)
 [![Tauri](https://img.shields.io/badge/tauri-2-24C8DB.svg)](https://tauri.app/)
 [![Svelte](https://img.shields.io/badge/svelte-5-FF3E00.svg)](https://svelte.dev/)
 
@@ -17,15 +17,22 @@
 
 ## English
 
-Canifol is a free tool for electronics repair technicians. Component calculators, datasheet search, pinouts and an SMD code database right inside the app. Works fully offline after the first launch.
+Canifol is a free tool for electronics repair technicians. Component calculators, datasheet search, pinouts, an SMD code database and a full-featured **BoardView** right inside the app. Works fully offline after the first launch.
 
-**Available on Windows and Android.** The desktop build ships as a standard Windows installer (`.exe`), and the mobile build ships as a standalone Android APK (`.apk`). Both are attached to every release.
+**Available on Windows, Android and Linux.** The desktop build ships as a standard Windows installer (`.exe`), the mobile build as a standalone Android APK (`.apk`), and the Linux build as `.deb`, `.rpm` and `.AppImage` (auto-built via GitHub Actions). All files are attached to every release.
 
-### What's new in 1.1.0
+### What's new in 1.2.0
 
-- **Pinouts** — visual SVG diagrams for connectors (USB, HDMI, DisplayPort, VGA, ATX, SATA, Jack 3.5), imported ICs (LM, NE, TDA, 74HC, etc.) and Soviet microchips (K155, K561, KR142, etc.).
-- **SMD Code Search** — database of **270 974 components** with **119 290 unique codes**. Search by the code printed on the package and get the model, type, package and parameters instantly.
-- **Extended SMD database** — parsed from the SMD-CODES DATABOOK 2023 EDITION.
+- **BoardView** — open `.fz`, `.cae`, `.cad`, `.bdv` and `.asc` files directly in Canifol.
+- **Net highlighting** — click any pin to highlight the entire net (green = selected, purple = connected). This is the killer feature for finding shorts.
+- **Component search** — type `Q21`, `R123`, or `U5` to instantly locate and highlight a component.
+- **Layers** — toggle pins, traces, components, and routing on/off.
+- **Fullscreen** — view the board without the UI.
+- **Touch support** — pinch-to-zoom and pan on Android.
+- **Supported formats:**
+  - **FZ** (ASUS / ASRock) — pins + components.
+  - **CAD** (GenCAD) — pins + components + traces + pads.
+  - **BDV** (eM-Test Expert / Honhan) — pins + components with native outlines.
 
 ### Features
 
@@ -35,15 +42,16 @@ Canifol is a free tool for electronics repair technicians. Component calculators
 - **BMS** — balancing resistor, S/P pack, current shunt, MOSFET protection.
 - **Transistors** — analog search (DigiKey + LCSC + Soviet database), parametric search, base resistor calculator.
 - **Datasheets** — search via DigiKey and LCSC, download PDFs with local caching, built-in PDF viewer with fullscreen mode.
-- **Pinouts** — connectors (USB Type-A, USB Type-C, USB 3.0, HDMI, DisplayPort, VGA, Jack 3.5 TRS/TRRS, ATX 24-pin, SATA Power), imported ICs (LM358, NE555, LM7805, LM317, LM7812, IRFZ44N, TL494, NE5532, 74HC595, ATmega328P, TDA2030, TDA7294, TDA2822, LM386, PC817, MC34063, 74HC14), Soviet microchips (К155ЛА3, К155ТМ2, К155ИД3, К155ИР1, К155АГ3, К155КП1, К155ИЕ7, К561ЛА7, К561ТМ2, К561ИЕ10, КР142ЕН5А, КР142ЕН8Б, К140УД6, К140УД7, КР1006ВИ1, КР1533ИР22, КР580ВМ80А, КР580ВВ55А, КР580ВИ53).
-- **SMD Code Search** — database of 270 974 components, instant search by code, with model, type, package and parameters.
+- **Pinouts** — connectors (USB Type-A/B/C, USB 3.0, Mini-B, Micro-B, HDMI, DisplayPort, VGA, Jack 3.5 TRS/TRRS, ATX 24-pin, SATA Power, RJ45, PS/2), imported ICs (LM358, NE555, LM7805, LM317, LM7812, IRFZ44N, TL494, NE5532, 74HC595, ATmega328P, TDA2030, TDA7294, TDA2822, LM386, PC817, MC34063, 74HC14, CH340G, MAX232, ULN2003, L293D, DS3231, LM2596, AMS1117, ESP-01), Soviet microchips (К155, К561, КР142, К140, КР1006, КР1533, КР580, and more).
+- **SMD Code Search** — database of 270 974 components with 119 290 unique codes. Search by the code printed on the package and get the model, type, package and parameters instantly.
+- **BoardView** — see above.
 - **Localization** — English and Russian, with automatic system language detection.
 - **Settings** — interface zoom (70–150%), datasheet cache size and cleanup.
 - **Dark theme** by default.
 
 ### Tech Stack
 
-Tauri 2 · Svelte 5 (runes) · Rust · Vite · `svelte-pdf-view`.
+Tauri 2 · Svelte 5 (runes) · Rust · Vite · `svelte-pdf-view` · `pcbrepair` · `gencad`.
 
 ### Install
 
@@ -51,11 +59,13 @@ Tauri 2 · Svelte 5 (runes) · Rust · Vite · `svelte-pdf-view`.
 
 **Android:** Download the `.apk` from [Releases](../../releases), allow installation from unknown sources, install.
 
+**Linux:** Download `.deb`, `.rpm` or `.AppImage` from [Releases](../../releases).
+
 > **Note:** On first launch the app needs internet to fetch datasheets and analog data. After that, calculators work fully offline.
 
 ### Build from Source
 
-Requirements: [Node.js](https://nodejs.org/) 18+, [Rust](https://rustup.rs/) 1.75+, Windows 10/11 (WebView2) or Android SDK + NDK.
+Requirements: [Node.js](https://nodejs.org/) 18+, [Rust](https://rustup.rs/) 1.75+, Windows 10/11 (WebView2) or Android SDK + NDK or Linux dependencies.
 
 1. `git clone https://github.com/invisiblelevel/canifol.git`
 2. `cd canifol`
@@ -80,15 +90,22 @@ INV.LVL · [@invisiblelevel](https://github.com/invisiblelevel)
 
 ## Русский
 
-Canifol — бесплатный инструмент для ремонтников электроники. Калькуляторы компонентов, поиск даташитов, распиновки и база SMD-кодов прямо в приложении. После первого запуска работает полностью оффлайн.
+Canifol — бесплатный инструмент для ремонтников электроники. Калькуляторы компонентов, поиск даташитов, распиновки, база SMD-кодов и полноценный **BoardView** прямо в приложении. После первого запуска работает полностью оффлайн.
 
-**Доступно на Windows и Android.** Десктопная версия поставляется как обычный установщик (`.exe`), мобильная — как отдельный APK (`.apk`). Оба файла прикрепляются к каждому релизу.
+**Доступно на Windows, Android и Linux.** Десктопная версия поставляется как обычный установщик (`.exe`), мобильная — как отдельный APK (`.apk`), Linux — как `.deb`, `.rpm` и `.AppImage` (собираются автоматически через GitHub Actions). Все файлы прикрепляются к каждому релизу.
 
-### Что нового в 1.1.0
+### Что нового в 1.2.0
 
-- **Распиновки** — визуальные SVG-схемы для разъёмов (USB, HDMI, DisplayPort, VGA, ATX, SATA, Jack 3.5), импортных микросхем (LM, NE, TDA, 74HC и т.д.) и советских микросхем (К155, К561, КР142 и т.д.).
-- **Поиск по SMD-кодам** — база на **270 974 компонента** с **119 290 уникальными кодами**. Ищешь по коду с корпуса — получаешь модель, тип, корпус и параметры мгновенно.
-- **Расширенная SMD-база** — распарсена из SMD-CODES DATABOOK 2023 EDITION.
+- **BoardView** — открывай `.fz`, `.cae`, `.cad`, `.bdv` и `.asc` файлы прямо в Canifol.
+- **Подсветка цепей** — клик по пину подсвечивает всю цепь (зелёный = выбранный, фиолетовые = связанные). Это главная фича для поиска короткого замыкания.
+- **Поиск по компонентам** — вводишь `Q21`, `R123` или `U5` — компонент мгновенно находится и подсвечивается.
+- **Слои** — включение/выключение пинов, дорожек, компонентов и трассировки.
+- **Fullscreen** — просмотр платы без интерфейса.
+- **Тач-управление** — pinch-to-zoom и панорамирование на Android.
+- **Поддерживаемые форматы:**
+  - **FZ** (ASUS / ASRock) — пины + компоненты.
+  - **CAD** (GenCAD) — пины + компоненты + дорожки + пады.
+  - **BDV** (eM-Test Expert / Honhan) — пины + компоненты с родными контурами.
 
 ### Что умеет
 
@@ -98,15 +115,16 @@ Canifol — бесплатный инструмент для ремонтник�
 - **BMS** — балансир, S/P сборка, шунт, защита на MOSFET.
 - **Транзисторы** — поиск аналога (DigiKey + LCSC + советская база), подбор по параметрам, расчёт базового резистора.
 - **Даташиты** — поиск через DigiKey и LCSC, скачивание PDF с локальным кэшем, встроенный просмотрщик с полноэкранным режимом.
-- **Распиновки** — разъёмы (USB Type-A, USB Type-C, USB 3.0, HDMI, DisplayPort, VGA, Jack 3.5 TRS/TRRS, ATX 24-pin, SATA Power), импортные микросхемы (LM358, NE555, LM7805, LM317, LM7812, IRFZ44N, TL494, NE5532, 74HC595, ATmega328P, TDA2030, TDA7294, TDA2822, LM386, PC817, MC34063, 74HC14), советские микросхемы (К155ЛА3, К155ТМ2, К155ИД3, К155ИР1, К155АГ3, К155КП1, К155ИЕ7, К561ЛА7, К561ТМ2, К561ИЕ10, КР142ЕН5А, КР142ЕН8Б, К140УД6, К140УД7, КР1006ВИ1, КР1533ИР22, КР580ВМ80А, КР580ВВ55А, КР580ВИ53).
-- **Поиск по SMD-кодам** — база на 270 974 компонента, мгновенный поиск по коду, с моделью, типом, корпусом и параметрами.
+- **Распиновки** — разъёмы (USB Type-A/B/C, USB 3.0, Mini-B, Micro-B, HDMI, DisplayPort, VGA, Jack 3.5 TRS/TRRS, ATX 24-pin, SATA Power, RJ45, PS/2), импортные микросхемы (LM358, NE555, LM7805, LM317, LM7812, IRFZ44N, TL494, NE5532, 74HC595, ATmega328P, TDA2030, TDA7294, TDA2822, LM386, PC817, MC34063, 74HC14, CH340G, MAX232, ULN2003, L293D, DS3231, LM2596, AMS1117, ESP-01), советские микросхемы (К155, К561, КР142, К140, КР1006, КР1533, КР580 и др.).
+- **Поиск по SMD-кодам** — база на 270 974 компонента с 119 290 уникальными кодами. Мгновенный поиск по коду с корпуса, с моделью, типом, корпусом и параметрами.
+- **BoardView** — см. выше.
 - **Локализация** — русский и английский, с автоопределением языка системы.
 - **Настройки** — масштаб интерфейса (70–150%), размер кэша даташитов и его очистка.
 - **Тёмная тема** по умолчанию.
 
 ### Стек
 
-Tauri 2 · Svelte 5 (руны) · Rust · Vite · `svelte-pdf-view`.
+Tauri 2 · Svelte 5 (руны) · Rust · Vite · `svelte-pdf-view` · `pcbrepair` · `gencad`.
 
 ### Установка
 
@@ -114,11 +132,13 @@ Tauri 2 · Svelte 5 (руны) · Rust · Vite · `svelte-pdf-view`.
 
 **Android:** Скачай `.apk` из [Releases](../../releases), разреши установку из неизвестных источников, установи.
 
+**Linux:** Скачай `.deb`, `.rpm` или `.AppImage` из [Releases](../../releases).
+
 > **Важно:** При первом запуске нужен интернет, чтобы загрузить даташиты и базу аналогов. После этого калькуляторы работают полностью оффлайн.
 
 ### Сборка из исходников
 
-Требования: [Node.js](https://nodejs.org/) 18+, [Rust](https://rustup.rs/) 1.75+, Windows 10/11 (WebView2) или Android SDK + NDK.
+Требования: [Node.js](https://nodejs.org/) 18+, [Rust](https://rustup.rs/) 1.75+, Windows 10/11 (WebView2) или Android SDK + NDK или Linux-зависимости.
 
 1. `git clone https://github.com/invisiblelevel/canifol.git`
 2. `cd canifol`
