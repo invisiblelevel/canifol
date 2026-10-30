@@ -38,6 +38,7 @@
   <h3>{h.markingTitle}</h3><p>{h.markingText}</p>
   <h3>{h.reactanceTitle}</h3><p>{h.reactanceText}</p>
   <h3>{h.connTitle}</h3><p>{h.connText}</p>
+  <h3>{h.esrTitle}</h3><p>{h.esrText}</p>
 </SectionHelpModal>
 
 <style>

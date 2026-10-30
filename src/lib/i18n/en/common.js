@@ -2,6 +2,7 @@ export const common = {
   app: { name: 'Canifol', tagline: "Repairman's toolkit" },
   nav: { menu: 'Menu', close: 'Close', sections: 'Sections', settings: 'Settings' },
   sections: {
+    favorites: 'Favorites',
     resistors: 'Resistors', capacitors: 'Capacitors', inductors: 'Inductors',
     bms: 'BMS', transistors: 'Transistors', datasheets: 'Datasheets',
     pinouts: 'Pinouts',
@@ -49,7 +50,7 @@ export const common = {
     showLines: 'Traces',
     showComponents: 'Components',
     showRoutes: 'Routing',
-	    helpTitle: 'BoardView Help',
+    helpTitle: 'BoardView Help',
     helpFormatsTitle: 'Supported formats',
     helpFormats: [
       { name: 'FZ / CAE', desc: 'ASUS / ASRock. Pins and components.' },

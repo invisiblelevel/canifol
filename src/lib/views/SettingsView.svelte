@@ -12,6 +12,10 @@
   let clearing = $state(false);
   let cleared = $state(false);
 
+  let favSize = $state(0);
+  let favClearing = $state(false);
+  let favCleared = $state(false);
+
   function formatBytes(bytes) {
     if (bytes === 0) return `0 ${strings.units.b}`;
     if (bytes < 1024) return `${bytes} ${strings.units.b}`;
@@ -22,11 +26,17 @@
 
   async function loadCacheSize() {
     try {
-      const size = await invoke('get_cache_size');
-      console.log('[DEBUG] Cache size from Rust:', size);
-      cacheSize = size;
+      cacheSize = await invoke('get_cache_size');
     } catch (e) {
-      console.error('[DEBUG] Failed to load cache size', e);
+      console.error('Failed to load cache size', e);
+    }
+  }
+
+  async function loadFavSize() {
+    try {
+      favSize = await invoke('get_favorites_size');
+    } catch (e) {
+      console.error('Failed to load favorites size', e);
     }
   }
 
@@ -46,12 +56,30 @@
     }
   }
 
+  async function clearFavorites() {
+    if (!confirm(strings.settings.confirmClearFavorites)) return;
+    favClearing = true;
+    try {
+      await invoke('clear_favorites');
+      await loadFavSize();
+      await loadCacheSize();
+      favCleared = true;
+      setTimeout(() => (favCleared = false), 2000);
+    } catch (e) {
+      console.error('Clear favorites error:', e);
+      alert('Error: ' + e);
+    } finally {
+      favClearing = false;
+    }
+  }
+
   function setScale(value) {
     uiScaleStore.set(value);
   }
 
   onMount(() => {
     loadCacheSize();
+    loadFavSize();
   });
 </script>
 
@@ -86,7 +114,7 @@
       </div>
     </div>
 
-    <!-- Кэш -->
+    <!-- Кэш даташитов -->
     <div class="section">
       <div class="section__title">{strings.settings.cacheTitle}</div>
       <div class="section__hint">{strings.settings.cacheHint}</div>
@@ -105,6 +133,29 @@
           disabled={cacheSize === 0}
         >
           {cleared ? strings.settings.cacheCleared : strings.buttons.clearCache}
+        </Button>
+      </div>
+    </div>
+
+    <!-- Кэш избранных PDF -->
+    <div class="section">
+      <div class="section__title">{strings.settings.favoritesCacheTitle}</div>
+      <div class="section__hint">{strings.settings.favoritesCacheHint}</div>
+      <div class="cache-row">
+        <div class="cache-info">
+          <span class="cache-info__label">{strings.settings.cacheSize}:</span>
+          <span class="cache-info__value">
+            {favSize > 0 ? formatBytes(favSize) : strings.settings.cacheEmpty}
+          </span>
+        </div>
+        <Button
+          variant={favSize > 0 ? 'danger' : 'ghost'}
+          size="sm"
+          onclick={clearFavorites}
+          loading={favClearing}
+          disabled={favSize === 0}
+        >
+          {favCleared ? strings.settings.cacheCleared : strings.settings.clearFavorites}
         </Button>
       </div>
     </div>

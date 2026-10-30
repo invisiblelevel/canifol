@@ -1,0 +1,6 @@
+{
+  "arduino-uno": 20,
+  "arduino-nano": 30,
+  "esp32-devkit": 30,
+  "rpi-40pin": 40
+}

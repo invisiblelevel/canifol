@@ -47,7 +47,6 @@
             <X size={18} strokeWidth={2} />
           </button>
         </div>
-        <!-- Оборачиваем Tabs в div с onclick, чтобы меню закрывалось при клике на любой раздел -->
         <div onclick={closeMenu} class="drawer-tabs">
           <Tabs />
         </div>
@@ -56,6 +55,7 @@
           <div class="lang-switch">
             <button type="button" class="lang-btn" class:active={localeStore.current === 'ru'} onclick={() => localeStore.current = 'ru'}>RU</button>
             <button type="button" class="lang-btn" class:active={localeStore.current === 'en'} onclick={() => localeStore.current = 'en'}>EN</button>
+            <button type="button" class="lang-btn" class:active={localeStore.current === 'zh'} onclick={() => localeStore.current = 'zh'}>ZH</button>
           </div>
           
           <div class="footer-row">
@@ -85,6 +85,7 @@
         <div class="lang-switch">
           <button type="button" class="lang-btn" class:active={localeStore.current === 'ru'} onclick={() => localeStore.current = 'ru'}>RU</button>
           <button type="button" class="lang-btn" class:active={localeStore.current === 'en'} onclick={() => localeStore.current = 'en'}>EN</button>
+          <button type="button" class="lang-btn" class:active={localeStore.current === 'zh'} onclick={() => localeStore.current = 'zh'}>ZH</button>
         </div>
         
         <div class="footer-row">
@@ -137,13 +138,9 @@
   .sidebar__brand-name { font-size: var(--font-size-xl); font-weight: 700; letter-spacing: 0.5px; }
   .sidebar__brand-tagline { font-size: var(--font-size-sm); color: var(--text-muted); margin-top: var(--space-1); }
   
-  /* Футер */
   .sidebar__footer { margin-top: auto; padding-top: var(--space-3); border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: var(--space-2); padding-bottom: env(safe-area-inset-bottom); }
-  
-  /* Ряд с About и Настройками */
   .footer-row { display: flex; align-items: center; gap: 2px; width: 100%; }
   
-  /* Стили кнопок в ряду (чуть компактнее) */
   .sidebar__link, .drawer__link {
     display: flex;
     align-items: center;

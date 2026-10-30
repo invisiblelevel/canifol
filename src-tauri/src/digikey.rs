@@ -8,12 +8,10 @@ use tauri::Manager;
 const TOKEN_URL: &str = "https://api.digikey.com/v1/oauth2/token";
 const SEARCH_URL: &str = "https://api.digikey.com/products/v4/search/keyword";
 
-// Ключи зашиты как дефолтные. Если есть .env — подхватится оттуда.
 const DEFAULT_CLIENT_ID: &str = "MmdeQPn52lzXUMNRcekRZJbBpZaTzpUwD6aTVJ8FAYlxzUOn";
 const DEFAULT_CLIENT_SECRET: &str = "f5BUbmzVH9nPbbfpfZaWBhsRrc0AzLlNO5Q03z8aCdbxM7qbsCiejgz9UmU9W0tG";
 
 fn get_credentials() -> (String, String) {
-    // Пробуем из .env
     dotenvy::dotenv().ok();
     let id = std::env::var("DIGIKEY_CLIENT_ID").unwrap_or_else(|_| DEFAULT_CLIENT_ID.to_string());
     let secret = std::env::var("DIGIKEY_CLIENT_SECRET").unwrap_or_else(|_| DEFAULT_CLIENT_SECRET.to_string());
@@ -56,23 +54,67 @@ fn get_cache_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     Ok(path)
 }
 
+fn get_favorites_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let mut path = app.path().app_data_dir().map_err(|e| format!("Не удалось найти папку данных: {}", e))?;
+    path.push("favorites_pdfs");
+    if !path.exists() {
+        fs::create_dir_all(&path).map_err(|e| format!("Не удалось создать папку избранного: {}", e))?;
+    }
+    Ok(path)
+}
+
 fn sanitize_filename(name: &str) -> String {
     name.replace(|c: char| !c.is_alphanumeric() && c != '-' && c != '_', "_")
 }
 
 #[tauri::command]
-pub async fn download_pdf(app: tauri::AppHandle, url: String, filename: String) -> Result<String, String> {
-    let cache_dir = get_cache_dir(&app)?;
+pub async fn download_pdf(
+    app: tauri::AppHandle,
+    url: String,
+    filename: String,
+    save_to_favorites: Option<bool>,
+) -> Result<String, String> {
+    let save_to_favorites = save_to_favorites.unwrap_or(false);
     let safe_name = sanitize_filename(&filename);
-    let file_path = cache_dir.join(format!("{}.pdf", safe_name));
-
-    if file_path.exists() {
+    
+    // 1. Если просят сохранить в офлайн — проверяем офлайн-папку, если нет — качаем туда.
+    if save_to_favorites {
+        let target_dir = get_favorites_dir(&app)?;
+        let file_path = target_dir.join(format!("{}.pdf", safe_name));
+        if file_path.exists() {
+            return Ok(file_path.to_string_lossy().to_string());
+        }
+        
+        // Если нет — качаем сразу в офлайн
+        download_to_path(&url, &file_path).await?;
         return Ok(file_path.to_string_lossy().to_string());
     }
 
+    // 2. Если это просто открыть PDF:
+    // Сначала проверяем офлайн-папку! Если он там есть, возвращаем его.
+    let fav_dir = get_favorites_dir(&app)?;
+    let fav_path = fav_dir.join(format!("{}.pdf", safe_name));
+    if fav_path.exists() {
+        return Ok(fav_path.to_string_lossy().to_string());
+    }
+
+    // 3. Если нет в офлайне, проверяем обычный кэш
+    let cache_dir = get_cache_dir(&app)?;
+    let cache_path = cache_dir.join(format!("{}.pdf", safe_name));
+    if cache_path.exists() {
+        return Ok(cache_path.to_string_lossy().to_string());
+    }
+
+    // 4. Если нигде нет — качаем в обычный кэш
+    download_to_path(&url, &cache_path).await?;
+    Ok(cache_path.to_string_lossy().to_string())
+}
+
+// Вынесем логику скачивания в отдельную функцию, чтобы не дублировать код
+async fn download_to_path(url: &str, file_path: &std::path::Path) -> Result<(), String> {
     let client = Client::new();
     let res = client
-        .get(&url)
+        .get(url)
         .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
         .send()
         .await
@@ -83,21 +125,38 @@ pub async fn download_pdf(app: tauri::AppHandle, url: String, filename: String) 
     }
 
     let bytes = res.bytes().await.map_err(|e| format!("Ошибка чтения данных: {}", e))?;
-    
+
     if bytes.len() < 4 || &bytes[0..4] != b"%PDF" {
         return Err("Скачанный файл не является PDF".to_string());
     }
 
-    fs::write(&file_path, &bytes).map_err(|e| format!("Ошибка записи в кэш: {}", e))?;
-    Ok(file_path.to_string_lossy().to_string())
+    fs::write(file_path, &bytes).map_err(|e| format!("Ошибка записи: {}", e))?;
+    Ok(())
 }
 
 #[tauri::command]
 pub fn read_pdf(app: tauri::AppHandle, filename: String) -> Result<Vec<u8>, String> {
-    let cache_dir = get_cache_dir(&app)?;
     let safe_name = sanitize_filename(&filename);
+
+    // Сначала пробуем избранное, потом кэш
+    if let Ok(fav_dir) = get_favorites_dir(&app) {
+        let path = fav_dir.join(format!("{}.pdf", safe_name));
+        if path.exists() {
+            return fs::read(&path).map_err(|e| format!("Не удалось прочитать файл из избранного: {}", e));
+        }
+    }
+
+    let cache_dir = get_cache_dir(&app)?;
     let file_path = cache_dir.join(format!("{}.pdf", safe_name));
     fs::read(&file_path).map_err(|e| format!("Не удалось прочитать файл из кэша: {}", e))
+}
+
+#[tauri::command]
+pub fn read_favorite_pdf(app: tauri::AppHandle, filename: String) -> Result<Vec<u8>, String> {
+    let fav_dir = get_favorites_dir(&app)?;
+    let safe_name = sanitize_filename(&filename);
+    let file_path = fav_dir.join(format!("{}.pdf", safe_name));
+    fs::read(&file_path).map_err(|e| format!("Не удалось прочитать файл из избранного: {}", e))
 }
 
 async fn get_token() -> Result<String, String> {
@@ -176,7 +235,7 @@ pub async fn search_datasheets(query: String) -> Result<Vec<DatasheetResult>, St
 
 fn parse_digikey_params(product: &Value, _tr_type: &str) -> Option<(Option<f64>, Option<f64>, Option<f64>, Option<f64>, Option<f64>, Option<f64>, Option<String>)> {
     let params = product.get("Parameters")?.as_array()?;
-    
+
     let mut vds = None;
     let mut id = None;
     let mut rds_on = None;
@@ -255,7 +314,7 @@ pub async fn find_analogs_digikey(query: String, tr_type: String) -> Result<Vec<
     let _params = parse_digikey_params(product, &tr_type).ok_or("Не удалось распарсить параметры")?;
 
     let search_keyword = if tr_type == "mosfet" { "MOSFET" } else { "Bipolar Transistor" };
-    
+
     let body = serde_json::json!({
         "Keywords": search_keyword,
         "RecordCount": 20,
@@ -283,7 +342,7 @@ pub async fn find_analogs_digikey(query: String, tr_type: String) -> Result<Vec<
 
             let manufacturer = p.get("Manufacturer").and_then(|m| m.get("Name")).and_then(|v| v.as_str()).unwrap_or("").to_string();
             let url = p.get("DatasheetUrl").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            
+
             if let Some((vds, id, rds, vceo, ic, hfe, ttype)) = parse_digikey_params(p, &tr_type) {
                 results.push(AnalogResult {
                     name, manufacturer, datasheet_url: url, source: "DigiKey".to_string(),
@@ -335,10 +394,10 @@ pub async fn find_by_params_digikey(params: serde_json::Value) -> Result<Vec<Ana
         for p in products {
             let name = p.get("ManufacturerProductNumber").and_then(|v| v.as_str()).unwrap_or("").to_string();
             if name.is_empty() { continue; }
-            
+
             let manufacturer = p.get("Manufacturer").and_then(|m| m.get("Name")).and_then(|v| v.as_str()).unwrap_or("").to_string();
             let url = p.get("DatasheetUrl").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            
+
             if let Some((vds, id, rds, vceo, ic, hfe, ttype)) = parse_digikey_params(p, tr_type) {
                 let mut pass = true;
                 if tr_type == "mosfet" {
@@ -350,7 +409,7 @@ pub async fn find_by_params_digikey(params: serde_json::Value) -> Result<Vec<Ana
                     if let Some(min) = ic_min { if ic.unwrap_or(0.0) < min { pass = false; } }
                     if let Some(min) = hfe_min { if hfe.unwrap_or(0.0) < min { pass = false; } }
                 }
-                
+
                 if pass {
                     results.push(AnalogResult {
                         name, manufacturer, datasheet_url: url, source: "DigiKey".to_string(),

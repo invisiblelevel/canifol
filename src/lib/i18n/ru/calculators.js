@@ -63,11 +63,12 @@ export const calculators = {
   },
   "capacitors": {
     "title": "Калькуляторы конденсаторов",
-    "subtitle": "Маркировка, SMD-коды, реактивное сопротивление",
+    "subtitle": "Маркировка, SMD-коды, реактивное сопротивление, ESR",
     "sub": {
       "marking": "Маркировка",
       "reactance": "Xc",
-      "connections": "Соединения"
+      "connections": "Соединения",
+      "esr": "ESR"
     },
     "labels": {
       "marking": "Маркировка",
@@ -102,7 +103,28 @@ export const calculators = {
       "tolerance": "Допуск",
       "voltageLabel": "Напряжение",
       "color_interpretation": "Стандартная интерпретация — у разных производителей может отличаться",
-      "smd_ceramic_warning": "Возможно, значение в мкФ — проверь корпус и даташит"
+      "smd_ceramic_warning": "Возможно, значение в мкФ — проверь корпус и даташит",
+
+      "esrCapacitance": "Ёмкость",
+      "esrVoltage": "Напряжение",
+      "esrType": "Тип конденсатора",
+      "esrTypeGeneral": "Обычный (общего назначения)",
+      "esrTypeLowEsr": "Low-ESR (для импульсных БП)",
+      "esrTypeAudio": "Аудио (звуковой тракт)",
+      "esrTypeHighTemp": "Высокотемпературный (105 °C+)",
+      "esrPresetsCap": "Быстрый выбор ёмкости",
+      "esrPresetsVolt": "Напряжение",
+      "esrRange": "Норма ESR",
+      "esrBadThreshold": "Порог «менять»",
+      "esrMeasured": "Твой замер (мультиметр)",
+      "esrMeasuredPlaceholder": "например 0.15",
+      "esrEnterCap": "Введи ёмкость и напряжение, чтобы увидеть норму ESR.",
+      "esrJudgeOk": "В норме — конденсатор живой.",
+      "esrJudgeLow": "Ниже нормы — возможен пробой или КЗ, проверь ещё раз.",
+      "esrJudgeHigh": "Повышенный ESR — конденсатор стареет, скоро менять.",
+      "esrJudgeBad": "ESR сильно завышен — конденсатор высох, менять.",
+      "esrJudgeUnknown": "Введи показание мультиметра для вердикта.",
+      "esrDisclaimer": "Данные — усреднённые по datasheet-ам Panasonic, Nichicon, Rubycon и типовым китайским. Производители отличаются, для точной проверки сверяйся с даташитом на конкретную серию."
     }
   },
   "inductors": {

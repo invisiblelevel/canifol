@@ -2,6 +2,7 @@ export const common = {
   app: { name: 'Canifol', tagline: 'Инструмент ремонтника' },
   nav: { menu: 'Меню', close: 'Закрыть', sections: 'Разделы', settings: 'Настройки' },
   sections: {
+    favorites: 'Избранное',
     resistors: 'Резисторы', capacitors: 'Конденсаторы', inductors: 'Катушки',
     bms: 'BMS', transistors: 'Транзисторы', datasheets: 'Даташиты',
     pinouts: 'Распиновки',

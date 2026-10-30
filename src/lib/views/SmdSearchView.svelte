@@ -1,9 +1,13 @@
 <script>
   import Card from '../components/Card.svelte';
   import Input from '../components/Input.svelte';
+  import StarButton from '../components/StarButton.svelte';
   import { getStrings } from '../strings.svelte.js';
+  import { favoritesStore } from '../stores/favorites.svelte.js';
+  import { navStore } from '../stores/navigation.svelte.js';
 
   const strings = $derived(getStrings());
+  const F = $derived(strings.favorites);
 
   let query = $state('');
   let index = $state(null);
@@ -72,8 +76,22 @@
     searched = true;
   }
 
+  function toggleFav(item) {
+    // Сохраняем ВЕСЬ объект целиком, чтобы в избранном были все данные
+    favoritesStore.toggleSmd(item);
+  }
+
   $effect(() => {
     loadIndex();
+  });
+
+  $effect(() => {
+    const p = navStore.payload;
+    if (p && p.smdQuery) {
+      query = p.smdQuery;
+      navStore.clearPayload();
+      search();
+    }
   });
 </script>
 
@@ -120,6 +138,7 @@
           <table class="results-table">
             <thead>
               <tr>
+                <th></th>
                 <th>{strings.smd.code}</th>
                 <th>{strings.smd.model}</th>
                 <th>{strings.smd.type}</th>
@@ -130,6 +149,13 @@
             <tbody>
               {#each results as r, i (i)}
                 <tr>
+                  <td class="td-star">
+                    <StarButton
+                      active={favoritesStore.isFavoriteSmd(r)}
+                      onclick={() => toggleFav(r)}
+                      title={favoritesStore.isFavoriteSmd(r) ? F.removeFromFavorites : F.addToFavorites}
+                    />
+                  </td>
                   <td class="td-code">{r.code}</td>
                   <td class="td-model">{r.model}</td>
                   <td>{r.type}</td>
@@ -147,7 +173,6 @@
 
 <style>
   .smd-search { display: flex; flex-direction: column; gap: var(--space-3); }
-
   .search-row { display: flex; gap: var(--space-2); align-items: flex-end; }
   .search-input { flex: 1; }
   .search-btn {
@@ -162,7 +187,6 @@
   }
   .search-btn:hover:not(:disabled) { filter: brightness(1.1); }
   .search-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
   .loading-bar { display: flex; flex-direction: column; gap: 6px; padding: var(--space-3); background: var(--bg-elevated-2); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); }
   .loading-bar__text { font-size: var(--font-size-sm); color: var(--text-secondary); }
   .loading-bar__track { position: relative; height: 6px; background: var(--bg-base); border-radius: 3px; overflow: hidden; }
@@ -179,15 +203,14 @@
     0% { left: -40%; }
     100% { left: 100%; }
   }
-
   .error-note { padding: var(--space-3); color: var(--danger); background: rgba(232, 90, 90, 0.08); border: 1px solid rgba(232, 90, 90, 0.25); border-radius: var(--radius-md); font-size: var(--font-size-sm); }
   .empty { color: var(--text-muted); text-align: center; padding: var(--space-5); }
-
   .results-header { font-size: var(--font-size-sm); font-weight: 600; color: var(--accent); }
   .results-table-wrap { overflow-x: auto; max-height: 60vh; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); }
   .results-table { width: 100%; border-collapse: collapse; font-size: var(--font-size-sm); }
   .results-table th { text-align: left; padding: var(--space-2) var(--space-3); color: var(--text-muted); font-weight: 600; border-bottom: 2px solid var(--border-strong); position: sticky; top: 0; background: var(--bg-elevated); z-index: 1; }
   .results-table td { padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); vertical-align: top; }
+  .td-star { width: 40px; padding: var(--space-1) !important; }
   .td-code { font-family: var(--font-mono); color: var(--text-primary) !important; font-weight: 600; }
   .td-model { color: var(--text-primary) !important; }
   .td-params { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }

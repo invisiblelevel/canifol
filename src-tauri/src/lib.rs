@@ -14,9 +14,11 @@ fn get_system_locale() -> String {
 
 #[tauri::command]
 fn get_cache_size(app: tauri::AppHandle) -> Result<u64, String> {
+    // Считаем ТОЛЬКО обычный кэш (datasheets), не трогая избранное
     let cache_dir = app.path().app_data_dir()
         .map_err(|e| format!("No data dir: {}", e))?
         .join("datasheets");
+    
     if !cache_dir.exists() { return Ok(0); }
     let mut total_size = 0;
     if let Ok(entries) = fs::read_dir(&cache_dir) {
@@ -38,6 +40,32 @@ fn clear_cache(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn get_favorites_size(app: tauri::AppHandle) -> Result<u64, String> {
+    let dir = app.path().app_data_dir()
+        .map_err(|e| format!("No data dir: {}", e))?
+        .join("favorites_pdfs");
+    if !dir.exists() { return Ok(0); }
+    let mut total_size = 0;
+    if let Ok(entries) = fs::read_dir(&dir) {
+        for entry in entries.flatten() {
+            if let Ok(meta) = entry.metadata() {
+                if meta.is_file() { total_size += meta.len(); }
+            }
+        }
+    }
+    Ok(total_size)
+}
+
+#[tauri::command]
+fn clear_favorites(app: tauri::AppHandle) -> Result<(), String> {
+    let dir = app.path().app_data_dir()
+        .map_err(|e| format!("No data dir: {}", e))?
+        .join("favorites_pdfs");
+    if dir.exists() { fs::remove_dir_all(&dir).map_err(|e| e.to_string())?; }
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut builder = tauri::Builder::default()
@@ -55,6 +83,7 @@ pub fn run() {
             digikey::search_datasheets,
             digikey::download_pdf,
             digikey::read_pdf,
+            digikey::read_favorite_pdf,
             digikey::find_analogs_digikey,
             digikey::find_by_params_digikey,
             lcsc::search_lcsc,
@@ -64,6 +93,8 @@ pub fn run() {
             get_system_locale,
             get_cache_size,
             clear_cache,
+            get_favorites_size,
+            clear_favorites,
             boardview::read_boardview,
             #[cfg(target_os = "android")]
             boardview::read_boardview_uri

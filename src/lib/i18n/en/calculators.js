@@ -63,11 +63,12 @@ export const calculators = {
   },
   "capacitors": {
     "title": "Capacitor calculators",
-    "subtitle": "Marking, SMD codes, reactance",
+    "subtitle": "Marking, SMD codes, reactance, ESR",
     "sub": {
       "marking": "Marking",
       "reactance": "Xc",
-      "connections": "Connections"
+      "connections": "Connections",
+      "esr": "ESR"
     },
     "labels": {
       "marking": "Marking",
@@ -102,7 +103,28 @@ export const calculators = {
       "tolerance": "Tolerance",
       "voltageLabel": "Voltage",
       "color_interpretation": "Standard interpretation — may vary between manufacturers",
-      "smd_ceramic_warning": "Value may be in µF — check package and datasheet"
+      "smd_ceramic_warning": "Value may be in µF — check package and datasheet",
+
+      "esrCapacitance": "Capacitance",
+      "esrVoltage": "Voltage",
+      "esrType": "Capacitor type",
+      "esrTypeGeneral": "General purpose",
+      "esrTypeLowEsr": "Low-ESR (SMPS)",
+      "esrTypeAudio": "Audio (signal path)",
+      "esrTypeHighTemp": "High temperature (105 °C+)",
+      "esrPresetsCap": "Quick capacitance",
+      "esrPresetsVolt": "Voltage",
+      "esrRange": "Normal ESR",
+      "esrBadThreshold": "Replace above",
+      "esrMeasured": "Your measurement (multimeter)",
+      "esrMeasuredPlaceholder": "e.g. 0.15",
+      "esrEnterCap": "Enter capacitance and voltage to see ESR range.",
+      "esrJudgeOk": "In spec — capacitor is healthy.",
+      "esrJudgeLow": "Below spec — possible short or breakdown, check again.",
+      "esrJudgeHigh": "Elevated ESR — capacitor is aging, replace soon.",
+      "esrJudgeBad": "ESR way too high — capacitor is dried out, replace.",
+      "esrJudgeUnknown": "Enter multimeter reading for verdict.",
+      "esrDisclaimer": "Averaged from Panasonic, Nichicon, Rubycon and generic Chinese datasheets. Manufacturers differ; for precise checks refer to the specific series datasheet."
     }
   },
   "inductors": {

@@ -6,6 +6,7 @@
   import { navStore } from './lib/stores/navigation.svelte.js';
   import { detectSystemLocale } from './lib/stores/locale.svelte.js';
 
+  import FavoritesView from './lib/views/FavoritesView.svelte';
   import ResistorsView from './lib/views/ResistorsView.svelte';
   import CapacitorsView from './lib/views/CapacitorsView.svelte';
   import InductorsView from './lib/views/InductorsView.svelte';
@@ -15,12 +16,13 @@
   import SettingsView from './lib/views/SettingsView.svelte';
   import PinoutsView from './lib/views/PinoutsView.svelte';
   import SmdSearchView from './lib/views/SmdSearchView.svelte';
-  import BoardViewView from './lib/views/BoardViewView.svelte'; // <-- НОВЫЙ ИМПОРТ
+  import BoardViewView from './lib/views/BoardViewView.svelte';
 
   let showAbout = $state(false);
   let showSupport = $state(false);
 
   const views = {
+    favorites:  FavoritesView,
     resistors:  ResistorsView,
     capacitors: CapacitorsView,
     inductors:  InductorsView,
@@ -30,7 +32,7 @@
     settings:   SettingsView,
     pinouts:    PinoutsView,
     smd:        SmdSearchView,
-    boardview:  BoardViewView // <-- НОВЫЙ РАЗДЕЛ
+    boardview:  BoardViewView
   };
 
   const currentView = $derived(views[navStore.current]);
@@ -41,7 +43,9 @@
 </script>
 
 <AppShell onOpenAbout={() => showAbout = true}>
-  {#if currentView === ResistorsView}
+  {#if currentView === FavoritesView}
+    <FavoritesView />
+  {:else if currentView === ResistorsView}
     <ResistorsView />
   {:else if currentView === CapacitorsView}
     <CapacitorsView />
@@ -54,7 +58,12 @@
   {:else if currentView === SettingsView}
     <SettingsView />
   {:else if currentView === PinoutsView}
-    <PinoutsView />
+    {#key navStore.pinoutKey}
+      <PinoutsView 
+        initialTab={navStore.payload?.pinoutTab || 'connectors'} 
+        initialId={navStore.payload?.pinoutId || ''} 
+      />
+    {/key}
   {:else if currentView === SmdSearchView}
     <SmdSearchView />
   {:else if currentView === BoardViewView}

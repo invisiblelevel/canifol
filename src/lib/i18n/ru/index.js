@@ -5,6 +5,7 @@ import { pinouts } from './pinouts.js';
 import { smd } from './smd.js';
 import { about } from './about.js';
 import { help } from './help.js';
+import { favorites } from './favorites.js';
 
 export const ru = {
   ...common,
@@ -13,5 +14,6 @@ export const ru = {
   ...pinouts,
   ...smd,
   ...about,
-  ...help
+  ...help,
+  ...favorites
 };

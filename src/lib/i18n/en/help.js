@@ -15,14 +15,16 @@ export const help = {
       "pickTitle": "Pick resistor",
       "pickText": "Enter voltage and current — the app picks resistance, shows dissipated power, recommended power rating and nearest E24 values."
     },
-    "capacitors": {
+      "capacitors": {
       "title": "Capacitors — help",
       "markingTitle": "Marking",
       "markingText": "Three modes: Code (ceramic/film: 104, 4R7, 3n3), SMD (tantalum: J3, A0), Colors (bands). Result in pF, nF, µF or mF.",
       "reactanceTitle": "Reactance (Xc)",
       "reactanceText": "Enter any two of f, C, Xc — the app calculates the third. Xc is the capacitor's \"resistance\" to AC.",
       "connTitle": "Connections",
-      "connText": "Series and parallel. Note: capacitors behave opposite to resistors. Series — capacitance decreases, parallel — increases."
+      "connText": "Series and parallel. Note: capacitors behave opposite to resistors. Series — capacitance decreases, parallel — increases.",
+      "esrTitle": "ESR (equivalent series resistance)",
+      "esrText": "Electrolytic check by ESR. Pick capacitance, voltage and type (general / low-ESR / audio / 105 °C). The app shows normal ESR range and the \"replace above\" threshold. Enter your multimeter reading — get a verdict: healthy, aging, or dried out. For low-ESR (SMPS) the requirements are stricter — ESR is several times lower. Data is averaged; for precise checks refer to the specific series datasheet."
     },
     "inductors": {
       "title": "Inductors — help",

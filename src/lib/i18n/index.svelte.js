@@ -1,7 +1,10 @@
 import { localeStore } from '../stores/locale.svelte.js';
 import { ru } from './ru/index.js';
 import { en } from './en/index.js';
+import { zh } from './zh/index.js';
 
 export function getStrings() {
-  return localeStore.current === 'en' ? en : ru;
+  if (localeStore.current === 'en') return en;
+  if (localeStore.current === 'zh') return zh;
+  return ru;
 }

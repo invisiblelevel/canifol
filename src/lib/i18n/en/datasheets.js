@@ -32,6 +32,10 @@ export const datasheets = {
     "cacheHint": "Downloaded PDFs are stored locally and open instantly on re-request. Clearing frees space, but the next search will re-download the PDF.",
     "cacheCleared": "Cache cleared",
     "cacheEmpty": "Cache is empty",
-    "confirmClear": "Are you sure you want to delete all downloaded PDFs? This cannot be undone."
+    "confirmClear": "Are you sure you want to delete all downloaded PDFs? This cannot be undone.",
+    "favoritesCacheTitle": "Favorite PDFs (offline)",
+    "favoritesCacheHint": "These PDFs are saved for offline access and are not deleted when clearing the regular cache. Delete only if you are sure they are no longer needed.",
+    "clearFavorites": "Clear favorite PDFs",
+    "confirmClearFavorites": "Delete all favorite PDFs? They will disappear from offline access but remain in the favorites list."
   }
 };
