@@ -1,6 +1,6 @@
 [package]
 name = "canifol"
-version = "1.3.0"
+version = "1.4.0"
 description = "Canifol — Repairman's toolkit"
 authors = ["you"]
 edition = "2021"
@@ -28,6 +28,9 @@ dirs = "5"
 sys-locale = "0.3"
 dotenvy = "0.15"
 tauri-plugin-android-fs = "27"
+regex = "1"
+scraper = "0.20"
+des = "0.8"
 
 # BoardView
 pcbrepair = "0.4"

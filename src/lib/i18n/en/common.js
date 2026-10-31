@@ -7,7 +7,8 @@ export const common = {
     bms: 'BMS', transistors: 'Transistors', datasheets: 'Datasheets',
     pinouts: 'Pinouts',
     smd: 'SMD Codes',
-    boardview: 'BoardView'
+    boardview: 'BoardView',
+    database: 'Database'
   },
   common: {
     comingSoon: 'Calculator coming soon',
@@ -39,9 +40,22 @@ export const common = {
     ah: 'Ah', wh: 'Wh', ma: 'mA', uv: 'µV', mv: 'mV',
     b: 'B', kb: 'KB', mb: 'MB', gb: 'GB'
   },
+  database: {
+    title: 'Database',
+    emptyTitle: 'Knowledge base not loaded',
+    emptyDesc: 'Download the latest list of schematics and BoardViews for GPUs, laptops and other devices.',
+    loadBtn: 'Load database',
+    loading: 'Loading...',
+    error: 'Loading error',
+    refresh: 'Refresh',
+    backToList: 'Back to list',
+    downloading: 'Downloading'
+  },
   boardview: {
     openFile: 'Open local file',
     noFile: 'Select a .fz or .cad file to view',
+    emptyTitle: 'No file open',
+    emptyDesc: 'Open a BoardView (.fz, .cad, .bdv) to see the board schematic, pins and components.',
     loading: 'Loading...',
     error: 'Loading error',
     pinsCount: 'Pins',

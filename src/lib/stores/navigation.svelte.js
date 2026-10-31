@@ -1,4 +1,4 @@
-import { Zap, Battery, Cable, FileText, CircuitBoard, Cpu, Network, ScanLine, Layers, Star } from '@lucide/svelte';
+import { Zap, Battery, Cable, FileText, CircuitBoard, Cpu, Network, ScanLine, Layers, Star, Database } from '@lucide/svelte';
 
 export const SECTIONS = [
   { id: 'favorites',   icon: Star },
@@ -10,7 +10,8 @@ export const SECTIONS = [
   { id: 'datasheets',  icon: FileText },
   { id: 'pinouts',     icon: Network },
   { id: 'smd',         icon: ScanLine },
-  { id: 'boardview',   icon: Layers }
+  { id: 'boardview',   icon: Layers },
+  { id: 'database',    icon: Database }
 ];
 
 let current = $state('transistors');

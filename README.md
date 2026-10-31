@@ -1,10 +1,10 @@
 # Canifol
 
-**Cross-platform electronics repair toolkit: component calculators, datasheet search, pinouts, SMD code database and BoardView.**
-**Кросс-платформенный инструмент ремонтника: калькуляторы компонентов, поиск даташитов, распиновки, база SMD-кодов и BoardView.**
-**跨平台电子维修工具包：元器件计算器、数据表搜索、引脚图、SMD 代码数据库和 BoardView。**
+**Cross-platform electronics repair toolkit: component calculators, datasheet search, pinouts, SMD code database, BoardView and Knowledge Base.**
+**Кросс-платформенный инструмент ремонтника: калькуляторы компонентов, поиск даташитов, распиновки, база SMD-кодов, BoardView и База знаний.**
+**跨平台电子维修工具包：元器件计算器、数据表搜索、引脚图、SMD 代码数据库、BoardView 和知识库。**
 
-[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](../../releases)
+[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](../../releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android%20%7C%20Linux-0078D6.svg)](#install)
 [![Tauri](https://img.shields.io/badge/tauri-2-24C8DB.svg)](https://tauri.app/)
@@ -18,18 +18,16 @@
 
 ## English
 
-Canifol is a free tool for electronics repair technicians. Component calculators, datasheet search, pinouts, an SMD code database and a full-featured **BoardView** right inside the app. Works fully offline after the first launch.
+Canifol is a free tool for electronics repair technicians. Component calculators, datasheet search, pinouts, an SMD code database, a full-featured **BoardView**, and a **Knowledge Base** right inside the app. Works fully offline after the first launch.
 
 **Available on Windows, Android and Linux.** The desktop build ships as a standard Windows installer (`.exe`), the mobile build as a standalone Android APK (`.apk`), and the Linux build as `.deb`, `.rpm` and `.AppImage` (auto-built via GitHub Actions). All files are attached to every release.
 
-### What's new in 1.3.0
+### What's new in 1.4.0
 
-- **Favorites** — save SMD codes, pinouts, and datasheets. Access them all in a single tab.
-- **Offline Datasheets** — download PDFs to a separate folder that is not cleared when you clear the regular cache. Works without internet.
-- **SMD Favorites** — save a specific SMD component variant (uniquely identified by code + model + package) without marking all similar ones.
-- **Pinouts Favorites** — save any connector, IC, or dev board and jump right back to it.
-- **Cross-navigation** — open a favorite item and the app instantly switches to the correct tab with the item pre-selected.
-- **UI Fixes** — improved mobile navigation for the pinouts list.
+- **Knowledge Base** — a new section with schematics and BoardView files for GPUs, game consoles, and more, synced from Google Drive.
+- **XZZ (.pcb) support** — open Nintendo Switch (and other XZZ) boards directly in Canifol. Traces, component outlines, and pins are displayed.
+- **Smart search** — filter the database by model or category in real time.
+- **Unified cache** — all downloaded files (datasheets and database) are now stored in a single folder, cleared via the Settings button.
 
 ### Features
 
@@ -42,13 +40,14 @@ Canifol is a free tool for electronics repair technicians. Component calculators
 - **Pinouts** — connectors, imported ICs, Soviet microchips, and development boards.
 - **SMD Code Search** — database of 270,974 components. Search by the code printed on the package.
 - **Favorites** — save SMD codes, pinouts, and datasheets. Offline PDF support.
-- **BoardView** — open `.fz`, `.cae`, `.cad`, `.bdv` and `.asc` files, highlight nets, search components, toggle layers.
+- **BoardView** — open `.fz`, `.cae`, `.cad`, `.bdv`, `.asc`, and `.pcb` files, highlight nets, search components, toggle layers.
+- **Knowledge Base** — synced from Google Drive, with auto-updating catalog, smart search, and built-in viewing of PDFs and BoardView files.
 - **Localization** — English, Russian, and Chinese, with automatic system language detection.
-- **Settings** — interface zoom (70–150%), datasheet cache size and cleanup, offline favorites cleanup.
+- **Settings** — interface zoom (70–150%), unified cache size and cleanup, offline favorites cleanup.
 
 ### Tech Stack
 
-Tauri 2 · Svelte 5 (runes) · Rust · Vite · `svelte-pdf-view` · `pcbrepair` · `gencad`.
+Tauri 2 · Svelte 5 (runes) · Rust · Vite · `svelte-pdf-view` · `pcbrepair` · `gencad` · `des` (for XZZ).
 
 ### Install
 
@@ -77,18 +76,16 @@ INV.LVL · [@invisiblelevel](https://github.com/invisiblelevel)
 
 ## Русский
 
-Canifol — бесплатный инструмент для ремонтников электроники. Калькуляторы компонентов, поиск даташитов, распиновки, база SMD-кодов и полноценный **BoardView** прямо в приложении. После первого запуска работает полностью оффлайн.
+Canifol — бесплатный инструмент для ремонтников электроники. Калькуляторы компонентов, поиск даташитов, распиновки, база SMD-кодов, полноценный **BoardView** и **База знаний** прямо в приложении. После первого запуска работает полностью оффлайн.
 
 **Доступно на Windows, Android и Linux.** Десктопная версия поставляется как обычный установщик (`.exe`), мобильная — как отдельный APK (`.apk`), Linux — как `.deb`, `.rpm` и `.AppImage`. Все файлы прикрепляются к каждому релизу.
 
-### Что нового в 1.3.0
+### Что нового в 1.4.0
 
-- **Избранное** — сохраняй SMD-коды, распиновки и даташиты. Всё в одной вкладке.
-- **Офлайн-даташиты** — скачивай PDF в отдельную папку, которая не удаляется при очистке обычного кэша. Работает без интернета.
-- **SMD-избранное** — сохраняется конкретный вариант компонента (уникальность по коду + модели + корпусу), а не все похожие.
-- **Распиновки в избранном** — сохраняй любой разъём, микросхему или плату и мгновенно переходи к ним.
-- **Кросс-навигация** — при открытии из избранного приложение переключается на нужную вкладку с уже выбранным элементом.
-- **UI Fixes** — улучшена навигация по списку микросхем на мобильных устройствах.
+- **База знаний** — новый раздел со схемами и BoardView для видеокарт, игровых консолей и другого, синхронизируется с Google Drive.
+- **Поддержка XZZ (.pcb)** — открывай платы Nintendo Switch (и другие XZZ-файлы) прямо в Canifol. Отображаются дорожки, контуры компонентов и пины.
+- **Умный поиск** — фильтрация базы по модели или категории в реальном времени.
+- **Единый кэш** — все скачанные файлы (даташиты и база) теперь лежат в одной папке, чистой кнопкой из настроек.
 
 ### Что умеет
 
@@ -101,13 +98,14 @@ Canifol — бесплатный инструмент для ремонтник�
 - **Распиновки** — разъёмы, импортные микросхемы, советские, платы разработчика.
 - **Поиск по SMD-кодам** — база на 270 974 компонента.
 - **Избранное** — сохранение SMD-кодов, распиновок и даташитов. Офлайн-доступ к PDF.
-- **BoardView** — открытие файлов, подсветка цепей, поиск компонентов, слои.
+- **BoardView** — открытие `.fz`, `.cae`, `.cad`, `.bdv`, `.asc` и `.pcb` файлов, подсветка цепей, поиск компонентов, слои.
+- **База знаний** — синхронизируется с Google Drive, автообновление каталога, умный поиск, встроенный просмотр PDF и BoardView.
 - **Локализация** — русский, английский, китайский. Автоопределение языка системы.
-- **Настройки** — масштаб интерфейса, размер кэша даташитов и его очистка, очистка офлайн-избранного.
+- **Настройки** — масштаб интерфейса, размер единого кэша и его очистка, очистка офлайн-избранного.
 
 ### Стек
 
-Tauri 2 · Svelte 5 (руны) · Rust · Vite · `svelte-pdf-view` · `pcbrepair` · `gencad`.
+Tauri 2 · Svelte 5 (руны) · Rust · Vite · `svelte-pdf-view` · `pcbrepair` · `gencad` · `des` (для XZZ).
 
 ### Установка
 
@@ -136,18 +134,16 @@ INV.LVL · [@invisiblelevel](https://github.com/invisiblelevel)
 
 ## 中文
 
-Canifol 是一款免费的电子维修技术人员工具。内置元器件计算器、数据表搜索、引脚图、SMD 代码数据库以及功能齐全的 **BoardView**。首次启动后完全支持离线使用。
+Canifol 是一款免费的电子维修技术人员工具。内置元器件计算器、数据表搜索、引脚图、SMD 代码数据库、功能齐全的 **BoardView** 以及 **知识库**。首次启动后完全支持离线使用。
 
 **支持 Windows、Android 和 Linux。** 桌面版为标准 Windows 安装程序 (`.exe`)，移动版为独立的 Android APK (`.apk`)，Linux 版为 `.deb`、`.rpm` 和 `.AppImage`。所有文件均附在每次发布中。
 
-### 1.3.0 新功能
+### 1.4.0 新功能
 
-- **收藏夹** — 保存 SMD 代码、引脚图和数据表。在一个选项卡中查看所有内容。
-- **离线数据表** — 将 PDF 下载到单独的文件夹，清除普通缓存时不会删除该文件夹。无需网络即可使用。
-- **SMD 收藏** — 保存特定的 SMD 元器件（按代码 + 型号 + 封装唯一标识），不会标记所有相似项。
-- **引脚图收藏** — 保存任意连接器、IC 或开发板，并快速跳转回该页面。
-- **交叉导航** — 打开收藏项时，应用会立即切换到正确的选项卡并预先选中该项。
-- **UI 修复** — 改进移动端引脚图列表的导航。
+- **知识库** — 新增部分，包含显卡、游戏主机等的原理图和 BoardView 文件，从 Google Drive 同步。
+- **XZZ (.pcb) 支持** — 直接在 Canifol 中打开 Nintendo Switch（及其他 XZZ）主板。显示走线、元件轮廓和引脚。
+- **智能搜索** — 按型号或类别实时筛选数据库。
+- **统一缓存** — 所有下载的文件（数据表和数据库）现在存储在一个文件夹中，可通过设置中的按钮清除。
 
 ### 功能
 
@@ -160,13 +156,14 @@ Canifol 是一款免费的电子维修技术人员工具。内置元器件计算
 - **引脚图** — 连接器、进口 IC、苏联微芯片和开发板。
 - **SMD 代码搜索** — 270,974 个元器件数据库。按封装上印刷的代码进行搜索。
 - **收藏夹** — 保存 SMD 代码、引脚图和数据表。支持离线 PDF。
-- **BoardView** — 打开 `.fz`、`.cae`、`.cad`、`.bdv` 和 `.asc` 文件，高亮网络，搜索元器件，切换图层。
+- **BoardView** — 打开 `.fz`、`.cae`、`.cad`、`.bdv`、`.asc` 和 `.pcb` 文件，高亮网络，搜索元器件，切换图层。
+- **知识库** — 从 Google Drive 同步，自动更新目录，智能搜索，内置查看 PDF 和 BoardView 文件。
 - **本地化** — 英语、俄语和中文，自动检测系统语言。
-- **设置** — 界面缩放 (70–150%)、数据表缓存大小和清理、离线收藏夹清理。
+- **设置** — 界面缩放 (70–150%)、统一缓存大小和清理、离线收藏夹清理。
 
 ### 技术栈
 
-Tauri 2 · Svelte 5 (runes) · Rust · Vite · `svelte-pdf-view` · `pcbrepair` · `gencad`。
+Tauri 2 · Svelte 5 (runes) · Rust · Vite · `svelte-pdf-view` · `pcbrepair` · `gencad` · `des`（用于 XZZ）。
 
 ### 安装
 

@@ -7,7 +7,8 @@ export const common = {
     bms: 'BMS', transistors: 'Транзисторы', datasheets: 'Даташиты',
     pinouts: 'Распиновки',
     smd: 'SMD-коды',
-    boardview: 'BoardView'
+    boardview: 'BoardView',
+    database: 'База'
   },
   common: {
     comingSoon: 'Скоро здесь будет калькулятор',
@@ -41,9 +42,22 @@ export const common = {
     ah: 'А·ч', wh: 'Вт·ч', ma: 'мА', uv: 'мкВ', mv: 'мВ',
     b: 'Б', kb: 'КБ', mb: 'МБ', gb: 'ГБ'
   },
+  database: {
+    title: 'База',
+    emptyTitle: 'База знаний не загружена',
+    emptyDesc: 'Скачайте актуальный список схем и BoardView для видеокарт, ноутбуков и других устройств.',
+    loadBtn: 'Загрузить базу',
+    loading: 'Загрузка...',
+    error: 'Ошибка загрузки',
+    refresh: 'Обновить',
+    backToList: 'Назад к списку',
+    downloading: 'Скачивание'
+  },
   boardview: {
     openFile: 'Открыть свой файл',
     noFile: 'Выберите файл .fz или .cad для просмотра',
+    emptyTitle: 'Нет открытого файла',
+    emptyDesc: 'Откройте BoardView (.fz, .cad, .bdv), чтобы увидеть схему платы, пины и компоненты.',
     loading: 'Загрузка...',
     error: 'Ошибка загрузки',
     pinsCount: 'Пинов',

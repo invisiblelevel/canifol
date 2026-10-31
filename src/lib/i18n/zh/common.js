@@ -5,7 +5,8 @@ export const common = {
     favorites: '收藏',
     resistors: '电阻器', capacitors: '电容器', inductors: '电感器',
     bms: 'BMS', transistors: '晶体管', datasheets: '数据表',
-    pinouts: '引脚图', smd: 'SMD 代码', boardview: '主板视图'
+    pinouts: '引脚图', smd: 'SMD 代码', boardview: '主板视图',
+    database: '数据库'
   },
   common: {
     comingSoon: '计算器即将推出',
@@ -37,9 +38,22 @@ export const common = {
     ah: '安时', wh: '瓦时', ma: '毫安', uv: '微伏', mv: '毫伏',
     b: '字节', kb: 'KB', mb: 'MB', gb: 'GB'
   },
+  database: {
+    title: '数据库',
+    emptyTitle: '知识库未加载',
+    emptyDesc: '下载最新的显卡、笔记本电脑及其他设备的原理图和 BoardView 列表。',
+    loadBtn: '加载数据库',
+    loading: '加载中...',
+    error: '加载错误',
+    refresh: '刷新',
+    backToList: '返回列表',
+    downloading: '下载中'
+  },
   boardview: {
     openFile: '打开本地文件',
     noFile: '选择一个 .fz 或 .cad 文件进行查看',
+    emptyTitle: '未打开文件',
+    emptyDesc: '打开 BoardView (.fz, .cad, .bdv) 以查看电路板原理图、引脚和元器件。',
     loading: '加载中...',
     error: '加载错误',
     pinsCount: '引脚',

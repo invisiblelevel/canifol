@@ -6,6 +6,8 @@
   import HelpButton from '../components/HelpButton.svelte';
   import SectionHelpModal from '../components/SectionHelpModal.svelte';
   import { getStrings } from '../strings.svelte.js';
+  import EmptyState from '../components/EmptyState.svelte';
+  import { Layers } from '@lucide/svelte';
 
   const strings = $derived(getStrings());
   let filePath = $state('');
@@ -22,7 +24,7 @@
     } else {
       selected = await open({
         multiple: false,
-        filters: [{ name: 'BoardView', extensions: ['fz', 'cae', 'cad', 'bdv', 'asc'] }]
+        filters: [{ name: 'BoardView', extensions: ['fz', 'cae', 'cad', 'bdv', 'asc', 'pcb'] }]
       });
     }
     if (!selected) return;
@@ -48,25 +50,27 @@
     <HelpButton onclick={() => showHelp = true} />
   {/snippet}
 
-  <div class="controls">
-    <button class="btn-open" onclick={openFile}>
-      {strings.boardview.openFile}
-    </button>
-    {#if filePath}
-      <span class="file-path">{filePath}</span>
-    {/if}
-  </div>
-
-  {#if errorMsg}
-    <div class="error-box">Ошибка: {errorMsg}</div>
-  {/if}
-
   {#if boardData}
     <BoardViewer data={boardData} />
   {:else if filePath && !errorMsg}
     <BoardViewer path={filePath} />
-  {:else if !filePath}
-    <div class="placeholder">{strings.boardview.noFile}</div>
+  {:else if errorMsg}
+    <div class="error-box">Ошибка: {errorMsg}</div>
+    <div class="controls">
+      <button class="btn-open" onclick={openFile}>
+        {strings.boardview.openFile}
+      </button>
+    </div>
+  {:else}
+    <EmptyState 
+      icon={Layers}
+      title={strings.boardview.emptyTitle || 'Нет открытого файла'}
+      description={strings.boardview.emptyDesc || 'Откройте BoardView (.fz, .cad, .bdv), чтобы увидеть схему платы, пины и компоненты.'}
+    >
+      <button class="btn-open" onclick={openFile}>
+        {strings.boardview.openFile}
+      </button>
+    </EmptyState>
   {/if}
 </Card>
 
@@ -90,6 +94,5 @@
   .btn-open { padding: 8px 16px; background: var(--accent-dim); color: var(--accent); border-radius: var(--radius-md); font-weight: 600; transition: background var(--transition-fast); }
   .btn-open:hover { background: var(--accent); color: #000; }
   .file-path { font-family: var(--font-mono); font-size: var(--font-size-sm); color: var(--text-muted); word-break: break-all; }
-  .placeholder { padding: 40px; text-align: center; color: var(--text-muted); border: 1px dashed var(--border-subtle); border-radius: var(--radius-md); }
   .error-box { padding: 16px; background: rgba(239, 83, 80, 0.1); border: 1px solid rgba(239, 83, 80, 0.3); border-radius: var(--radius-md); color: #ff4444; font-family: var(--font-mono); font-size: 12px; word-break: break-all; }
 </style>

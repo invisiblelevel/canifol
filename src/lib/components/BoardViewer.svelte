@@ -174,9 +174,31 @@
     ctx.translate(-(minX + w / 2), -(minY + h / 2));
 
     if (showLines && data.lines && data.lines.length > 0) {
-      ctx.strokeStyle = '#00aa00'; ctx.lineWidth = 1 / (scale * fitScale); ctx.beginPath();
-      for (const line of data.lines) { ctx.moveTo(line.x1, line.y1); ctx.lineTo(line.x2, line.y2); }
-      ctx.stroke();
+      // 1. Обычные дорожки платы (зеленые)
+      const boardLines = data.lines.filter(l => l.layer !== 'COMPONENT');
+      if (boardLines.length > 0) {
+        ctx.strokeStyle = '#00aa00'; 
+        ctx.lineWidth = 1 / (scale * fitScale); 
+        ctx.beginPath();
+        for (const line of boardLines) { 
+          ctx.moveTo(line.x1, line.y1); 
+          ctx.lineTo(line.x2, line.y2); 
+        } 
+        ctx.stroke();
+      }
+
+      // 2. Визуальные контуры компонентов (голубые)
+      const compLines = data.lines.filter(l => l.layer === 'COMPONENT');
+      if (compLines.length > 0) {
+        ctx.strokeStyle = '#00aaff'; 
+        ctx.lineWidth = 1.5 / (scale * fitScale); 
+        ctx.beginPath();
+        for (const line of compLines) { 
+          ctx.moveTo(line.x1, line.y1); 
+          ctx.lineTo(line.x2, line.y2); 
+        } 
+        ctx.stroke();
+      }
     }
 
     if (showRoutes && data.routes && data.routes.length > 0) {
