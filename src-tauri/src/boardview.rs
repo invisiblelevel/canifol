@@ -107,6 +107,216 @@ fn parse_cad(text: &str) -> Result<BoardData, String> {
         pads: gencad.pads, routes: gencad.routes,
     })
 }
+// ==========================================
+// ПАРСЕР BRD Apple (Ультра-толерантный рабочий вариант)
+// ==========================================
+fn parse_apple_brd(path: &str) -> Result<BoardData, String> {
+    let raw = std::fs::read(path).map_err(|e| format!("Read error: {}", e))?;
+    if raw.len() < 4 || &raw[0..4] != b"\x23\xE2\x63\x28" {
+        return Err("Not an Apple BRD file (wrong magic)".to_string());
+    }
+
+    let mut data = raw.clone();
+    for b in data.iter_mut() {
+        if *b != b'\r' && *b != b'\n' && *b != 0 {
+            let c = *b as i8 as i32;
+            let shifted = ((c >> 6) & 3) | (c << 2);
+            *b = (!shifted & 0xFF) as u8;
+        }
+    }
+
+    let text = String::from_utf8_lossy(&data);
+    let mut pins_raw: Vec<(f64, f64, String)> = Vec::new();
+    let mut current_section = "";
+
+    for line in text.lines() {
+        let line = line.trim();
+        if line.is_empty() { continue; }
+
+        if line.starts_with("str_length:") { current_section = "str_length"; continue; }
+        if line.starts_with("var_data:") { current_section = "var_data"; continue; }
+        if line.starts_with("Format:") { current_section = "format"; continue; }
+        if line.starts_with("Pins1:") { current_section = "pins1"; continue; }
+        if line.starts_with("Pins2:") { current_section = "pins2"; continue; }
+        if line.starts_with("Pins:") { current_section = "pins"; continue; }
+        if line.starts_with("Nails:") { current_section = "nails"; continue; }
+
+        let parts: Vec<&str> = line.split_whitespace().collect();
+
+        match current_section {
+            "pins2" | "pins" => {
+                if parts.len() >= 5 {
+                    if let (Ok(x), Ok(y)) = (parts[0].parse::<f64>(), parts[1].parse::<f64>()) {
+                        let net = parts[4].to_string();
+                        pins_raw.push((x, y, net));
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    eprintln!("[Apple BRD] pins_raw: {}", pins_raw.len());
+
+    let mut final_pins = Vec::new();
+    for (i, (x, y, net)) in pins_raw.iter().enumerate() {
+        let x_mm = x / 1000.0 * 25.4;
+        let y_mm = y / 1000.0 * 25.4;
+        final_pins.push(BoardPin {
+            name: format!("P{}.{}", i + 1, if net.is_empty() { "NC" } else { net }),
+            x: x_mm,
+            y: y_mm,
+            net: net.clone(),
+            side: "top".to_string(),
+        });
+    }
+
+    eprintln!("[Apple BRD] Final: 0 components, {} pins", final_pins.len());
+
+    Ok(BoardData {
+        format: "apple_brd".to_string(),
+        pins: final_pins,
+        lines: vec![],
+        arcs: vec![],
+        components: vec![], // <-- НЕ создаем компоненты
+        pads: vec![],
+        routes: vec![],
+    })
+}
+
+// ==========================================
+// 3. ПАРСЕР BRD
+// ==========================================
+fn parse_brd2(path: &str) -> Result<BoardData, String> {
+    let content = std::fs::read_to_string(path).map_err(|e| format!("Read error: {}", e))?;
+    
+    let mut pins = Vec::new();
+    let mut components = Vec::new();
+    let mut nets: HashMap<usize, String> = HashMap::new();
+    
+    // Временное хранилище для партов (имя, x1, y1, x2, y2, start_pin_idx, side)
+    let mut parts_raw: Vec<(String, f64, f64, f64, f64, usize, String)> = Vec::new();
+    // Временное хранилище для пинов (x, y, net_idx, side)
+    let mut pins_raw: Vec<(f64, f64, usize, String)> = Vec::new();
+    
+    let mut current_section = "";
+    
+    for line in content.lines() {
+        let line = line.trim();
+        if line.is_empty() { continue; }
+        
+        if line.starts_with("BRDOUT:") {
+            current_section = "BRDOUT";
+            continue;
+        } else if line.starts_with("NETS:") {
+            current_section = "NETS";
+            continue;
+        } else if line.starts_with("PARTS:") {
+            current_section = "PARTS";
+            continue;
+        } else if line.starts_with("PINS:") {
+            current_section = "PINS";
+            continue;
+        } else if line.starts_with("NAILS:") {
+            current_section = "NAILS";
+            continue;
+        }
+        
+        let parts: Vec<&str> = line.split_whitespace().collect();
+        
+        match current_section {
+            "NETS" => {
+                if parts.len() >= 2 {
+                    if let Ok(idx) = parts[0].parse::<usize>() {
+                        nets.insert(idx, parts[1].to_string());
+                    }
+                }
+            }
+            "PARTS" => {
+                if parts.len() >= 7 {
+                    let name = parts[0].to_string();
+                    let x1 = parts[1].parse().unwrap_or(0.0);
+                    let y1 = parts[2].parse().unwrap_or(0.0);
+                    let x2 = parts[3].parse().unwrap_or(0.0);
+                    let y2 = parts[4].parse().unwrap_or(0.0);
+                    let start_idx = parts[5].parse().unwrap_or(0);
+                    let side = if parts[6] == "1" { "top".to_string() } else { "bottom".to_string() };
+                    parts_raw.push((name, x1, y1, x2, y2, start_idx, side));
+                }
+            }
+            "PINS" => {
+                if parts.len() >= 4 {
+                    let x = parts[0].parse().unwrap_or(0.0);
+                    let y = parts[1].parse().unwrap_or(0.0);
+                    let net_idx = parts[2].parse().unwrap_or(0);
+                    let side = if parts[3] == "1" { "top".to_string() } else { "bottom".to_string() };
+                    pins_raw.push((x, y, net_idx, side));
+                }
+            }
+            _ => {}
+        }
+    }
+    
+    // Теперь связываем пины с компонентами по индексам
+    // В BRD2: part[i] владеет пинами от start_idx до start_idx следующего парта
+    let mut part_pin_counts: Vec<usize> = Vec::new();
+    for i in 0..parts_raw.len() {
+        let end = if i + 1 < parts_raw.len() {
+            parts_raw[i + 1].5
+        } else {
+            pins_raw.len()
+        };
+        let count = end.saturating_sub(parts_raw[i].5);
+        part_pin_counts.push(count);
+    }
+    
+    // Создаем компоненты и пины
+    let mut global_pin_idx = 0;
+    for (i, (name, x1, y1, x2, y2, _start_idx, side)) in parts_raw.iter().enumerate() {
+        components.push(GenCadComponent {
+            ref_name: name.clone(),
+            x: (x1 + x2) / 2.0,
+            y: (y1 + y2) / 2.0,
+            shape: "".to_string(),
+            layer: if side == "top" { "TOP".to_string() } else { "BOTTOM".to_string() },
+            bounds_x1: *x1,
+            bounds_y1: *y1,
+            bounds_x2: *x2,
+            bounds_y2: *y2,
+            rotation: 0.0,
+            mirror: false,
+            device: "".to_string(),
+        });
+        
+        // Добавляем пины для этого компонента
+        let pin_count = part_pin_counts[i];
+        for p in 0..pin_count {
+            if global_pin_idx < pins_raw.len() {
+                let (px, py, net_idx, pin_side) = &pins_raw[global_pin_idx];
+                let net_name = nets.get(net_idx).cloned().unwrap_or_else(|| "".to_string());
+                pins.push(BoardPin {
+                    name: format!("{}.{}", name, p + 1),
+                    x: *px,
+                    y: *py,
+                    net: net_name,
+                    side: pin_side.clone(),
+                });
+                global_pin_idx += 1;
+            }
+        }
+    }
+    
+    Ok(BoardData {
+        format: "brd2".to_string(),
+        pins,
+        lines: vec![],
+        arcs: vec![],
+        components,
+        pads: vec![],
+        routes: vec![],
+    })
+}
+
 
 // ==========================================
 // 3. ПАРСЕР BDV
@@ -423,6 +633,18 @@ pub async fn read_boardview(path: String) -> Result<BoardData, String> {
         "cad" => { let text = std::fs::read_to_string(&path).map_err(|e| format!("Read error: {}", e))?; parse_cad(&text) }
         "bdv" | "asc" => parse_bdv(&path),
         "pcb" => parse_xzz(&path),
+        "brd" =>  {
+            let raw = std::fs::read(&path).map_err(|e| format!("Read error: {}", e))?;
+            if raw.len() >= 4 && &raw[0..4] == b"\x23\xE2\x63\x28" {
+                return parse_apple_brd(&path);
+            }
+            if let Ok(text) = std::str::from_utf8(&raw) {
+                if text.contains("BRDOUT:") && text.contains("NETS:") {
+                    return parse_brd2(&path);
+                }
+            }
+            Err("Unsupported .brd format (not Apple, not BRD2)".to_string())
+        }
         _ => Err(format!("Unsupported format: {}", ext)),
     }
 }
@@ -433,24 +655,32 @@ pub async fn read_boardview_uri(app: tauri::AppHandle, uri: String) -> Result<Bo
     use tauri_plugin_android_fs::{AndroidFsExt, FileUri};
     use std::io::Read;
     use tauri::Manager;
+
     let file_uri = FileUri::from_uri(&uri);
     let api = app.android_fs_async();
     let mut file = api.open_file_readable(&file_uri).await.map_err(|e| e.to_string())?;
     let mut buffer = Vec::new();
     file.read_to_end(&mut buffer).map_err(|e| e.to_string())?;
-    
+
+    // 1. BDV (зашифрованный)
     if buffer.starts_with(b"dd:1.3?,r?-=bb") {
         let content = decode_bdv(&buffer)?;
         return parse_bdv_from_content(&content);
     }
+
+    // 2. ASC (текстовый BDV)
     if buffer.starts_with(b"<<format.asc>>") {
         let content = String::from_utf8(buffer).map_err(|e| format!("Invalid UTF-8: {}", e))?;
         return parse_bdv_from_content(&content);
     }
+
+    // 3. CAD (GenCAD)
     if buffer.starts_with(b"$HEADER") || buffer.windows(7).any(|w| w == b"GENCAD") {
         let text = String::from_utf8(buffer).map_err(|e| format!("Invalid UTF-8: {}", e))?;
         return parse_cad(&text);
     }
+
+    // 4. XZZ (PCB)
     if buffer.len() >= 6 {
         let mut header_check = buffer[0..6].to_vec();
         if buffer.len() > 0x10 {
@@ -470,6 +700,36 @@ pub async fn read_boardview_uri(app: tauri::AppHandle, uri: String) -> Result<Bo
             }
         }
     }
+
+    // 5. BRD (Apple BoardView или TOPTEST BRD2)
+    if buffer.len() >= 4 {
+        // 5.1. Apple BoardView (магия 23 E2 63 28)
+        if &buffer[0..4] == b"\x23\xE2\x63\x28" {
+            if let Ok(cache_dir) = app.path().app_cache_dir() {
+                let temp_path = cache_dir.join(format!("canifol_temp_{}.brd", std::process::id()));
+                if let Ok(_) = std::fs::write(&temp_path, &buffer) {
+                    let result = parse_apple_brd(temp_path.to_str().unwrap_or(""));
+                    let _ = std::fs::remove_file(&temp_path);
+                    if let Ok(data) = result { return Ok(data); }
+                }
+            }
+        }
+        // 5.2. TOPTEST BRD2 (текст с BRDOUT: и NETS:)
+        if let Ok(text) = String::from_utf8(buffer.clone()) {
+            if text.contains("BRDOUT:") && text.contains("NETS:") {
+                if let Ok(cache_dir) = app.path().app_cache_dir() {
+                    let temp_path = cache_dir.join(format!("canifol_temp_{}.brd", std::process::id()));
+                    if let Ok(_) = std::fs::write(&temp_path, &buffer) {
+                        let result = parse_brd2(temp_path.to_str().unwrap_or(""));
+                        let _ = std::fs::remove_file(&temp_path);
+                        if let Ok(data) = result { return Ok(data); }
+                    }
+                }
+            }
+        }
+    }
+
+    // 6. FZ (сохраняем во временный файл)
     if let Ok(cache_dir) = app.path().app_cache_dir() {
         let temp_path = cache_dir.join(format!("canifol_temp_{}.fz", std::process::id()));
         if let Ok(_) = std::fs::write(&temp_path, &buffer) {
@@ -478,5 +738,6 @@ pub async fn read_boardview_uri(app: tauri::AppHandle, uri: String) -> Result<Bo
             if let Ok(data) = result { return Ok(data); }
         }
     }
+
     Err("Unsupported format on Android".to_string())
 }

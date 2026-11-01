@@ -57,7 +57,7 @@ export const common = {
     openFile: 'Открыть свой файл',
     noFile: 'Выберите файл .fz или .cad для просмотра',
     emptyTitle: 'Нет открытого файла',
-    emptyDesc: 'Откройте BoardView (.fz, .cad, .bdv), чтобы увидеть схему платы, пины и компоненты.',
+    emptyDesc: 'Откройте BoardView (.fz, .cad, .bdv, .pcb, .brd), чтобы увидеть схему платы, пины и компоненты.',
     loading: 'Загрузка...',
     error: 'Ошибка загрузки',
     pinsCount: 'Пинов',
@@ -71,7 +71,10 @@ export const common = {
     helpFormats: [
       { name: 'FZ / CAE', desc: 'ASUS / ASRock. Пины и компоненты.' },
       { name: 'CAD (GenCAD)', desc: 'Пины, компоненты, дорожки, пады.' },
-      { name: 'BDV / ASC', desc: 'eM-Test Expert. Пины и компоненты (родные контуры).' }
+      { name: 'BDV / ASC', desc: 'eM-Test Expert. Пины и компоненты (родные контуры).' },
+      { name: 'XZZ (.pcb)', desc: 'Nintendo Switch и другие. XOR + DES. Дорожки, контуры, пины.' },
+      { name: 'TOPTEST BRD2 (.brd)', desc: 'Текстовый формат. Пины, компоненты, нет-листы.' },
+      { name: 'Apple BoardView (.brd)', desc: 'Apple / Mac. Обфусцированный текст. Пины и нет-листы.' }
     ],
     helpFeaturesTitle: 'Возможности',
     helpFeatures: [

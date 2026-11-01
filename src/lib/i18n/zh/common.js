@@ -53,7 +53,7 @@ export const common = {
     openFile: '打开本地文件',
     noFile: '选择一个 .fz 或 .cad 文件进行查看',
     emptyTitle: '未打开文件',
-    emptyDesc: '打开 BoardView (.fz, .cad, .bdv) 以查看电路板原理图、引脚和元器件。',
+    emptyDesc: '打开 BoardView (.fz, .cad, .bdv, .pcb, .brd) 以查看电路板原理图、引脚和元器件。',
     loading: '加载中...',
     error: '加载错误',
     pinsCount: '引脚',
@@ -67,7 +67,10 @@ export const common = {
     helpFormats: [
       { name: 'FZ / CAE', desc: 'ASUS / ASRock。引脚和元件。' },
       { name: 'CAD (GenCAD)', desc: '引脚、元件、走线、焊盘。' },
-      { name: 'BDV / ASC', desc: 'eM-Test Expert。引脚和元件（原生轮廓）。' }
+      { name: 'BDV / ASC', desc: 'eM-Test Expert。引脚和元件（原生轮廓）。' },
+      { name: 'XZZ (.pcb)', desc: 'Nintendo Switch 等。XOR + DES。走线、轮廓、引脚。' },
+      { name: 'TOPTEST BRD2 (.brd)', desc: '文本格式。引脚、元件、网络。' },
+      { name: 'Apple BoardView (.brd)', desc: 'Apple / Mac。混淆文本。引脚和网络。' }
     ],
     helpFeaturesTitle: '功能',
     helpFeatures: [

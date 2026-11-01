@@ -4,7 +4,7 @@
 **Кросс-платформенный инструмент ремонтника: калькуляторы компонентов, поиск даташитов, распиновки, база SMD-кодов, BoardView и База знаний.**
 **跨平台电子维修工具包：元器件计算器、数据表搜索、引脚图、SMD 代码数据库、BoardView 和知识库。**
 
-[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](../../releases)
+[![Version](https://img.shields.io/badge/version-1.4.1-blue.svg)](../../releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android%20%7C%20Linux-0078D6.svg)](#install)
 [![Tauri](https://img.shields.io/badge/tauri-2-24C8DB.svg)](https://tauri.app/)
@@ -22,12 +22,11 @@ Canifol is a free tool for electronics repair technicians. Component calculators
 
 **Available on Windows, Android and Linux.** The desktop build ships as a standard Windows installer (`.exe`), the mobile build as a standalone Android APK (`.apk`), and the Linux build as `.deb`, `.rpm` and `.AppImage` (auto-built via GitHub Actions). All files are attached to every release.
 
-### What's new in 1.4.0
+### What's new in 1.4.1
 
-- **Knowledge Base** — a new section with schematics and BoardView files for GPUs, game consoles, and more, synced from Google Drive.
 - **XZZ (.pcb) support** — open Nintendo Switch (and other XZZ) boards directly in Canifol. Traces, component outlines, and pins are displayed.
-- **Smart search** — filter the database by model or category in real time.
-- **Unified cache** — all downloaded files (datasheets and database) are now stored in a single folder, cleared via the Settings button.
+- **TOPTEST BRD2 (.brd) support** — open text-based BRD2 files with pins, components, and nets.
+- **Apple BoardView (.brd) support** — open Apple/Mac obfuscated `.brd` files with pins and nets.
 
 ### Features
 
@@ -40,7 +39,7 @@ Canifol is a free tool for electronics repair technicians. Component calculators
 - **Pinouts** — connectors, imported ICs, Soviet microchips, and development boards.
 - **SMD Code Search** — database of 270,974 components. Search by the code printed on the package.
 - **Favorites** — save SMD codes, pinouts, and datasheets. Offline PDF support.
-- **BoardView** — open `.fz`, `.cae`, `.cad`, `.bdv`, `.asc`, and `.pcb` files, highlight nets, search components, toggle layers.
+- **BoardView** — open `.fz`, `.cae`, `.cad`, `.bdv`, `.asc`, `.pcb`, and `.brd` files, highlight nets, search components, toggle layers.
 - **Knowledge Base** — synced from Google Drive, with auto-updating catalog, smart search, and built-in viewing of PDFs and BoardView files.
 - **Localization** — English, Russian, and Chinese, with automatic system language detection.
 - **Settings** — interface zoom (70–150%), unified cache size and cleanup, offline favorites cleanup.
@@ -80,12 +79,11 @@ Canifol — бесплатный инструмент для ремонтник�
 
 **Доступно на Windows, Android и Linux.** Десктопная версия поставляется как обычный установщик (`.exe`), мобильная — как отдельный APK (`.apk`), Linux — как `.deb`, `.rpm` и `.AppImage`. Все файлы прикрепляются к каждому релизу.
 
-### Что нового в 1.4.0
+### Что нового в 1.4.1
 
-- **База знаний** — новый раздел со схемами и BoardView для видеокарт, игровых консолей и другого, синхронизируется с Google Drive.
 - **Поддержка XZZ (.pcb)** — открывай платы Nintendo Switch (и другие XZZ-файлы) прямо в Canifol. Отображаются дорожки, контуры компонентов и пины.
-- **Умный поиск** — фильтрация базы по модели или категории в реальном времени.
-- **Единый кэш** — все скачанные файлы (даташиты и база) теперь лежат в одной папке, чистой кнопкой из настроек.
+- **Поддержка TOPTEST BRD2 (.brd)** — открывай текстовые BRD2 файлы с пинами, компонентами и нет-листами.
+- **Поддержка Apple BoardView (.brd)** — открывай обфусцированные `.brd` файлы Apple/Mac с пинами и нет-листами.
 
 ### Что умеет
 
@@ -98,7 +96,7 @@ Canifol — бесплатный инструмент для ремонтник�
 - **Распиновки** — разъёмы, импортные микросхемы, советские, платы разработчика.
 - **Поиск по SMD-кодам** — база на 270 974 компонента.
 - **Избранное** — сохранение SMD-кодов, распиновок и даташитов. Офлайн-доступ к PDF.
-- **BoardView** — открытие `.fz`, `.cae`, `.cad`, `.bdv`, `.asc` и `.pcb` файлов, подсветка цепей, поиск компонентов, слои.
+- **BoardView** — открытие `.fz`, `.cae`, `.cad`, `.bdv`, `.asc`, `.pcb` и `.brd` файлов, подсветка цепей, поиск компонентов, слои.
 - **База знаний** — синхронизируется с Google Drive, автообновление каталога, умный поиск, встроенный просмотр PDF и BoardView.
 - **Локализация** — русский, английский, китайский. Автоопределение языка системы.
 - **Настройки** — масштаб интерфейса, размер единого кэша и его очистка, очистка офлайн-избранного.
@@ -138,12 +136,11 @@ Canifol 是一款免费的电子维修技术人员工具。内置元器件计算
 
 **支持 Windows、Android 和 Linux。** 桌面版为标准 Windows 安装程序 (`.exe`)，移动版为独立的 Android APK (`.apk`)，Linux 版为 `.deb`、`.rpm` 和 `.AppImage`。所有文件均附在每次发布中。
 
-### 1.4.0 新功能
+### 1.4.1 新功能
 
-- **知识库** — 新增部分，包含显卡、游戏主机等的原理图和 BoardView 文件，从 Google Drive 同步。
 - **XZZ (.pcb) 支持** — 直接在 Canifol 中打开 Nintendo Switch（及其他 XZZ）主板。显示走线、元件轮廓和引脚。
-- **智能搜索** — 按型号或类别实时筛选数据库。
-- **统一缓存** — 所有下载的文件（数据表和数据库）现在存储在一个文件夹中，可通过设置中的按钮清除。
+- **TOPTEST BRD2 (.brd) 支持** — 打开文本格式的 BRD2 文件，包含引脚、元件和网络。
+- **Apple BoardView (.brd) 支持** — 打开 Apple/Mac 混淆的 `.brd` 文件，包含引脚和网络。
 
 ### 功能
 
@@ -156,7 +153,7 @@ Canifol 是一款免费的电子维修技术人员工具。内置元器件计算
 - **引脚图** — 连接器、进口 IC、苏联微芯片和开发板。
 - **SMD 代码搜索** — 270,974 个元器件数据库。按封装上印刷的代码进行搜索。
 - **收藏夹** — 保存 SMD 代码、引脚图和数据表。支持离线 PDF。
-- **BoardView** — 打开 `.fz`、`.cae`、`.cad`、`.bdv`、`.asc` 和 `.pcb` 文件，高亮网络，搜索元器件，切换图层。
+- **BoardView** — 打开 `.fz`、`.cae`、`.cad`、`.bdv`、`.asc`、`.pcb` 和 `.brd` 文件，高亮网络，搜索元器件，切换图层。
 - **知识库** — 从 Google Drive 同步，自动更新目录，智能搜索，内置查看 PDF 和 BoardView 文件。
 - **本地化** — 英语、俄语和中文，自动检测系统语言。
 - **设置** — 界面缩放 (70–150%)、统一缓存大小和清理、离线收藏夹清理。

@@ -24,7 +24,7 @@
     } else {
       selected = await open({
         multiple: false,
-        filters: [{ name: 'BoardView', extensions: ['fz', 'cae', 'cad', 'bdv', 'asc', 'pcb'] }]
+        filters: [{ name: 'BoardView', extensions: ['fz', 'cae', 'cad', 'bdv', 'asc', 'pcb', 'brd'] }]
       });
     }
     if (!selected) return;

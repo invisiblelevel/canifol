@@ -1,6 +1,6 @@
 [package]
 name = "canifol"
-version = "1.4.0"
+version = "1.4.1"
 description = "Canifol — Repairman's toolkit"
 authors = ["you"]
 edition = "2021"
