@@ -19,7 +19,7 @@
   const F = $derived(strings.favorites);
 
   let query = $state('LM7805');
-  let source = $state('digikey');
+  let source = $state('digikey'); // 'digikey' | 'lcsc' | 'farnell'
   let loading = $state(false);
   let results = $state([]);
   let error = $state('');
@@ -54,9 +54,15 @@
     if (!query.trim()) return;
     loading = true; error = ''; results = [];
     try {
-      const command = source === 'digikey' ? 'search_datasheets' : 'search_lcsc';
+      let command = 'search_datasheets';
+      if (source === 'lcsc') command = 'search_lcsc';
+      if (source === 'farnell') command = 'search_element14';
+
       const res = await invoke(command, { query });
-      results = res;
+      results = Array.isArray(res) ? res : [];
+      if (!results.length) {
+        error = `No results found for "${query}".`;
+      }
     } catch (e) {
       console.error('Search error:', e);
       error = String(e);
@@ -64,17 +70,32 @@
     finally { loading = false; }
   }
 
+  function hasPdf(item) {
+    return !!(item && item.datasheet_url && (item.datasheet_url.startsWith('http://') || item.datasheet_url.startsWith('https://')));
+  }
+
+  function isFav(item) {
+    if (!hasPdf(item)) return false;
+    try {
+      return favoritesStore.isFavoriteDatasheet(item);
+    } catch (e) {
+      return false;
+    }
+  }
+
   async function openPdf(item) {
+    if (!hasPdf(item)) {
+      pdfError = "No datasheet available for this component.";
+      return;
+    }
     pdfLoading = true; pdfError = ''; currentPdf = null;
     try {
       let bytes;
       const readName = item.savedFilename || item.name;
       
       try {
-        // Пытаемся прочитать из офлайн-папки по точному имени
         bytes = await invoke('read_favorite_pdf', { filename: readName });
       } catch (e) {
-        // Если нет — качаем в кэш и читаем оттуда
         await invoke('download_pdf', {
           url: item.datasheet_url,
           filename: item.name,
@@ -109,9 +130,13 @@
   }
 
   async function toggleFav(item) {
-    const isFav = favoritesStore.isFavoriteDatasheet(item);
+    if (!hasPdf(item)) {
+      pdfError = "Cannot add to favorites: no PDF available.";
+      return;
+    }
+    const fav = isFav(item);
 
-    if (isFav) {
+    if (fav) {
       favoritesStore.toggleDatasheet({ ...item, source });
       return;
     }
@@ -128,17 +153,14 @@
       offlineSaving = item.name;
       pdfError = '';
       try {
-        // Скачиваем и получаем точный путь
         const savedPath = await invoke('download_pdf', {
           url: item.datasheet_url,
           filename: item.name,
           saveToFavorites: true
         });
         
-        // Вытаскиваем точное имя файла из пути
         const actualFilename = savedPath.split(/[\\/]/).pop(); 
         
-        // Сохраняем это имя в избранное
         favoritesStore.updateDatasheet({
           ...item,
           source,
@@ -147,7 +169,7 @@
         });
       } catch (e) {
         pdfError = `${F.downloadingOffline}: ${String(e)}`;
-        favoritesStore.toggleDatasheet({ ...item, source }); // Откат
+        favoritesStore.toggleDatasheet({ ...item, source });
       } finally {
         offlineSaving = '';
       }
@@ -195,6 +217,9 @@
       <button type="button" class="source-btn" class:active={source === 'lcsc'} onclick={() => { source = 'lcsc'; results = []; error = ''; }}>
         {strings.datasheets.lcsc}
       </button>
+      <button type="button" class="source-btn" class:active={source === 'farnell'} onclick={() => { source = 'farnell'; results = []; error = ''; }}>
+        Farnell
+      </button>
     </div>
 
     <div class="search-bar">
@@ -224,27 +249,37 @@
 
     {#if results.length > 0}
       <ul class="results-list">
-        {#each results as item (`${item.name}_${item.manufacturer}_${item.datasheet_url}`)}
-          {@const fav = favoritesStore.isFavoriteDatasheet(item)}
-          <li class="result-item">
-            <StarButton
-              active={fav}
-              onclick={() => toggleFav(item)}
-              title={fav ? F.removeFromFavorites : F.addToFavorites}
-            />
-            <div class="result-info">
-              <div class="result-name">{item.name}</div>
-              <div class="result-mfr">
-                {item.manufacturer}
-                {#if favoritesStore.offlineOf(item)}
-                  <span class="offline-badge">{F.offlineBadge}</span>
-                {/if}
+        {#each results as item (item.lcsc_code || item.name || item.manufacturer)}
+          {#if item}
+            <li class="result-item">
+              {#if hasPdf(item)}
+                <StarButton
+                  active={isFav(item)}
+                  onclick={() => toggleFav(item)}
+                  title={isFav(item) ? F.removeFromFavorites : F.addToFavorites}
+                />
+              {:else}
+                <div class="star-placeholder" aria-hidden="true"></div>
+              {/if}
+              <div class="result-info">
+                <div class="result-name">
+                  {item.name}
+                  {#if !hasPdf(item)}
+                    <span class="no-pdf-badge">No PDF</span>
+                  {/if}
+                </div>
+                <div class="result-mfr">
+                  {item.manufacturer}
+                  {#if favoritesStore.offlineOf(item)}
+                    <span class="offline-badge">{F.offlineBadge}</span>
+                  {/if}
+                </div>
               </div>
-            </div>
-            <Button variant="secondary" size="sm" onclick={() => openPdf(item)}>
-              {strings.datasheets.openPdf}
-            </Button>
-          </li>
+              <Button variant="secondary" size="sm" onclick={() => openPdf(item)} disabled={!hasPdf(item)}>
+                {strings.datasheets.openPdf}
+              </Button>
+            </li>
+          {/if}
         {/each}
       </ul>
     {:else if !loading && !error}
@@ -301,8 +336,27 @@
   .results-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
   .result-item { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); background: var(--bg-elevated-2); padding: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--border-subtle); }
   .result-info { flex: 1; overflow: hidden; }
-  .result-name { font-weight: 600; color: var(--accent); }
+  .result-name { font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: var(--space-2); }
   .result-mfr { font-size: var(--font-size-sm); color: var(--text-secondary); display: flex; align-items: center; gap: var(--space-2); }
+  
+  .no-pdf-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--danger);
+    background: rgba(232, 90, 90, 0.15);
+    border-radius: var(--radius-sm);
+  }
+
+  .star-placeholder {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+
   .offline-badge {
     display: inline-block;
     padding: 1px 6px;

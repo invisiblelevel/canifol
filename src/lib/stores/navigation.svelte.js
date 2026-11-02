@@ -1,4 +1,5 @@
-import { Zap, Battery, Cable, FileText, CircuitBoard, Cpu, Network, ScanLine, Layers, Star, Database } from '@lucide/svelte';
+import { Zap, Battery, Cable, FileText, CircuitBoard, Cpu, Network, ScanLine, Layers, Star, Database, BookOpen } from '@lucide/svelte';
+import { localeStore } from './locale.svelte.js';
 
 export const SECTIONS = [
   { id: 'favorites',   icon: Star },
@@ -11,7 +12,8 @@ export const SECTIONS = [
   { id: 'pinouts',     icon: Network },
   { id: 'smd',         icon: ScanLine },
   { id: 'boardview',   icon: Layers },
-  { id: 'database',    icon: Database }
+  { id: 'database',    icon: Database },
+  { id: 'guides',      icon: BookOpen, locales: ['ru', 'en'] }
 ];
 
 let current = $state('transistors');
@@ -37,5 +39,11 @@ export const navStore = {
   setSettings() {
     current = 'settings';
   },
+  
+  // Возвращает секции, доступные для текущей локали
+  get visibleSections() {
+    return SECTIONS.filter(s => !s.locales || s.locales.includes(localeStore.current));
+  },
+  
   sections: SECTIONS
 };

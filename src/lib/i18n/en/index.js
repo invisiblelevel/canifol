@@ -6,6 +6,7 @@ import { smd } from './smd.js';
 import { about } from './about.js';
 import { help } from './help.js';
 import { favorites } from './favorites.js';
+import { guides } from './guides.js';
 
 export const en = {
   ...common,
@@ -15,5 +16,6 @@ export const en = {
   ...smd,
   ...about,
   ...help,
-  ...favorites
+  ...favorites,
+  ...guides
 };

@@ -8,14 +8,25 @@ use tauri::Manager;
 const TOKEN_URL: &str = "https://api.digikey.com/v1/oauth2/token";
 const SEARCH_URL: &str = "https://api.digikey.com/products/v4/search/keyword";
 
-const DEFAULT_CLIENT_ID: &str = "MmdeQPn52lzXUMNRcekRZJbBpZaTzpUwD6aTVJ8FAYlxzUOn";
-const DEFAULT_CLIENT_SECRET: &str = "f5BUbmzVH9nPbbfpfZaWBhsRrc0AzLlNO5Q03z8aCdbxM7qbsCiejgz9UmU9W0tG";
-
-fn get_credentials() -> (String, String) {
+fn get_credentials() -> Result<(String, String), String> {
+    // 1. Пробуем env (для dev, где .env загружается через dotenvy)
     dotenvy::dotenv().ok();
-    let id = std::env::var("DIGIKEY_CLIENT_ID").unwrap_or_else(|_| DEFAULT_CLIENT_ID.to_string());
-    let secret = std::env::var("DIGIKEY_CLIENT_SECRET").unwrap_or_else(|_| DEFAULT_CLIENT_SECRET.to_string());
-    (id, secret)
+    if let (Ok(id), Ok(secret)) = (
+        std::env::var("DIGIKEY_CLIENT_ID"),
+        std::env::var("DIGIKEY_CLIENT_SECRET"),
+    ) {
+        if !id.is_empty() && !secret.is_empty() {
+            return Ok((id, secret));
+        }
+    }
+
+    // 2. Fallback на compile-time инъекцию (для релиза / CI)
+    let id = option_env!("DIGIKEY_CLIENT_ID")
+        .ok_or("DIGIKEY_CLIENT_ID is not set. Please set it in .env (dev) or GitHub Secrets (CI)")?;
+    let secret = option_env!("DIGIKEY_CLIENT_SECRET")
+        .ok_or("DIGIKEY_CLIENT_SECRET is not set. Please set it in .env (dev) or GitHub Secrets (CI)")?;
+
+    Ok((id.to_string(), secret.to_string()))
 }
 
 #[derive(Deserialize)]
@@ -46,19 +57,19 @@ pub struct AnalogResult {
 }
 
 fn get_cache_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let mut path = app.path().app_data_dir().map_err(|e| format!("Не удалось найти папку данных: {}", e))?;
+    let mut path = app.path().app_data_dir().map_err(|e| format!("Failed to find data dir: {}", e))?;
     path.push("datasheets");
     if !path.exists() {
-        fs::create_dir_all(&path).map_err(|e| format!("Не удалось создать папку кэша: {}", e))?;
+        fs::create_dir_all(&path).map_err(|e| format!("Failed to create cache dir: {}", e))?;
     }
     Ok(path)
 }
 
 fn get_favorites_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let mut path = app.path().app_data_dir().map_err(|e| format!("Не удалось найти папку данных: {}", e))?;
+    let mut path = app.path().app_data_dir().map_err(|e| format!("Failed to find data dir: {}", e))?;
     path.push("favorites_pdfs");
     if !path.exists() {
-        fs::create_dir_all(&path).map_err(|e| format!("Не удалось создать папку избранного: {}", e))?;
+        fs::create_dir_all(&path).map_err(|e| format!("Failed to create favorites dir: {}", e))?;
     }
     Ok(path)
 }
@@ -76,61 +87,65 @@ pub async fn download_pdf(
 ) -> Result<String, String> {
     let save_to_favorites = save_to_favorites.unwrap_or(false);
     let safe_name = sanitize_filename(&filename);
+
+    if url.is_empty() {
+        return Err("No datasheet available for this component.".to_string());
+    }
     
-    // 1. Если просят сохранить в офлайн — проверяем офлайн-папку, если нет — качаем туда.
     if save_to_favorites {
         let target_dir = get_favorites_dir(&app)?;
         let file_path = target_dir.join(format!("{}.pdf", safe_name));
         if file_path.exists() {
             return Ok(file_path.to_string_lossy().to_string());
         }
-        
-        // Если нет — качаем сразу в офлайн
         download_to_path(&url, &file_path).await?;
         return Ok(file_path.to_string_lossy().to_string());
     }
 
-    // 2. Если это просто открыть PDF:
-    // Сначала проверяем офлайн-папку! Если он там есть, возвращаем его.
     let fav_dir = get_favorites_dir(&app)?;
     let fav_path = fav_dir.join(format!("{}.pdf", safe_name));
     if fav_path.exists() {
         return Ok(fav_path.to_string_lossy().to_string());
     }
 
-    // 3. Если нет в офлайне, проверяем обычный кэш
     let cache_dir = get_cache_dir(&app)?;
     let cache_path = cache_dir.join(format!("{}.pdf", safe_name));
     if cache_path.exists() {
         return Ok(cache_path.to_string_lossy().to_string());
     }
 
-    // 4. Если нигде нет — качаем в обычный кэш
     download_to_path(&url, &cache_path).await?;
     Ok(cache_path.to_string_lossy().to_string())
 }
 
-// Вынесем логику скачивания в отдельную функцию, чтобы не дублировать код
 async fn download_to_path(url: &str, file_path: &std::path::Path) -> Result<(), String> {
     let client = Client::new();
+    
+    let referer = if url.contains("lcsc.com") || url.contains("wmsc.lcsc.com") {
+        "https://www.lcsc.com/"
+    } else {
+        "https://www.digikey.com/"
+    };
+
     let res = client
         .get(url)
-        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        .header("Referer", referer)
         .send()
         .await
-        .map_err(|e| format!("Ошибка скачивания: {}", e))?;
+        .map_err(|e| format!("Download error: {}", e))?;
 
     if !res.status().is_success() {
-        return Err(format!("Сервер вернул ошибку: {}", res.status()));
+        return Err(format!("Server returned error: {}", res.status()));
     }
 
-    let bytes = res.bytes().await.map_err(|e| format!("Ошибка чтения данных: {}", e))?;
+    let bytes = res.bytes().await.map_err(|e| format!("Read error: {}", e))?;
 
     if bytes.len() < 4 || &bytes[0..4] != b"%PDF" {
-        return Err("Скачанный файл не является PDF".to_string());
+        return Err("The datasheet is not available as a PDF file.".to_string());
     }
 
-    fs::write(file_path, &bytes).map_err(|e| format!("Ошибка записи: {}", e))?;
+    fs::write(file_path, &bytes).map_err(|e| format!("Write error: {}", e))?;
     Ok(())
 }
 
@@ -138,17 +153,16 @@ async fn download_to_path(url: &str, file_path: &std::path::Path) -> Result<(), 
 pub fn read_pdf(app: tauri::AppHandle, filename: String) -> Result<Vec<u8>, String> {
     let safe_name = sanitize_filename(&filename);
 
-    // Сначала пробуем избранное, потом кэш
     if let Ok(fav_dir) = get_favorites_dir(&app) {
         let path = fav_dir.join(format!("{}.pdf", safe_name));
         if path.exists() {
-            return fs::read(&path).map_err(|e| format!("Не удалось прочитать файл из избранного: {}", e));
+            return fs::read(&path).map_err(|e| format!("Failed to read from favorites: {}", e));
         }
     }
 
     let cache_dir = get_cache_dir(&app)?;
     let file_path = cache_dir.join(format!("{}.pdf", safe_name));
-    fs::read(&file_path).map_err(|e| format!("Не удалось прочитать файл из кэша: {}", e))
+    fs::read(&file_path).map_err(|e| format!("Failed to read from cache: {}", e))
 }
 
 #[tauri::command]
@@ -156,11 +170,11 @@ pub fn read_favorite_pdf(app: tauri::AppHandle, filename: String) -> Result<Vec<
     let fav_dir = get_favorites_dir(&app)?;
     let safe_name = sanitize_filename(&filename);
     let file_path = fav_dir.join(format!("{}.pdf", safe_name));
-    fs::read(&file_path).map_err(|e| format!("Не удалось прочитать файл из избранного: {}", e))
+    fs::read(&file_path).map_err(|e| format!("Failed to read from favorites: {}", e))
 }
 
 async fn get_token() -> Result<String, String> {
-    let (client_id, client_secret) = get_credentials();
+    let (client_id, client_secret) = get_credentials()?;
     let client = Client::new();
     let params = [
         ("client_id", client_id.as_str()),
@@ -169,19 +183,19 @@ async fn get_token() -> Result<String, String> {
     ];
 
     let res = client.post(TOKEN_URL).form(&params).send().await
-        .map_err(|e| format!("Ошибка запроса токена: {}", e))?;
+        .map_err(|e| format!("Token request error: {}", e))?;
 
     if !res.status().is_success() {
-        return Err(format!("DigiKey вернул ошибку при получении токена: {}", res.status()));
+        return Err(format!("DigiKey token error: {}", res.status()));
     }
 
-    let token_res: TokenResponse = res.json().await.map_err(|e| format!("Ошибка парсинга токена: {}", e))?;
+    let token_res: TokenResponse = res.json().await.map_err(|e| format!("Token parse error: {}", e))?;
     Ok(token_res.access_token)
 }
 
 #[tauri::command]
 pub async fn search_datasheets(query: String) -> Result<Vec<DatasheetResult>, String> {
-    let (client_id, _) = get_credentials();
+    let (client_id, _) = get_credentials()?;
     let token = get_token().await?;
     let client = Client::new();
 
@@ -201,19 +215,19 @@ pub async fn search_datasheets(query: String) -> Result<Vec<DatasheetResult>, St
         .json(&body)
         .send()
         .await
-        .map_err(|e| format!("Ошибка поиска: {}", e))?;
+        .map_err(|e| format!("Search error: {}", e))?;
 
     if !res.status().is_success() {
-        return Err(format!("DigiKey вернул ошибку поиска: {}", res.status()));
+        return Err(format!("DigiKey search error: {}", res.status()));
     }
 
-    let json: Value = res.json().await.map_err(|e| format!("Ошибка парсинга: {}", e))?;
+    let json: Value = res.json().await.map_err(|e| format!("Parse error: {}", e))?;
     let mut results = Vec::new();
 
     if let Some(products) = json.get("Products").and_then(|p| p.as_array()) {
         for product in products {
-            let name = product.get("ManufacturerProductNumber").and_then(|v| v.as_str()).unwrap_or("Без названия").to_string();
-            let manufacturer = product.get("Manufacturer").and_then(|m| m.get("Name")).and_then(|v| v.as_str()).unwrap_or("Неизвестен").to_string();
+            let name = product.get("ManufacturerProductNumber").and_then(|v| v.as_str()).unwrap_or("Untitled").to_string();
+            let manufacturer = product.get("Manufacturer").and_then(|m| m.get("Name")).and_then(|v| v.as_str()).unwrap_or("Unknown").to_string();
             let raw_url = product.get("DatasheetUrl").and_then(|v| v.as_str()).unwrap_or("").to_string();
 
             let mut datasheet_url = raw_url.clone();
@@ -286,7 +300,7 @@ fn parse_digikey_params(product: &Value, _tr_type: &str) -> Option<(Option<f64>,
 
 #[tauri::command]
 pub async fn find_analogs_digikey(query: String, tr_type: String) -> Result<Vec<AnalogResult>, String> {
-    let (client_id, _) = get_credentials();
+    let (client_id, _) = get_credentials()?;
     let token = get_token().await?;
     let client = Client::new();
 
@@ -305,13 +319,13 @@ pub async fn find_analogs_digikey(query: String, tr_type: String) -> Result<Vec<
         .json(&body)
         .send()
         .await
-        .map_err(|e| format!("Ошибка поиска: {}", e))?;
+        .map_err(|e| format!("Search error: {}", e))?;
 
-    let json: Value = res.json().await.map_err(|e| format!("Ошибка парсинга: {}", e))?;
+    let json: Value = res.json().await.map_err(|e| format!("Parse error: {}", e))?;
     let product = json.get("Products").and_then(|p| p.as_array()).and_then(|a| a.first())
-        .ok_or("Оригинал не найден")?;
+        .ok_or("Original component not found")?;
 
-    let _params = parse_digikey_params(product, &tr_type).ok_or("Не удалось распарсить параметры")?;
+    let _params = parse_digikey_params(product, &tr_type).ok_or("Failed to parse parameters")?;
 
     let search_keyword = if tr_type == "mosfet" { "MOSFET" } else { "Bipolar Transistor" };
 
@@ -330,9 +344,9 @@ pub async fn find_analogs_digikey(query: String, tr_type: String) -> Result<Vec<
         .json(&body)
         .send()
         .await
-        .map_err(|e| format!("Ошибка поиска аналогов: {}", e))?;
+        .map_err(|e| format!("Analog search error: {}", e))?;
 
-    let json: Value = res.json().await.map_err(|e| format!("Ошибка парсинга: {}", e))?;
+    let json: Value = res.json().await.map_err(|e| format!("Parse error: {}", e))?;
     let mut results = Vec::new();
 
     if let Some(products) = json.get("Products").and_then(|p| p.as_array()) {
@@ -357,7 +371,7 @@ pub async fn find_analogs_digikey(query: String, tr_type: String) -> Result<Vec<
 
 #[tauri::command]
 pub async fn find_by_params_digikey(params: serde_json::Value) -> Result<Vec<AnalogResult>, String> {
-    let (client_id, _) = get_credentials();
+    let (client_id, _) = get_credentials()?;
     let tr_type = params.get("type").and_then(|v| v.as_str()).unwrap_or("mosfet");
     let vds_min = params.get("vds").and_then(|v| v.as_f64());
     let id_min = params.get("id").and_then(|v| v.as_f64());
@@ -385,9 +399,9 @@ pub async fn find_by_params_digikey(params: serde_json::Value) -> Result<Vec<Ana
         .json(&body)
         .send()
         .await
-        .map_err(|e| format!("Ошибка поиска: {}", e))?;
+        .map_err(|e| format!("Search error: {}", e))?;
 
-    let json: Value = res.json().await.map_err(|e| format!("Ошибка парсинга: {}", e))?;
+    let json: Value = res.json().await.map_err(|e| format!("Parse error: {}", e))?;
     let mut results = Vec::new();
 
     if let Some(products) = json.get("Products").and_then(|p| p.as_array()) {

@@ -3,6 +3,9 @@ mod lcsc;
 mod transistors;
 mod boardview;
 mod gencad_parser;
+mod guides;
+mod element14;
+
 
 use std::fs;
 use tauri::Manager;
@@ -89,7 +92,6 @@ async fn download_gdrive_file(app: tauri::AppHandle, file_id: String, filename: 
         .build()
         .map_err(|e| e.to_string())?;
 
-    // ТЕПЕРЬ ВСЁ ЛЕЖИТ В ОДНОМ МЕСТЕ: app_data_dir/datasheets
     let cache_dir = app.path().app_data_dir()
         .map_err(|e| format!("No data dir: {}", e))?
         .join("datasheets");
@@ -186,6 +188,7 @@ pub fn run() {
             lcsc::search_lcsc,
             lcsc::find_analogs_lcsc,
             lcsc::find_by_params_lcsc,
+			element14::search_element14,
             transistors::search_soviet_analog,
             get_system_locale,
             get_cache_size,
@@ -198,6 +201,9 @@ pub fn run() {
             read_binary_file,
             open_pdf,
             boardview::read_boardview,
+            guides::fetch_guides,
+            guides::get_guides_cache_size,
+            guides::clear_guides_cache,
             #[cfg(target_os = "android")]
             boardview::read_boardview_uri
         ])

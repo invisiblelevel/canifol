@@ -16,6 +16,10 @@
   let favClearing = $state(false);
   let favCleared = $state(false);
 
+  let guidesSize = $state(0);
+  let guidesClearing = $state(false);
+  let guidesCleared = $state(false);
+
   function formatBytes(bytes) {
     if (bytes === 0) return `0 ${strings.units.b}`;
     if (bytes < 1024) return `${bytes} ${strings.units.b}`;
@@ -37,6 +41,14 @@
       favSize = await invoke('get_favorites_size');
     } catch (e) {
       console.error('Failed to load favorites size', e);
+    }
+  }
+
+  async function loadGuidesSize() {
+    try {
+      guidesSize = await invoke('get_guides_cache_size');
+    } catch (e) {
+      console.error('Failed to load guides cache size', e);
     }
   }
 
@@ -73,6 +85,22 @@
     }
   }
 
+  async function clearGuides() {
+    if (!confirm(strings.settings.confirmClearGuides)) return;
+    guidesClearing = true;
+    try {
+      await invoke('clear_guides_cache');
+      await loadGuidesSize();
+      guidesCleared = true;
+      setTimeout(() => (guidesCleared = false), 2000);
+    } catch (e) {
+      console.error('Clear guides cache error:', e);
+      alert('Error: ' + e);
+    } finally {
+      guidesClearing = false;
+    }
+  }
+
   function setScale(value) {
     uiScaleStore.set(value);
   }
@@ -80,6 +108,7 @@
   onMount(() => {
     loadCacheSize();
     loadFavSize();
+    loadGuidesSize();
   });
 </script>
 
@@ -156,6 +185,29 @@
           disabled={favSize === 0}
         >
           {favCleared ? strings.settings.cacheCleared : strings.settings.clearFavorites}
+        </Button>
+      </div>
+    </div>
+
+    <!-- Кэш гайдов -->
+    <div class="section">
+      <div class="section__title">{strings.settings.guidesCacheTitle}</div>
+      <div class="section__hint">{strings.settings.guidesCacheHint}</div>
+      <div class="cache-row">
+        <div class="cache-info">
+          <span class="cache-info__label">{strings.settings.cacheSize}:</span>
+          <span class="cache-info__value">
+            {guidesSize > 0 ? formatBytes(guidesSize) : strings.settings.cacheEmpty}
+          </span>
+        </div>
+        <Button
+          variant={guidesSize > 0 ? 'secondary' : 'ghost'}
+          size="sm"
+          onclick={clearGuides}
+          loading={guidesClearing}
+          disabled={guidesSize === 0}
+        >
+          {guidesCleared ? strings.settings.cacheCleared : strings.settings.clearGuides}
         </Button>
       </div>
     </div>

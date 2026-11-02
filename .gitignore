@@ -49,3 +49,6 @@ desktop.ini
 *.swo
 .env
 src-tauri/.env
+build-windows.ps1
+build-android.ps1
+*.ps1

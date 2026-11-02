@@ -48,6 +48,9 @@ jobs:
         run: npm run tauri build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DIGIKEY_CLIENT_ID: ${{ secrets.DIGIKEY_CLIENT_ID }}
+          DIGIKEY_CLIENT_SECRET: ${{ secrets.DIGIKEY_CLIENT_SECRET }}
+          ELEMENT14_API_KEY: ${{ secrets.ELEMENT14_API_KEY }}
 
       - name: Create Draft Release and Upload Linux Artifacts
         uses: tauri-apps/tauri-action@v0
@@ -57,12 +60,12 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'Canifol ${{ github.ref_name }}'
           releaseBody: |
-            **Hotfix v1.1.2**
+            **Canifol ${{ github.ref_name }}**
 
-            - Improved API configuration handling.
-            - No functional changes — search and datasheets work as before.
-
-            **Important:** If you're using an older version (1.1.1 or below), please update to 1.1.2 for the best experience.
+            - **RSS feed** — repair videos from YouTube (RU/EN).
+            - **Farnell (element14)** — third datasheet source with direct PDFs.
+            - **Datasheet fix** — "No PDF" badge for unavailable files.
+            - **Android fullscreen fix** — native video fullscreen.
 
             **Downloads:**
             - Windows: `.exe` (NSIS installer) — *attach manually*

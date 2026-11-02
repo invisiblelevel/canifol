@@ -74,6 +74,27 @@ fn parse_lcsc_params(comp: &Value, _tr_type: &str) -> Option<(Option<f64>, Optio
     Some((vds, id, rds_on, vceo, ic, hfe, ttype))
 }
 
+// Рекурсивно ищем в JSON массив, элементы которого содержат "componentCode"
+fn find_components_array(value: &Value) -> Option<&Vec<Value>> {
+    if let Some(arr) = value.as_array() {
+        if !arr.is_empty() && arr[0].get("componentCode").is_some() {
+            return Some(arr);
+        }
+        for item in arr {
+            if let Some(found) = find_components_array(item) {
+                return Some(found);
+            }
+        }
+    } else if let Some(obj) = value.as_object() {
+        for (_, v) in obj {
+            if let Some(found) = find_components_array(v) {
+                return Some(found);
+            }
+        }
+    }
+    None
+}
+
 #[tauri::command]
 pub async fn search_lcsc(query: String) -> Result<Vec<LcscResult>, String> {
     let client = Client::new();
@@ -92,29 +113,30 @@ pub async fn search_lcsc(query: String) -> Result<Vec<LcscResult>, String> {
         .json(&body)
         .send()
         .await
-        .map_err(|e| format!("Ошибка поиска JLCPCB: {}", e))?;
+        .map_err(|e| format!("JLCPCB search error: {}", e))?;
 
-    let json: Value = res.json().await.map_err(|e| format!("Ошибка парсинга: {}", e))?;
+    let json: Value = res.json().await.map_err(|e| format!("Parse error: {}", e))?;
+
+    let components = match find_components_array(&json) {
+        Some(arr) => arr,
+        None => return Ok(Vec::new()),
+    };
+
     let mut results = Vec::new();
 
-    if let Some(components) = json
-        .get("data")
-        .and_then(|d| d.get("componentPageInfo"))
-        .and_then(|c| c.get("list"))
-        .and_then(|l| l.as_array())
-    {
-        for comp in components {
-            let lcsc_code = comp.get("componentCode").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            if lcsc_code.is_empty() { continue; }
+    for comp in components {
+        let lcsc_code = comp.get("componentCode").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        if lcsc_code.is_empty() { continue; }
 
-            let name = comp.get("componentModelEn").and_then(|v| v.as_str()).unwrap_or("Без названия").to_string();
-            let manufacturer = comp.get("componentBrandEn").and_then(|v| v.as_str()).unwrap_or("Неизвестен").to_string();
-            let datasheet_url = fetch_lcsc_pdf_url(&client, &lcsc_code).await
-                .unwrap_or_else(|| format!("https://datasheet.lcsc.com/lcsc/datasheet_{}.pdf", lcsc_code));
+        let name = comp.get("componentModelEn").and_then(|v| v.as_str()).unwrap_or("Unknown").to_string();
+        let manufacturer = comp.get("componentBrandEn").and_then(|v| v.as_str()).unwrap_or("Unknown").to_string();
+        
+        let datasheet_url = fetch_lcsc_pdf_url(&client, &lcsc_code).await
+            .unwrap_or_default();
 
-            results.push(LcscResult { name, manufacturer, datasheet_url, lcsc_code });
-        }
+        results.push(LcscResult { name, manufacturer, datasheet_url, lcsc_code });
     }
+
     Ok(results)
 }
 
@@ -136,19 +158,13 @@ pub async fn find_analogs_lcsc(query: String, tr_type: String) -> Result<Vec<Ana
         .json(&body)
         .send()
         .await
-        .map_err(|e| format!("Ошибка поиска: {}", e))?;
+        .map_err(|e| format!("Search error: {}", e))?;
 
-    let json: Value = res.json().await.map_err(|e| format!("Ошибка парсинга: {}", e))?;
-    let comp = json
-        .get("data")
-        .and_then(|d| d.get("componentPageInfo"))
-        .and_then(|c| c.get("list"))
-        .and_then(|l| l.as_array())
-        .and_then(|a| a.first())
-        .ok_or("Оригинал не найден")?;
+    let json: Value = res.json().await.map_err(|e| format!("Parse error: {}", e))?;
+    let comp = find_components_array(&json).and_then(|arr| arr.first())
+        .ok_or("Original component not found")?;
 
-    let params = parse_lcsc_params(comp, &tr_type).ok_or("Не удалось распарсить параметры")?;
-    println!("[DEBUG] Параметры оригинала LCSC: {:?}", params);
+    let params = parse_lcsc_params(comp, &tr_type).ok_or("Failed to parse parameters")?;
 
     let search_keyword = if tr_type == "mosfet" { "MOSFET" } else { "Bipolar Transistor" };
     
@@ -166,25 +182,21 @@ pub async fn find_analogs_lcsc(query: String, tr_type: String) -> Result<Vec<Ana
         .json(&body)
         .send()
         .await
-        .map_err(|e| format!("Ошибка поиска аналогов: {}", e))?;
+        .map_err(|e| format!("Analog search error: {}", e))?;
 
-    let json: Value = res.json().await.map_err(|e| format!("Ошибка парсинга: {}", e))?;
+    let json: Value = res.json().await.map_err(|e| format!("Parse error: {}", e))?;
     let mut results = Vec::new();
 
-    if let Some(components) = json
-        .get("data")
-        .and_then(|d| d.get("componentPageInfo"))
-        .and_then(|c| c.get("list"))
-        .and_then(|l| l.as_array())
-    {
+    if let Some(components) = find_components_array(&json) {
         for c in components {
             let name = c.get("componentModelEn").and_then(|v| v.as_str()).unwrap_or("").to_string();
             if name.is_empty() || name == query { continue; }
 
             let lcsc_code = c.get("componentCode").and_then(|v| v.as_str()).unwrap_or("").to_string();
             let manufacturer = c.get("componentBrandEn").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            
             let datasheet_url = fetch_lcsc_pdf_url(&client, &lcsc_code).await
-                .unwrap_or_else(|| format!("https://datasheet.lcsc.com/lcsc/datasheet_{}.pdf", lcsc_code));
+                .unwrap_or_default();
 
             if let Some((vds, id, rds, vceo, ic, hfe, ttype)) = parse_lcsc_params(c, &tr_type) {
                 results.push(AnalogResult {
@@ -225,25 +237,21 @@ pub async fn find_by_params_lcsc(params: serde_json::Value) -> Result<Vec<Analog
         .json(&body)
         .send()
         .await
-        .map_err(|e| format!("Ошибка поиска: {}", e))?;
+        .map_err(|e| format!("Search error: {}", e))?;
 
-    let json: Value = res.json().await.map_err(|e| format!("Ошибка парсинга: {}", e))?;
+    let json: Value = res.json().await.map_err(|e| format!("Parse error: {}", e))?;
     let mut results = Vec::new();
 
-    if let Some(components) = json
-        .get("data")
-        .and_then(|d| d.get("componentPageInfo"))
-        .and_then(|c| c.get("list"))
-        .and_then(|l| l.as_array())
-    {
+    if let Some(components) = find_components_array(&json) {
         for c in components {
             let name = c.get("componentModelEn").and_then(|v| v.as_str()).unwrap_or("").to_string();
             if name.is_empty() { continue; }
 
             let lcsc_code = c.get("componentCode").and_then(|v| v.as_str()).unwrap_or("").to_string();
             let manufacturer = c.get("componentBrandEn").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            
             let datasheet_url = fetch_lcsc_pdf_url(&client, &lcsc_code).await
-                .unwrap_or_else(|| format!("https://datasheet.lcsc.com/lcsc/datasheet_{}.pdf", lcsc_code));
+                .unwrap_or_default();
 
             if let Some((vds, id, rds, vceo, ic, hfe, ttype)) = parse_lcsc_params(c, tr_type) {
                 let mut pass = true;

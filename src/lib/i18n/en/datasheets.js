@@ -1,7 +1,7 @@
 export const datasheets = {
   "datasheets": {
-    "title": "Datasheet search",
-    "subtitle": "Find PDF and open right in the app",
+    "title": "Datasheet Search",
+    "subtitle": "Find PDFs and open them right in the app",
     "digikey": "DigiKey",
     "lcsc": "LCSC",
     "openPdf": "Open PDF",
@@ -11,7 +11,7 @@ export const datasheets = {
     "labels": {
       "searchLabel": "Datasheet search",
       "searchPlaceholder": "e.g. IRFZ44N",
-      "enterQuery": "Enter a query and press «Search»",
+      "enterQuery": "Enter a query and press Search",
       "searching": "Searching...",
       "nothingFound": "Nothing found",
       "downloading": "Downloading and preparing PDF...",
@@ -27,15 +27,19 @@ export const datasheets = {
     "title": "Settings",
     "scaleTitle": "Interface scale",
     "scaleHint": "Increase if you have a 4K monitor or poor eyesight.",
-    "cacheTitle": "Datasheet cache",
+    "cacheTitle": "Datasheets cache",
     "cacheSize": "Cache size",
-    "cacheHint": "Downloaded PDFs are stored locally and open instantly on re-request. Clearing frees space, but the next search will re-download the PDF.",
+    "cacheHint": "Downloaded PDFs are stored locally and open instantly on repeat requests. Clearing frees space, but PDFs will need to be downloaded again.",
     "cacheCleared": "Cache cleared",
     "cacheEmpty": "Cache is empty",
     "confirmClear": "Are you sure you want to delete all downloaded PDFs? This cannot be undone.",
     "favoritesCacheTitle": "Favorite PDFs (offline)",
-    "favoritesCacheHint": "These PDFs are saved for offline access and are not deleted when clearing the regular cache. Delete only if you are sure they are no longer needed.",
+    "favoritesCacheHint": "These PDFs are saved for offline access and are not removed when clearing the regular cache. Delete only if you are sure they are no longer needed.",
     "clearFavorites": "Clear favorite PDFs",
-    "confirmClearFavorites": "Delete all favorite PDFs? They will disappear from offline access but remain in the favorites list."
+    "confirmClearFavorites": "Delete all favorite PDFs? They will disappear from offline access but remain in favorites list.",
+    "guidesCacheTitle": "Guides cache",
+    "guidesCacheHint": "Downloaded articles and videos are stored locally for 6 hours. Clearing will force re-fetch on next open.",
+    "clearGuides": "Clear guides cache",
+    "confirmClearGuides": "Delete guides cache? Articles will be re-fetched next time you open the section."
   }
 };

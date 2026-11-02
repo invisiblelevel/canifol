@@ -8,7 +8,8 @@ export const common = {
     pinouts: 'Распиновки',
     smd: 'SMD-коды',
     boardview: 'BoardView',
-    database: 'База'
+    database: 'База',
+    guides: 'RSS'
   },
   common: {
     comingSoon: 'Скоро здесь будет калькулятор',
