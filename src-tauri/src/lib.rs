@@ -5,11 +5,12 @@ mod boardview;
 mod gencad_parser;
 mod guides;
 mod element14;
-
+mod bilibili;
 
 use std::fs;
 use tauri::Manager;
 use reqwest::Client;
+use megalib::public;
 
 #[tauri::command]
 fn get_system_locale() -> String {
@@ -151,6 +152,33 @@ async fn download_gdrive_file(app: tauri::AppHandle, file_id: String, filename: 
 }
 
 #[tauri::command]
+async fn download_mega_file(app: tauri::AppHandle, url: String, filename: String) -> Result<String, String> {
+    let cache_dir = app.path().app_data_dir()
+        .map_err(|e| format!("No data dir: {}", e))?
+        .join("datasheets");
+    
+    if !cache_dir.exists() {
+        fs::create_dir_all(&cache_dir).map_err(|e| e.to_string())?;
+    }
+
+    let safe_filename = filename.replace(|c: char| !c.is_alphanumeric() && c != '.' && c != '-' && c != '_', "_");
+    let dest_path = cache_dir.join(&safe_filename);
+
+    // Если файл уже есть — возвращаем путь (и не проверяем, потому что MEGA отдаёт файлы без мусора)
+    if dest_path.exists() {
+        return Ok(dest_path.to_string_lossy().to_string());
+    }
+
+    // Скачиваем с MEGA
+    let mut file = std::fs::File::create(&dest_path).map_err(|e| format!("Create file error: {}", e))?;
+    
+    public::download_public_file(&url, &mut file).await
+        .map_err(|e| format!("MEGA download error: {}", e))?;
+
+    Ok(dest_path.to_string_lossy().to_string())
+}
+
+#[tauri::command]
 fn read_text_file(path: String) -> Result<String, String> {
     fs::read_to_string(&path).map_err(|e| e.to_string())
 }
@@ -188,7 +216,7 @@ pub fn run() {
             lcsc::search_lcsc,
             lcsc::find_analogs_lcsc,
             lcsc::find_by_params_lcsc,
-			element14::search_element14,
+            element14::search_element14,
             transistors::search_soviet_analog,
             get_system_locale,
             get_cache_size,
@@ -197,9 +225,11 @@ pub fn run() {
             clear_favorites,
             delete_cached_file,
             download_gdrive_file,
+            download_mega_file,
             read_text_file,
             read_binary_file,
             open_pdf,
+            bilibili::fetch_bilibili_videos,
             boardview::read_boardview,
             guides::fetch_guides,
             guides::get_guides_cache_size,

@@ -7,7 +7,7 @@
 
   let { open = false, onClose = () => {}, onOpenSupport = () => {} } = $props();
   const strings = $derived(getStrings());
-  const APP_VERSION = '1.5.0';
+  const APP_VERSION = '1.5.1';
 </script>
 
 <Modal {open} {onClose}>

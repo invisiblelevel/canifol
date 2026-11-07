@@ -5,11 +5,15 @@
   let { guide, onOpen } = $props();
   const strings = $derived(getStrings());
 
-  const isVideo = $derived(guide.type === 'video');
+  const isVideo = $derived(guide?.type === 'video');
+  const isBilibili = $derived(guide?.link?.includes('bilibili.com') || guide?.source?.toLowerCase().includes('bilibili'));
+  const isYoutube = $derived(guide?.link?.includes('youtube.com'));
   let imgError = $state(false);
 
   function handleClick() {
-    onOpen?.(guide);
+    if (guide && guide.link) {
+      onOpen?.(guide);
+    }
   }
 
   function handleKeydown(e) {
@@ -20,52 +24,60 @@
   }
 </script>
 
-<article
-  class="guide-card"
-  role="button"
-  tabindex="0"
-  onclick={handleClick}
-  onkeydown={handleKeydown}
-  aria-label={guide.title}
->
-  <div class="guide-card__thumb">
-    {#if guide.image && !imgError}
-      <img
-        src={guide.image}
-        alt=""
-        loading="lazy"
-        onerror={() => (imgError = true)}
-      />
-    {:else}
-      <div class="guide-card__placeholder">
-        {#if isVideo}
-          <Play size={32} strokeWidth={1.5} />
-        {:else}
-          <FileText size={32} strokeWidth={1.5} />
-        {/if}
-      </div>
-    {/if}
-    <span class="guide-card__badge">
-      {#if isVideo}
-        <Play size={12} strokeWidth={2.5} />
-        {strings.guides.filters.video}
+{#if guide}
+  <article
+    class="guide-card"
+    role="button"
+    tabindex="0"
+    onclick={handleClick}
+    onkeydown={handleKeydown}
+    aria-label={guide.title}
+  >
+    <div class="guide-card__thumb">
+      {#if guide.image && !imgError}
+        <img
+          src={guide.image}
+          alt=""
+          loading="lazy"
+          onerror={() => (imgError = true)}
+          referrerpolicy="no-referrer"
+        />
       {:else}
-        <FileText size={12} strokeWidth={2.5} />
-        {strings.guides.filters.article}
+        <div class="guide-card__placeholder">
+          {#if isVideo}
+            <Play size={32} strokeWidth={1.5} />
+          {:else}
+            <FileText size={32} strokeWidth={1.5} />
+          {/if}
+        </div>
       {/if}
-    </span>
-  </div>
-
-  <div class="guide-card__body">
-    <h3 class="guide-card__title">{guide.title}</h3>
-    {#if guide.description}
-      <p class="guide-card__desc">{guide.description}</p>
-    {/if}
-    <div class="guide-card__meta">
-      <span class="guide-card__source">{guide.source}</span>
+      <span class="guide-card__badge">
+        {#if isVideo}
+          <Play size={12} strokeWidth={2.5} />
+          {strings.guides.filters.video}
+        {:else}
+          <FileText size={12} strokeWidth={2.5} />
+          {strings.guides.filters.article}
+        {/if}
+      </span>
+      {#if isBilibili}
+        <span class="guide-card__platform guide-card__platform--bili">Bilibili</span>
+      {:else if isYoutube}
+        <span class="guide-card__platform guide-card__platform--yt">YouTube</span>
+      {/if}
     </div>
-  </div>
-</article>
+
+    <div class="guide-card__body">
+      <h3 class="guide-card__title">{guide.title}</h3>
+      {#if guide.description}
+        <p class="guide-card__desc">{guide.description}</p>
+      {/if}
+      <div class="guide-card__meta">
+        <span class="guide-card__source">{guide.source}</span>
+      </div>
+    </div>
+  </article>
+{/if}
 
 <style>
   .guide-card {
@@ -130,6 +142,27 @@
     background: rgba(0, 0, 0, 0.7);
     color: #fff;
     backdrop-filter: blur(4px);
+  }
+
+  .guide-card__platform {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: #fff;
+    backdrop-filter: blur(4px);
+  }
+
+  .guide-card__platform--bili {
+    background: rgba(0, 161, 214, 0.9);
+  }
+
+  .guide-card__platform--yt {
+    background: rgba(255, 0, 0, 0.85);
   }
 
   .guide-card__body {

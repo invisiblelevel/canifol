@@ -6,7 +6,8 @@ export const common = {
     resistors: '电阻器', capacitors: '电容器', inductors: '电感器',
     bms: 'BMS', transistors: '晶体管', datasheets: '数据表',
     pinouts: '引脚图', smd: 'SMD 代码', boardview: '主板视图',
-    database: '数据库'
+    database: '数据库',
+	guides: '视频'
   },
   common: {
     comingSoon: '计算器即将推出',

@@ -8,12 +8,12 @@
   import PdfCustomToolbar from '../components/PdfCustomToolbar.svelte';
   import { ArrowLeft, Database as DatabaseIcon, Search } from '@lucide/svelte';
   import EmptyState from '../components/EmptyState.svelte';
-  import Input from '../components/Input.svelte';
 
   const strings = $derived(getStrings());
   const dbStrings = $derived(strings.database);
   
-  const CATALOG_FILE_ID = "1H7IkDnF1hQrQEu5btKx8vFLSo8KJqmNY";
+  const CATALOG_FILE_ID = "10--ZxmNatSAOxNrQaidWYp_zyJubApaY";
+  const CATALOG_MEGA_URL = "https://mega.nz/file/cyN1DIrJ#RuAXgTNRZlqrvM0I_UinIfcEAHlFl8DBOPWAHCE62EE";
 
   let catalog = $state(null);
   let loading = $state(false);
@@ -30,13 +30,11 @@
   let loadingFileName = $state('');
   let fileLoading = $state(false);
 
-  // Фильтрация: если есть поиск, ищем по всем категориям и моделям
   const filteredCatalog = $derived.by(() => {
     if (!catalog) return {};
     
     const query = searchQuery.trim().toLowerCase();
     if (!query) {
-      // Если поиска нет, возвращаем выбранную категорию (или все, если не выбрана)
       if (activeCategory && catalog[activeCategory]) {
         return { [activeCategory]: catalog[activeCategory] };
       }
@@ -47,7 +45,16 @@
     for (const [cat, models] of Object.entries(catalog)) {
       const matchedModels = {};
       for (const [model, files] of Object.entries(models)) {
-        if (model.toLowerCase().includes(query) || cat.toLowerCase().includes(query)) {
+        const modelLower = model.toLowerCase();
+        const catLower = cat.toLowerCase();
+
+        let matches = modelLower.includes(query) || catLower.includes(query);
+
+        if (!matches) {
+          matches = files.some(f => f.name.toLowerCase().includes(query));
+        }
+
+        if (matches) {
           matchedModels[model] = files;
         }
       }
@@ -62,13 +69,24 @@
     loading = true;
     error = '';
     try {
-      // Удаляем старый catalog.json из кэша, чтобы скачать свежий
       await invoke('delete_cached_file', { filename: 'catalog.json' }).catch(() => {});
       
-      const localPath = await invoke('download_gdrive_file', { 
-        fileId: CATALOG_FILE_ID, 
-        filename: 'catalog.json' 
-      });
+      let localPath;
+      try {
+        // 1. Пробуем Google Drive
+        localPath = await invoke('download_gdrive_file', { 
+          fileId: CATALOG_FILE_ID, 
+          filename: 'catalog.json' 
+        });
+      } catch (gdriveError) {
+        console.warn('GDrive failed, trying MEGA...', gdriveError);
+        // 2. Если GDrive упал — пробуем MEGA
+        localPath = await invoke('download_mega_file', {
+          url: CATALOG_MEGA_URL,
+          filename: 'catalog.json'
+        });
+      }
+
       const content = await invoke('read_text_file', { path: localPath });
       catalog = JSON.parse(content);
       
@@ -91,6 +109,7 @@
     currentPdf = null;
     
     try {
+      // Для файлов фоллбэк на MEGA не делаем (у нас нет прямых ссылок на каждый файл)
       const localPath = await invoke('download_gdrive_file', { 
         fileId: file.id, 
         filename: file.name 
@@ -120,6 +139,12 @@
   function closeModal() {
     activeModel = null;
     closeViewer();
+  }
+
+  function highlight(text, query) {
+    if (!query.trim()) return text;
+    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return text.replace(regex, '<mark>$1</mark>');
   }
 </script>
 
@@ -183,7 +208,7 @@
           <input 
             type="text" 
             bind:value={searchQuery}
-            placeholder={dbStrings.searchPlaceholder || 'Поиск по модели или категории...'}
+            placeholder={dbStrings.searchPlaceholder || 'Поиск по модели, категории или файлу...'}
             class="search-input"
           />
         </div>
@@ -192,7 +217,6 @@
         </Button>
       </div>
 
-      <!-- Если поиск пустой, показываем вкладки категорий -->
       {#if !searchQuery.trim() && activeCategory && catalog[activeCategory]}
         <div class="categories-tabs">
           {#each Object.keys(catalog) as cat}
@@ -207,7 +231,6 @@
         </div>
       {/if}
 
-      <!-- Список моделей (отфильтрованный) -->
       {#if Object.keys(filteredCatalog).length > 0}
         {#each Object.entries(filteredCatalog) as [catName, models]}
           {#if searchQuery.trim()}
@@ -216,7 +239,7 @@
           <div class="model-list">
             {#each Object.entries(models) as [modelName, files]}
               <button class="model-item" onclick={() => { activeModel = modelName; activeCategory = catName; }}>
-                <span>{modelName}</span>
+                <span>{@html highlight(modelName, searchQuery)}</span>
                 <span class="badge">{files.length}</span>
               </button>
             {/each}
@@ -229,7 +252,6 @@
   </Card>
 {/if}
 
-<!-- Модалка с файлами -->
 {#if activeModel && catalog && activeCategory && !currentBoard && !currentPdf}
   <div class="modal-overlay" onclick={closeModal}>
     <div class="modal-content" onclick={(e) => e.stopPropagation()}>
@@ -246,10 +268,11 @@
         {#each catalog[activeCategory][activeModel] as file}
           <button 
             class="file-btn" 
+            class:file-highlighted={searchQuery.trim() && file.name.toLowerCase().includes(searchQuery.trim().toLowerCase())}
             onclick={() => openFile(file)} 
             disabled={fileLoading}
           >
-            {file.type === 'pdf' ? '📄' : '🗺️'} {file.name}
+            {file.type === 'pdf' ? '📄' : '🗺️'} {@html highlight(file.name, searchQuery)}
           </button>
         {/each}
       </div>
@@ -260,7 +283,7 @@
 {/if}
 
 <style>
-  /* Стили для поиска */
+  /* ... стили без изменений, оставь как было ... */
   .controls { margin-bottom: 16px; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
   .search-wrapper { position: relative; flex: 1; max-width: 400px; }
   .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
@@ -297,6 +320,7 @@
   .file-list { display: flex; flex-direction: column; gap: 8px; }
   .file-btn { text-align: left; padding: 10px; background: var(--bg-base); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: var(--text-primary); }
   .file-btn:hover { border-color: var(--accent); }
+  .file-btn.file-highlighted { border-color: var(--accent); background: var(--accent-dim); }
 
   .loading-indicator { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-base); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--accent); font-size: 14px; }
   
@@ -313,4 +337,11 @@
   :global(.pdf-toolbar button[title="Download"]),
   :global(.pdf-toolbar button[aria-label="Download"]),
   :global(.pdf-toolbar .pdf-toolbar__download) { display: none !important; }
+
+  :global(mark) {
+    background: var(--accent);
+    color: #000;
+    padding: 0 2px;
+    border-radius: 2px;
+  }
 </style>

@@ -11,7 +11,7 @@ pub struct Guide {
     pub image: Option<String>,
     pub description: String,
     pub source: String,
-    pub r#type: String, // "video"
+    pub r#type: String,
     pub published: String,
 }
 
@@ -34,14 +34,14 @@ const YT_CHANNELS_RU: &[(&str, &str)] = &[
     ("GadgetHelp", "UCyhYiQsHN7Od2UEVgi4mKNA"),
 ];
 
+const BILI_UIDS: &[u64] = &[382666849, 611438407, 279787076, 1515460764];
+
 const CACHE_TTL_SECS: u64 = 6 * 60 * 60;
 
 fn get_guides_cache_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     let mut path = app.path().app_data_dir().map_err(|e| format!("No data dir: {}", e))?;
     path.push("guides");
-    if !path.exists() {
-        fs::create_dir_all(&path).map_err(|e| format!("Create dir error: {}", e))?;
-    }
+    if !path.exists() { fs::create_dir_all(&path).map_err(|e| format!("Create dir error: {}", e))?; }
     Ok(path)
 }
 
@@ -56,12 +56,8 @@ fn now_secs() -> u64 {
 
 fn clean_cdata(input: &str) -> String {
     let mut result = input.trim().to_string();
-    if result.starts_with("<![CDATA[") {
-        result = result.trim_start_matches("<![CDATA[").to_string();
-    }
-    if result.ends_with("]]>") {
-        result = result.trim_end_matches("]]>").to_string();
-    }
+    if result.starts_with("<![CDATA[") { result = result.trim_start_matches("<![CDATA[").to_string(); }
+    if result.ends_with("]]>") { result = result.trim_end_matches("]]>").to_string(); }
     result.trim().to_string()
 }
 
@@ -86,32 +82,19 @@ fn parse_youtube_feed(xml: &str, source_name: &str) -> Vec<Guide> {
             let entry_str = entry.as_str();
             let title = title_re.captures(entry_str).and_then(|c| c.get(1)).map(|m| clean_cdata(m.as_str())).unwrap_or_default();
             let published = published_re.captures(entry_str).and_then(|c| c.get(1)).map(|m| m.as_str().trim().to_string()).unwrap_or_default();
-            
             let mut link = String::new();
-            if let Some(cap) = link_re.captures(entry_str) {
-                if let Some(m) = cap.get(1) {
-                    link = m.as_str().to_string();
-                }
-            }
-            
+            if let Some(cap) = link_re.captures(entry_str) { if let Some(m) = cap.get(1) { link = m.as_str().to_string(); } }
             let image = thumb_re.captures(entry_str).and_then(|c| c.get(1)).map(|m| m.as_str().to_string());
 
             if !title.is_empty() && !link.is_empty() {
                 let embed_link = if let Some(vid) = link.split("v=").nth(1) {
                     format!("https://www.youtube.com/embed/{}", vid.split('&').next().unwrap_or(vid))
-                } else {
-                    link.clone()
-                };
+                } else { link.clone() };
 
                 guides.push(Guide {
-                    id: make_id(&link),
-                    title: title.clone(),
-                    link: embed_link,
-                    image,
-                    description: String::new(),
-                    source: source_name.to_string(),
-                    r#type: "video".to_string(),
-                    published,
+                    id: make_id(&link), title: title.clone(), link: embed_link, image,
+                    description: String::new(), source: source_name.to_string(),
+                    r#type: "video".to_string(), published,
                 });
             }
         }
@@ -124,64 +107,65 @@ async fn fetch_youtube_feeds(channels: &[(&str, &str)]) -> Vec<Guide> {
     let mut all = Vec::new();
     for (name, channel_id) in channels {
         let url = format!("https://www.youtube.com/feeds/videos.xml?channel_id={}", channel_id);
-        match client.get(&url).send().await {
-            Ok(resp) => {
-                let status = resp.status();
-                match resp.text().await {
-                    Ok(text) => {
-                        let parsed = parse_youtube_feed(&text, name);
-                        eprintln!("[guides] YouTube {}: status={}, parsed={}", name, status, parsed.len());
-                        all.extend(parsed);
-                    }
-                    Err(e) => eprintln!("[guides] YouTube {} text error: {}", name, e),
-                }
+        if let Ok(resp) = client.get(&url).send().await {
+            if let Ok(text) = resp.text().await {
+                all.extend(parse_youtube_feed(&text, name));
             }
-            Err(e) => eprintln!("[guides] YouTube {} request error: {}", name, e),
         }
     }
     all
 }
 
+async fn fetch_bilibili_feeds(page: u32) -> Result<Vec<Guide>, String> {
+    let mut all = Vec::new();
+    let mut risk_control = false;
+    for uid in BILI_UIDS {
+        match crate::bilibili::fetch_bilibili_videos(*uid, page).await {
+            Ok(videos) => all.extend(videos),
+            Err(e) => {
+                if e == "RISK_CONTROL" { risk_control = true; }
+            }
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+    }
+    if risk_control && all.is_empty() {
+        return Err("Bilibili временно недоступен (риск-контроль). Попробуйте позже.".to_string());
+    }
+    Ok(all)
+}
+
 #[tauri::command]
-pub async fn fetch_guides(app: tauri::AppHandle, locale: String, force: Option<bool>) -> Result<Vec<Guide>, String> {
+pub async fn fetch_guides(app: tauri::AppHandle, locale: String, force: Option<bool>, page: Option<u32>) -> Result<Vec<Guide>, String> {
     let force = force.unwrap_or(false);
+    let page = page.unwrap_or(1);
     let cache_path = cache_path_for_locale(&app, &locale)?;
-    
-    if !force && cache_path.exists() {
+
+    if !force && page == 1 && cache_path.exists() {
         if let Ok(content) = fs::read_to_string(&cache_path) {
             if let Ok(cached) = serde_json::from_str::<CachedGuides>(&content) {
                 if now_secs() - cached.timestamp < CACHE_TTL_SECS && !cached.guides.is_empty() {
-                    eprintln!("[guides] cache hit for locale={}, count={}", locale, cached.guides.len());
                     return Ok(cached.guides);
                 }
             }
         }
     }
 
-    eprintln!("[guides] fetching fresh data for locale={}, force={}", locale, force);
     let mut guides = Vec::new();
-    
     if locale == "ru" {
         guides.extend(fetch_youtube_feeds(YT_CHANNELS_RU).await);
+    } else if locale == "zh" {
+        guides = fetch_bilibili_feeds(page).await?;
     } else {
         guides.extend(fetch_youtube_feeds(YT_CHANNELS_EN).await);
     }
 
-    guides.sort_by(|a, b| {
-        if a.published.is_empty() && b.published.is_empty() { std::cmp::Ordering::Equal }
-        else if a.published.is_empty() { std::cmp::Ordering::Greater }
-        else if b.published.is_empty() { std::cmp::Ordering::Less }
-        else { b.published.cmp(&a.published) }
-    });
+    guides.sort_by(|a, b| b.published.cmp(&a.published));
 
-    if !guides.is_empty() {
+    if !guides.is_empty() && page == 1 {
         let cached = CachedGuides { timestamp: now_secs(), guides: guides.clone() };
         if let Ok(json) = serde_json::to_string(&cached) { let _ = fs::write(&cache_path, json); }
-    } else {
-        let _ = fs::remove_file(&cache_path);
     }
 
-    eprintln!("[guides] returning {} guides for locale={}", guides.len(), locale);
     Ok(guides)
 }
 

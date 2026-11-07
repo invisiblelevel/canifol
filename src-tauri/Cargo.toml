@@ -1,6 +1,6 @@
 [package]
 name = "canifol"
-version = "1.5.0"
+version = "1.5.1"
 description = "Canifol — Repairman's toolkit"
 authors = ["you"]
 edition = "2021"
@@ -16,6 +16,8 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2.12", features = [] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
+megalib = "0.11.0"
+tokio = { version = "1", features = ["time", "fs"] }
 serde_json = "1"
 urlencoding = "2"
 tauri-plugin-fs = "2"
@@ -27,6 +29,10 @@ regex = "1"
 scraper = "0.20"
 des = "0.8"
 encoding_rs = "0.8"
+md5 = "0.7"
+hmac = "0.12"
+sha2 = "0.10"
+
 
 # BoardView
 pcbrepair = "0.4"
