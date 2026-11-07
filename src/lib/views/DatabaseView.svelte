@@ -73,14 +73,12 @@
       
       let localPath;
       try {
-        // 1. Пробуем Google Drive
         localPath = await invoke('download_gdrive_file', { 
           fileId: CATALOG_FILE_ID, 
           filename: 'catalog.json' 
         });
       } catch (gdriveError) {
         console.warn('GDrive failed, trying MEGA...', gdriveError);
-        // 2. Если GDrive упал — пробуем MEGA
         localPath = await invoke('download_mega_file', {
           url: CATALOG_MEGA_URL,
           filename: 'catalog.json'
@@ -109,7 +107,6 @@
     currentPdf = null;
     
     try {
-      // Для файлов фоллбэк на MEGA не делаем (у нас нет прямых ссылок на каждый файл)
       const localPath = await invoke('download_gdrive_file', { 
         fileId: file.id, 
         filename: file.name 
@@ -208,7 +205,7 @@
           <input 
             type="text" 
             bind:value={searchQuery}
-            placeholder={dbStrings.searchPlaceholder || 'Поиск по модели, категории или файлу...'}
+            placeholder={dbStrings.searchPlaceholder}
             class="search-input"
           />
         </div>
@@ -246,7 +243,7 @@
           </div>
         {/each}
       {:else}
-        <div class="placeholder">{dbStrings.nothingFound || 'Ничего не найдено'}</div>
+        <div class="placeholder">{dbStrings.nothingFound}</div>
       {/if}
     {/if}
   </Card>
@@ -277,13 +274,13 @@
         {/each}
       </div>
       
-      <Button variant="ghost" onclick={closeModal}>Закрыть</Button>
+      <Button variant="ghost" onclick={closeModal}>{dbStrings.close}</Button>
     </div>
   </div>
 {/if}
 
 <style>
-  /* ... стили без изменений, оставь как было ... */
+  /* ... стили без изменений ... */
   .controls { margin-bottom: 16px; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
   .search-wrapper { position: relative; flex: 1; max-width: 400px; }
   .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }

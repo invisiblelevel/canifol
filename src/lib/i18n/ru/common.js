@@ -52,7 +52,10 @@ export const common = {
     error: 'Ошибка загрузки',
     refresh: 'Обновить',
     backToList: 'Назад к списку',
-    downloading: 'Скачивание'
+    downloading: 'Скачивание',
+    searchPlaceholder: 'Поиск по модели, категории или файлу...',
+    close: 'Закрыть',
+    nothingFound: 'Ничего не найдено'
   },
   boardview: {
     openFile: 'Открыть свой файл',

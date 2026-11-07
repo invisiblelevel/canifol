@@ -50,7 +50,10 @@ export const common = {
     error: 'Loading error',
     refresh: 'Refresh',
     backToList: 'Back to list',
-    downloading: 'Downloading'
+    downloading: 'Downloading',
+    searchPlaceholder: 'Search by model, category or file...',
+    close: 'Close',
+    nothingFound: 'Nothing found'
   },
   boardview: {
     openFile: 'Open local file',
