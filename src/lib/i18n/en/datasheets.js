@@ -40,6 +40,10 @@ export const datasheets = {
     "guidesCacheTitle": "Guides cache",
     "guidesCacheHint": "Downloaded articles and videos are stored locally for 6 hours. Clearing will force re-fetch on next open.",
     "clearGuides": "Clear guides cache",
-    "confirmClearGuides": "Delete guides cache? Articles will be re-fetched next time you open the section."
+    "confirmClearGuides": "Delete guides cache? Articles will be re-fetched next time you open the section.",
+    
+    "downloadFavoritesBtn": "Download all favorite PDFs",
+    "downloadNoFavorites": "No favorite datasheets to download",
+    "downloadResult": "Downloaded: {downloaded} · Already present: {skipped} · Failed: {failed}"
   }
 };

@@ -24,7 +24,7 @@
     } else {
       selected = await open({
         multiple: false,
-        filters: [{ name: 'BoardView', extensions: ['fz', 'cae', 'cad', 'bdv', 'asc', 'pcb', 'brd'] }]
+        filters: [{ name: 'BoardView', extensions: ['fz', 'cae', 'cad', 'bdv', 'asc', 'pcb', 'brd', 'tvw'] }]
       });
     }
     if (!selected) return;
@@ -55,7 +55,7 @@
   {:else if filePath && !errorMsg}
     <BoardViewer path={filePath} />
   {:else if errorMsg}
-    <div class="error-box">Ошибка: {errorMsg}</div>
+    <div class="error-box">{strings.boardview.error || 'Ошибка'}: {errorMsg}</div>
     <div class="controls">
       <button class="btn-open" onclick={openFile}>
         {strings.boardview.openFile}
@@ -64,8 +64,8 @@
   {:else}
     <EmptyState 
       icon={Layers}
-      title={strings.boardview.emptyTitle || 'Нет открытого файла'}
-      description={strings.boardview.emptyDesc || 'Откройте BoardView (.fz, .cad, .bdv), чтобы увидеть схему платы, пины и компоненты.'}
+      title={strings.boardview.emptyTitle}
+      description={strings.boardview.emptyDesc}
     >
       <button class="btn-open" onclick={openFile}>
         {strings.boardview.openFile}

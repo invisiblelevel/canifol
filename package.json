@@ -1,6 +1,6 @@
 {
   "name": "fixitron",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "Fixitron — инструмент ремонтника: калькуляторы компонентов и даташиты",
   "type": "module",
   "scripts": {

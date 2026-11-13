@@ -54,7 +54,7 @@ export const common = {
     openFile: '打开本地文件',
     noFile: '选择一个 .fz 或 .cad 文件进行查看',
     emptyTitle: '未打开文件',
-    emptyDesc: '打开 BoardView (.fz, .cad, .bdv, .pcb, .brd) 以查看电路板原理图、引脚和元器件。',
+    emptyDesc: '打开 BoardView (.fz, .cad, .bdv, .pcb, .brd, .tvw) 以查看电路板原理图、引脚和元器件。',
     loading: '加载中...',
     error: '加载错误',
     pinsCount: '引脚',
@@ -70,6 +70,7 @@ export const common = {
       { name: 'CAD (GenCAD)', desc: '引脚、元件、走线、焊盘。' },
       { name: 'BDV / ASC', desc: 'eM-Test Expert。引脚和元件（原生轮廓）。' },
       { name: 'XZZ (.pcb)', desc: 'Nintendo Switch 等。XOR + DES。走线、轮廓、引脚。' },
+      { name: 'TVW (Teleplan)', desc: 'Teleplan / TestView。二进制和 ASCII。引脚、元件、轮廓。' },
       { name: 'TOPTEST BRD2 (.brd)', desc: '文本格式。引脚、元件、网络。' },
       { name: 'Apple BoardView (.brd)', desc: 'Apple / Mac。混淆文本。引脚和网络。' }
     ],
@@ -78,6 +79,7 @@ export const common = {
       '点击引脚以高亮整个网络。',
       '按元件搜索（例如，Q21）。',
       '图层：引脚、走线、元件、布线。',
+      '双层板的 TOP / BOTTOM 切换。',
       '缩放和平移。',
       '全屏模式。'
     ]

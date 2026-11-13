@@ -61,7 +61,7 @@ export const common = {
     openFile: 'Открыть свой файл',
     noFile: 'Выберите файл .fz или .cad для просмотра',
     emptyTitle: 'Нет открытого файла',
-    emptyDesc: 'Откройте BoardView (.fz, .cad, .bdv, .pcb, .brd), чтобы увидеть схему платы, пины и компоненты.',
+    emptyDesc: 'Откройте BoardView (.fz, .cad, .bdv, .pcb, .brd, .tvw), чтобы увидеть схему платы, пины и компоненты.',
     loading: 'Загрузка...',
     error: 'Ошибка загрузки',
     pinsCount: 'Пинов',
@@ -77,6 +77,7 @@ export const common = {
       { name: 'CAD (GenCAD)', desc: 'Пины, компоненты, дорожки, пады.' },
       { name: 'BDV / ASC', desc: 'eM-Test Expert. Пины и компоненты (родные контуры).' },
       { name: 'XZZ (.pcb)', desc: 'Nintendo Switch и другие. XOR + DES. Дорожки, контуры, пины.' },
+      { name: 'TVW (Teleplan)', desc: 'Teleplan / TestView. Бинарный и ASCII. Пины, компоненты, контур.' },
       { name: 'TOPTEST BRD2 (.brd)', desc: 'Текстовый формат. Пины, компоненты, нет-листы.' },
       { name: 'Apple BoardView (.brd)', desc: 'Apple / Mac. Обфусцированный текст. Пины и нет-листы.' }
     ],
@@ -85,6 +86,7 @@ export const common = {
       'Клик по пину — подсветка всей цепи (нет-листа).',
       'Поиск по компонентам (например, Q21).',
       'Слои: пины, дорожки, компоненты, трассировка.',
+      'Переключение TOP / BOTTOM для двусторонних плат.',
       'Масштабирование и панорамирование.',
       'Полноэкранный режим.'
     ]

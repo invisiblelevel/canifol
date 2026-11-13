@@ -1,5 +1,4 @@
 <script>
-  // ... (без изменений, как в прошлой версии)
   import { invoke } from '@tauri-apps/api/core';
   import { onMount, tick } from 'svelte';
   import { getStrings } from '../strings.svelte.js';
@@ -9,7 +8,7 @@
 
   let canvas;
   let ctx;
-  let data = $state(externalData || { pins: [], lines: [], arcs: [], components: [], pads: [], routes: [] });
+  let data = $state(externalData || { format: '', pins: [], lines: [], arcs: [], components: [], pads: [], routes: [] });
   let loading = $state(!externalData);
   let error = $state('');
 
@@ -20,10 +19,17 @@
   let lastX = 0, lastY = 0;
   let isFullscreen = $state(false);
 
+  // Видимость слоёв
+  let showTop = $state(true);
+  let showBottom = $state(true);
+  let hasBottomLayer = $state(true); // есть ли вообще нижний слой
+
+  // Что рисуем
   let showPins = $state(true);
   let showLines = $state(true);
   let showComponents = $state(true);
   let showRoutes = $state(false);
+  let showLabels = $state(true);
 
   let bounds = { minX: 0, minY: 0, maxX: 0, maxY: 0, w: 1, h: 1 };
   let hoveredPin = $state(null);
@@ -51,6 +57,27 @@
     requestAnimationFrame(() => { drawPending = false; draw(); });
   }
 
+  function compSide(comp) {
+    if (!comp || !comp.layer) return 'TOP';
+    return comp.layer.toUpperCase() === 'BOTTOM' ? 'BOTTOM' : 'TOP';
+  }
+  function pinSide(pin) {
+    if (!pin || !pin.side) return 'TOP';
+    return pin.side.toLowerCase() === 'bottom' ? 'BOTTOM' : 'TOP';
+  }
+  function isCompVisible(comp) {
+    const s = compSide(comp);
+    if (s === 'TOP' && !showTop) return false;
+    if (s === 'BOTTOM' && !showBottom) return false;
+    return true;
+  }
+  function isPinVisible(pin) {
+    const s = pinSide(pin);
+    if (s === 'TOP' && !showTop) return false;
+    if (s === 'BOTTOM' && !showBottom) return false;
+    return true;
+  }
+
   async function loadFile() {
     if (!path) { loading = false; return; }
     loading = true;
@@ -58,6 +85,22 @@
     try {
       const result = await invoke('read_boardview', { path });
       data = result;
+      
+      // АВТООПРЕДЕЛЕНИЕ СЛОЕВ
+      const topPinsCount = data.pins.filter(p => p.side === 'top').length;
+      const botPinsCount = data.pins.filter(p => p.side === 'bottom').length;
+      const isSingleSided = botPinsCount < topPinsCount * 0.05;
+      
+      if (isSingleSided) {
+          showTop = true;
+          showBottom = false;
+          hasBottomLayer = false;
+      } else {
+          showTop = true;
+          showBottom = true;
+          hasBottomLayer = true;
+      }
+
       selectedPin = null; connectedNames = new Set();
       searchedComponent = null; searchedPinNames = new Set(); searchNotFound = false;
 
@@ -132,6 +175,7 @@
   function findPinAt(mx, my, rect) {
     let closest = null; let minDist = 15;
     for (const p of data.pins) {
+      if (!isPinVisible(p)) continue;
       const { x, y } = worldToScreen(p.x, p.y, rect);
       if (x < -15 || x > rect.width + 15 || y < -15 || y > rect.height + 15) continue;
       const dist = Math.hypot(x - mx, y - my);
@@ -174,29 +218,39 @@
     ctx.translate(-(minX + w / 2), -(minY + h / 2));
 
     if (showLines && data.lines && data.lines.length > 0) {
-      // 1. Обычные дорожки платы (зеленые)
-      const boardLines = data.lines.filter(l => l.layer !== 'COMPONENT');
+      const boardLines = data.lines.filter(l => l.layer !== 'COMPONENT' && l.layer !== 'OUTLINE');
       if (boardLines.length > 0) {
-        ctx.strokeStyle = '#00aa00'; 
-        ctx.lineWidth = 1 / (scale * fitScale); 
+        ctx.strokeStyle = '#00aa00';
+        ctx.lineWidth = 1 / (scale * fitScale);
         ctx.beginPath();
-        for (const line of boardLines) { 
-          ctx.moveTo(line.x1, line.y1); 
-          ctx.lineTo(line.x2, line.y2); 
-        } 
+        for (const line of boardLines) {
+          ctx.moveTo(line.x1, line.y1);
+          ctx.lineTo(line.x2, line.y2);
+        }
         ctx.stroke();
       }
 
-      // 2. Визуальные контуры компонентов (голубые)
+      const outlineLines = data.lines.filter(l => l.layer === 'OUTLINE' || l.layer === 'BOARD');
+      if (outlineLines.length > 0) {
+        ctx.strokeStyle = '#00ff88';
+        ctx.lineWidth = 2 / (scale * fitScale);
+        ctx.beginPath();
+        for (const line of outlineLines) {
+          ctx.moveTo(line.x1, line.y1);
+          ctx.lineTo(line.x2, line.y2);
+        }
+        ctx.stroke();
+      }
+
       const compLines = data.lines.filter(l => l.layer === 'COMPONENT');
       if (compLines.length > 0) {
-        ctx.strokeStyle = '#00aaff'; 
-        ctx.lineWidth = 1.5 / (scale * fitScale); 
+        ctx.strokeStyle = '#00aaff';
+        ctx.lineWidth = 1.5 / (scale * fitScale);
         ctx.beginPath();
-        for (const line of compLines) { 
-          ctx.moveTo(line.x1, line.y1); 
-          ctx.lineTo(line.x2, line.y2); 
-        } 
+        for (const line of compLines) {
+          ctx.moveTo(line.x1, line.y1);
+          ctx.lineTo(line.x2, line.y2);
+        }
         ctx.stroke();
       }
     }
@@ -204,8 +258,14 @@
     if (showRoutes && data.routes && data.routes.length > 0) {
       const topRoutes = data.routes.filter(r => r.layer === 'TOP');
       const bottomRoutes = data.routes.filter(r => r.layer !== 'TOP');
-      if (topRoutes.length > 0) { ctx.strokeStyle = '#00ff00'; ctx.lineWidth = 1 / (scale * fitScale); ctx.beginPath(); for (const r of topRoutes) { ctx.moveTo(r.x1, r.y1); ctx.lineTo(r.x2, r.y2); } ctx.stroke(); }
-      if (bottomRoutes.length > 0) { ctx.strokeStyle = '#ff8800'; ctx.lineWidth = 1 / (scale * fitScale); ctx.beginPath(); for (const r of bottomRoutes) { ctx.moveTo(r.x1, r.y1); ctx.lineTo(r.x2, r.y2); } ctx.stroke(); }
+      if (showTop && topRoutes.length > 0) {
+        ctx.strokeStyle = '#00ff00'; ctx.lineWidth = 1 / (scale * fitScale);
+        ctx.beginPath(); for (const r of topRoutes) { ctx.moveTo(r.x1, r.y1); ctx.lineTo(r.x2, r.y2); } ctx.stroke();
+      }
+      if (showBottom && bottomRoutes.length > 0) {
+        ctx.strokeStyle = '#ff8800'; ctx.lineWidth = 1 / (scale * fitScale);
+        ctx.beginPath(); for (const r of bottomRoutes) { ctx.moveTo(r.x1, r.y1); ctx.lineTo(r.x2, r.y2); } ctx.stroke();
+      }
     }
 
     if (showLines && data.arcs) {
@@ -213,57 +273,88 @@
       for (const arc of data.arcs) { ctx.beginPath(); ctx.moveTo(arc.x1, arc.y1); ctx.lineTo(arc.x2, arc.y2); ctx.stroke(); }
     }
 
-    if (showComponents && data.components) {
-      const worldStroke = 0.5 / (scale * fitScale);
+        if (showComponents && data.components) {
+      const worldStroke = 0.8 / (scale * fitScale);
       for (const comp of data.components) {
         if (comp.bounds_x1 === undefined) continue;
-        const cw = comp.bounds_x2 - comp.bounds_x1; const ch = comp.bounds_y2 - comp.bounds_y1;
+        if (!isCompVisible(comp)) continue;
+
+        const cw = comp.bounds_x2 - comp.bounds_x1;
+        const ch = comp.bounds_y2 - comp.bounds_y1;
+        const side = compSide(comp);
         const ic = isIC(comp.ref_name);
         const isSearched = searchedComponent && searchedComponent.ref_name === comp.ref_name;
-        if (isSearched) { ctx.strokeStyle = '#ff00ff'; ctx.lineWidth = worldStroke * 4; ctx.strokeRect(comp.bounds_x1, comp.bounds_y1, cw, ch); }
-        else if (ic) { ctx.strokeStyle = '#00aaff'; ctx.lineWidth = worldStroke * 2; ctx.strokeRect(comp.bounds_x1, comp.bounds_y1, cw, ch); }
-        else { ctx.fillStyle = 'rgba(80, 80, 80, 0.4)'; ctx.strokeStyle = '#aaaaaa'; ctx.lineWidth = worldStroke * 2; ctx.fillRect(comp.bounds_x1, comp.bounds_y1, cw, ch); ctx.strokeRect(comp.bounds_x1, comp.bounds_y1, cw, ch); }
+
+        // Тонкие контуры, без заливки
+        if (isSearched) {
+          ctx.strokeStyle = '#ff00ff';
+          ctx.lineWidth = worldStroke * 4;
+          ctx.strokeRect(comp.bounds_x1, comp.bounds_y1, cw, ch);
+        } else {
+          ctx.strokeStyle = side === 'TOP' ? (ic ? '#00aaff' : '#777777') : (ic ? '#ff8800' : '#996633');
+          ctx.lineWidth = worldStroke * 1.5;
+          ctx.strokeRect(comp.bounds_x1, comp.bounds_y1, cw, ch);
+        }
       }
     }
     ctx.restore();
 
     if (showPins && data.pins) {
       for (const p of data.pins) {
+        if (!isPinVisible(p)) continue;
         const { x, y } = worldToScreen(p.x, p.y, rect);
         if (x < -10 || x > rect.width + 10 || y < -10 || y > rect.height + 10) continue;
-        let fillColor = '#ffaa00'; let radius = 3;
+
+        const side = pinSide(p);
+        let fillColor = side === 'TOP' ? '#ffaa00' : '#ff6600';
+        let radius = 3;
+
         if (selectedPin && selectedPin.name === p.name) { fillColor = '#00ff00'; radius = 5; }
         else if (connectedNames.has(p.name) || searchedPinNames.has(p.name)) { fillColor = '#ff00ff'; radius = 4; }
+
         ctx.beginPath(); ctx.arc(x, y, radius + 1, 0, Math.PI * 2); ctx.fillStyle = '#000000'; ctx.fill();
         ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fillStyle = fillColor; ctx.fill();
       }
     }
 
-    if (showComponents && scale > 1.5 && data.components) {
+    if (showComponents && showLabels && scale > 1.5 && data.components) {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; let count = 0; const MAX_LABELS = 300;
       for (const comp of data.components) {
         if (count >= MAX_LABELS) break;
         if (comp.bounds_x1 === undefined) continue;
-        const cx = (comp.bounds_x1 + comp.bounds_x2) / 2; const cy = (comp.bounds_y1 + comp.bounds_y2) / 2;
+        if (!isCompVisible(comp)) continue;
+
+        const cx = (comp.bounds_x1 + comp.bounds_x2) / 2;
+        const cy = (comp.bounds_y1 + comp.bounds_y2) / 2;
         const { x, y } = worldToScreen(cx, cy, rect);
         if (x < 0 || x > rect.width || y < 0 || y > rect.height) continue;
-        const ic = isIC(comp.ref_name); const isSearched = searchedComponent && searchedComponent.ref_name === comp.ref_name;
+
+        const side = compSide(comp);
+        const ic = isIC(comp.ref_name);
+        const isSearched = searchedComponent && searchedComponent.ref_name === comp.ref_name;
         const fontSize = isSearched ? 20 : (ic ? 16 : 11);
         ctx.font = `${(ic || isSearched) ? 'bold ' : ''}${fontSize}px monospace`;
         const label = comp.device ? `${comp.ref_name} (${comp.device})` : comp.ref_name;
         const textW = ctx.measureText(label).width;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'; ctx.fillRect(x - textW/2 - 2, y - fontSize/2 - 2, textW + 4, fontSize + 4);
-        ctx.fillStyle = isSearched ? '#ff00ff' : (ic ? '#00aaff' : '#ffffff'); ctx.fillText(label, x, y); count++;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(x - textW/2 - 2, y - fontSize/2 - 2, textW + 4, fontSize + 4);
+        ctx.fillStyle = isSearched ? '#ff00ff' : (side === 'TOP' ? (ic ? '#00aaff' : '#ffffff') : '#ffaa55');
+        ctx.fillText(label, x, y); count++;
       }
     }
 
-    if (hoveredPin && hoveredPin.name !== selectedPin?.name) {
+    if (hoveredPin && hoveredPin.name !== selectedPin?.name && isPinVisible(hoveredPin)) {
       const { x, y } = worldToScreen(hoveredPin.x, hoveredPin.y, rect);
       ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI * 2); ctx.strokeStyle = '#ffaa00'; ctx.lineWidth = 2; ctx.stroke();
     }
   }
 
-  $effect(() => { scale; offsetX; offsetY; hoveredPin; showPins; showLines; showComponents; showRoutes; selectedPin; connectedNames; searchedComponent; searchedPinNames; requestDraw(); });
+  $effect(() => {
+    scale; offsetX; offsetY; hoveredPin; showPins; showLines; showComponents; showRoutes;
+    showTop; showBottom; showLabels;
+    selectedPin; connectedNames; searchedComponent; searchedPinNames;
+    requestDraw();
+  });
 
   function handleWheel(e) { e.preventDefault(); scale *= e.deltaY > 0 ? 0.9 : 1.1; requestDraw(); }
   function handleMouseMove(e) {
@@ -314,14 +405,16 @@
     }
   }
 
-  function handleTouchEnd() {
-    isTouchDragging = false;
-  }
+  function handleTouchEnd() { isTouchDragging = false; }
 
   function toggleFullscreen() {
     isFullscreen = !isFullscreen;
     setTimeout(() => requestDraw(), 100);
   }
+
+  function setOnlyTop() { showTop = true; showBottom = false; requestDraw(); }
+  function setOnlyBottom() { showTop = false; showBottom = true; requestDraw(); }
+  function setBoth() { showTop = true; showBottom = true; requestDraw(); }
 </script>
 
 <svelte:window onkeydown={(e) => { if (e.key === 'Escape' && isFullscreen) toggleFullscreen(); }} />
@@ -343,21 +436,65 @@
       ontouchmove={handleTouchMove}
       ontouchend={handleTouchEnd}
     ></canvas>
+
     <div class="layers-panel">
-      <label><input type="checkbox" bind:checked={showPins} /> {strings.boardview.showPins}</label>
-      <label><input type="checkbox" bind:checked={showLines} /> {strings.boardview.showLines}</label>
-      <label><input type="checkbox" bind:checked={showComponents} /> {strings.boardview.showComponents}</label>
-      <label><input type="checkbox" bind:checked={showRoutes} /> {strings.boardview.showRoutes}</label>
+      {#if hasBottomLayer}
+        <div class="side-switcher">
+          <button class="side-btn" class:active={showTop && !showBottom} onclick={setOnlyTop}>TOP</button>
+          <button class="side-btn" class:active={!showTop && showBottom} onclick={setOnlyBottom}>BOTTOM</button>
+          <button class="side-btn" class:active={showTop && showBottom} onclick={setBoth}>Оба</button>
+        </div>
+        <hr />
+      {/if}
+      <label><input type="checkbox" bind:checked={showTop} /> <span class="dot dot-top"></span> Верхний слой</label>
+      {#if hasBottomLayer}
+      <label><input type="checkbox" bind:checked={showBottom} /> <span class="dot dot-bottom"></span> Нижний слой</label>
+      {/if}
+      <hr />
+      <label><input type="checkbox" bind:checked={showPins} /> Пины</label>
+      <label><input type="checkbox" bind:checked={showLines} /> Линии/дорожки</label>
+      <label><input type="checkbox" bind:checked={showComponents} /> Компоненты</label>
+      <label><input type="checkbox" bind:checked={showLabels} /> Подписи</label>
+      <label><input type="checkbox" bind:checked={showRoutes} /> Routes</label>
     </div>
+
     <div class="info">
-      {strings.boardview.pinsCount}: {data.pins.length} · Компонентов: {data.components.length} · {strings.boardview.zoom}: {scale.toFixed(2)}x
+      {#if data.format}<span class="fmt-badge">{data.format.toUpperCase()}</span> · {/if}
+      {strings.boardview.pinsCount}: {data.pins.filter(isPinVisible).length}
+      · Компонентов: {data.components.filter(isCompVisible).length}
+      · {strings.boardview.zoom}: {scale.toFixed(2)}x
       {#if selectedPin} · <span style="color: #00ff00;">{selectedPin.name}</span> (Net: {selectedPin.net || 'no net'}) · Связей: {connectedNames.size}
       {:else if hoveredPin} · {hoveredPin.name} ({hoveredPin.net || 'no net'}){/if}
     </div>
+
     <div class="search-bar">
-      <input type="text" bind:value={searchQuery} oninput={() => { const q = searchQuery.trim().toUpperCase(); if (!q) { searchedComponent = null; searchedPinNames = new Set(); searchNotFound = false; requestDraw(); return; } const comp = data.components.find(c => c.ref_name.toUpperCase() === q); if (comp) { searchedComponent = comp; const names = new Set(); for (const p of data.pins) { if (p.name.startsWith(comp.ref_name + '.')) names.add(p.name); } searchedPinNames = names; searchNotFound = false; } else { searchedComponent = null; searchedPinNames = new Set(); searchNotFound = true; } requestDraw(); }} placeholder="Поиск: R123, Q21, U5..." class="search-input" />
+      <input
+        type="text"
+        bind:value={searchQuery}
+        oninput={() => {
+          const q = searchQuery.trim().toUpperCase();
+          if (!q) { searchedComponent = null; searchedPinNames = new Set(); searchNotFound = false; requestDraw(); return; }
+          const comp = data.components.find(c => c.ref_name.toUpperCase() === q);
+          if (comp) {
+            searchedComponent = comp;
+            const s = compSide(comp);
+            if (s === 'TOP') showTop = true; else showBottom = true;
+            const names = new Set();
+            for (const p of data.pins) {
+              if (p.name.startsWith(comp.ref_name + '.')) names.add(p.name);
+            }
+            searchedPinNames = names; searchNotFound = false;
+          } else {
+            searchedComponent = null; searchedPinNames = new Set(); searchNotFound = true;
+          }
+          requestDraw();
+        }}
+        placeholder="Поиск: R123, Q21, U5..."
+        class="search-input"
+      />
       {#if searchNotFound}<span class="not-found">Не найдено</span>{/if}
     </div>
+
     <button class="fullscreen-btn" onclick={toggleFullscreen} title="Fullscreen">{#if isFullscreen}✕{:else}⛶{/if}</button>
   {/if}
 </div>
@@ -369,10 +506,23 @@
   canvas:active { cursor: grabbing; }
   .loading, .error { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--text-muted); font-size: 1.2rem; }
   .error { color: var(--danger); }
-  .info { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 4px 12px; border-radius: var(--radius-sm); font-size: 0.8rem; color: var(--text-muted); pointer-events: none; }
-  .layers-panel { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 8px 12px; border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #fff; }
-  .layers-panel label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  .info { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 4px 12px; border-radius: var(--radius-sm); font-size: 0.8rem; color: var(--text-muted); pointer-events: none; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+  .fmt-badge { background: #ffaa00; color: #000; padding: 1px 6px; border-radius: 4px; font-weight: 600; font-size: 0.7rem; }
+
+  .layers-panel { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.85); padding: 8px 12px; border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #fff; border: 1px solid var(--border-subtle); }
+  .layers-panel hr { border: none; border-top: 1px solid var(--border-subtle); margin: 4px 0; }
+  .layers-panel label { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
   .layers-panel input[type="checkbox"] { cursor: pointer; }
+
+  .side-switcher { display: flex; gap: 4px; margin-bottom: 4px; }
+  .side-btn { flex: 1; padding: 4px 8px; background: rgba(255,255,255,0.08); color: #ccc; border: 1px solid var(--border-subtle); border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+  .side-btn:hover { background: rgba(255,255,255,0.15); }
+  .side-btn.active { background: var(--accent, #ffaa00); color: #000; border-color: var(--accent, #ffaa00); }
+
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+  .dot-top { background: #00aaff; }
+  .dot-bottom { background: #ff8800; }
+
   .search-bar { position: absolute; bottom: 50px; right: 10px; display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.85); padding: 6px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); }
   .search-input { background: transparent; border: none; color: #fff; font-size: 14px; width: 220px; outline: none; }
   .search-input::placeholder { color: #666; }

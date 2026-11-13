@@ -5,6 +5,7 @@
   import Button from '../components/Button.svelte';
   import { getStrings } from '../strings.svelte.js';
   import { uiScaleStore } from '../stores/uiScale.svelte.js';
+  import { favoritesStore } from '../stores/favorites.svelte.js';
 
   const strings = $derived(getStrings());
 
@@ -15,6 +16,10 @@
   let favSize = $state(0);
   let favClearing = $state(false);
   let favCleared = $state(false);
+
+  // Временно отключено: вернём в 1.6.0 вместе с "Добавить файл в избранное"
+  // let downloadingFavs = $state(false);
+  // let downloadResult = $state('');
 
   let guidesSize = $state(0);
   let guidesClearing = $state(false);
@@ -29,27 +34,13 @@
   }
 
   async function loadCacheSize() {
-    try {
-      cacheSize = await invoke('get_cache_size');
-    } catch (e) {
-      console.error('Failed to load cache size', e);
-    }
+    try { cacheSize = await invoke('get_cache_size'); } catch (e) { console.error(e); }
   }
-
   async function loadFavSize() {
-    try {
-      favSize = await invoke('get_favorites_size');
-    } catch (e) {
-      console.error('Failed to load favorites size', e);
-    }
+    try { favSize = await invoke('get_favorites_size'); } catch (e) { console.error(e); }
   }
-
   async function loadGuidesSize() {
-    try {
-      guidesSize = await invoke('get_guides_cache_size');
-    } catch (e) {
-      console.error('Failed to load guides cache size', e);
-    }
+    try { guidesSize = await invoke('get_guides_cache_size'); } catch (e) { console.error(e); }
   }
 
   async function clearCache() {
@@ -60,12 +51,8 @@
       await loadCacheSize();
       cleared = true;
       setTimeout(() => (cleared = false), 2000);
-    } catch (e) {
-      console.error('Clear cache error:', e);
-      alert('Error: ' + e);
-    } finally {
-      clearing = false;
-    }
+    } catch (e) { console.error(e); alert('Error: ' + e); }
+    finally { clearing = false; }
   }
 
   async function clearFavorites() {
@@ -74,15 +61,10 @@
     try {
       await invoke('clear_favorites');
       await loadFavSize();
-      await loadCacheSize();
       favCleared = true;
       setTimeout(() => (favCleared = false), 2000);
-    } catch (e) {
-      console.error('Clear favorites error:', e);
-      alert('Error: ' + e);
-    } finally {
-      favClearing = false;
-    }
+    } catch (e) { console.error(e); alert('Error: ' + e); }
+    finally { favClearing = false; }
   }
 
   async function clearGuides() {
@@ -93,13 +75,41 @@
       await loadGuidesSize();
       guidesCleared = true;
       setTimeout(() => (guidesCleared = false), 2000);
-    } catch (e) {
-      console.error('Clear guides cache error:', e);
-      alert('Error: ' + e);
-    } finally {
-      guidesClearing = false;
-    }
+    } catch (e) { console.error(e); alert('Error: ' + e); }
+    finally { guidesClearing = false; }
   }
+
+  // Временно отключено
+  // async function downloadAllFavorites() {
+  //   const datasheets = favoritesStore.datasheets;
+  //   if (!datasheets || datasheets.length === 0) {
+  //     downloadResult = strings.settings.downloadNoFavorites;
+  //     return;
+  //   }
+  //   const urls = datasheets
+  //     .map(d => d.datasheet_url)
+  //     .filter(u => u && typeof u === 'string' && u.length > 0);
+  //
+  //   if (urls.length === 0) {
+  //     downloadResult = strings.settings.downloadNoFavorites;
+  //     return;
+  //   }
+  //
+  //   downloadingFavs = true;
+  //   downloadResult = '';
+  //   try {
+  //     const res = await invoke('download_all_favorites', { urls });
+  //     downloadResult = strings.settings.downloadResult
+  //       .replace('{downloaded}', res.downloaded)
+  //       .replace('{skipped}', res.skipped)
+  //       .replace('{failed}', res.failed);
+  //     await loadFavSize();
+  //   } catch (e) {
+  //     downloadResult = 'Error: ' + e;
+  //   } finally {
+  //     downloadingFavs = false;
+  //   }
+  // }
 
   function setScale(value) {
     uiScaleStore.set(value);
@@ -120,10 +130,7 @@
       <div class="section__hint">{strings.settings.scaleHint}</div>
       <div class="scale-control">
         <input
-          type="range"
-          min="70"
-          max="150"
-          step="5"
+          type="range" min="70" max="150" step="5"
           value={uiScaleStore.current}
           oninput={(e) => setScale(parseInt(e.currentTarget.value, 10))}
           class="scale-slider"
@@ -132,13 +139,8 @@
       </div>
       <div class="scale-presets">
         {#each [80, 90, 100, 110, 125, 150] as preset}
-          <button
-            class="preset-btn"
-            class:active={uiScaleStore.current === preset}
-            onclick={() => setScale(preset)}
-          >
-            {preset}%
-          </button>
+          <button class="preset-btn" class:active={uiScaleStore.current === preset}
+            onclick={() => setScale(preset)}>{preset}%</button>
         {/each}
       </div>
     </div>
@@ -154,19 +156,14 @@
             {cacheSize > 0 ? formatBytes(cacheSize) : strings.settings.cacheEmpty}
           </span>
         </div>
-        <Button
-          variant={cacheSize > 0 ? 'secondary' : 'ghost'}
-          size="sm"
-          onclick={clearCache}
-          loading={clearing}
-          disabled={cacheSize === 0}
-        >
+        <Button variant={cacheSize > 0 ? 'secondary' : 'ghost'} size="sm"
+          onclick={clearCache} loading={clearing} disabled={cacheSize === 0}>
           {cleared ? strings.settings.cacheCleared : strings.buttons.clearCache}
         </Button>
       </div>
     </div>
 
-    <!-- Кэш избранных PDF -->
+    <!-- Кэш избранных PDF (кнопка "Скачать все" временно скрыта) -->
     <div class="section">
       <div class="section__title">{strings.settings.favoritesCacheTitle}</div>
       <div class="section__hint">{strings.settings.favoritesCacheHint}</div>
@@ -177,16 +174,24 @@
             {favSize > 0 ? formatBytes(favSize) : strings.settings.cacheEmpty}
           </span>
         </div>
-        <Button
-          variant={favSize > 0 ? 'danger' : 'ghost'}
-          size="sm"
-          onclick={clearFavorites}
-          loading={favClearing}
-          disabled={favSize === 0}
-        >
-          {favCleared ? strings.settings.cacheCleared : strings.settings.clearFavorites}
-        </Button>
+        <div class="cache-buttons">
+          <!--
+          <Button variant="primary" size="sm"
+            onclick={downloadAllFavorites} loading={downloadingFavs}>
+            {strings.settings.downloadFavoritesBtn}
+          </Button>
+          -->
+          <Button variant={favSize > 0 ? 'danger' : 'ghost'} size="sm"
+            onclick={clearFavorites} loading={favClearing} disabled={favSize === 0}>
+            {favCleared ? strings.settings.cacheCleared : strings.settings.clearFavorites}
+          </Button>
+        </div>
       </div>
+      <!--
+      {#if downloadResult}
+        <div class="download-result">{downloadResult}</div>
+      {/if}
+      -->
     </div>
 
     <!-- Кэш гайдов -->
@@ -200,13 +205,8 @@
             {guidesSize > 0 ? formatBytes(guidesSize) : strings.settings.cacheEmpty}
           </span>
         </div>
-        <Button
-          variant={guidesSize > 0 ? 'secondary' : 'ghost'}
-          size="sm"
-          onclick={clearGuides}
-          loading={guidesClearing}
-          disabled={guidesSize === 0}
-        >
+        <Button variant={guidesSize > 0 ? 'secondary' : 'ghost'} size="sm"
+          onclick={clearGuides} loading={guidesClearing} disabled={guidesSize === 0}>
           {guidesCleared ? strings.settings.cacheCleared : strings.settings.clearGuides}
         </Button>
       </div>
@@ -226,15 +226,7 @@
   .scale-value { min-width: 60px; text-align: right; font-family: var(--font-mono); font-weight: 600; color: var(--accent); }
 
   .scale-presets { display: flex; gap: var(--space-2); flex-wrap: wrap; }
-  .preset-btn {
-    min-height: 36px;
-    padding: 0 var(--space-3);
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-sm);
-    color: var(--text-secondary);
-    background: var(--bg-elevated-2);
-    border: 1px solid var(--border-subtle);
-  }
+  .preset-btn { min-height: 36px; padding: 0 var(--space-3); border-radius: var(--radius-md); font-size: var(--font-size-sm); color: var(--text-secondary); background: var(--bg-elevated-2); border: 1px solid var(--border-subtle); }
   .preset-btn:hover { color: var(--text-primary); border-color: var(--border-strong); }
   .preset-btn.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
 
@@ -242,4 +234,6 @@
   .cache-info { display: flex; gap: var(--space-2); align-items: baseline; }
   .cache-info__label { font-size: var(--font-size-sm); color: var(--text-muted); }
   .cache-info__value { font-family: var(--font-mono); font-size: var(--font-size-base); color: var(--text-primary); font-weight: 600; }
+  .cache-buttons { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+  .download-result { font-size: var(--font-size-sm); color: var(--accent); padding: var(--space-2) 0; }
 </style>

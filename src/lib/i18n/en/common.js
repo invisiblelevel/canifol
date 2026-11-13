@@ -59,7 +59,7 @@ export const common = {
     openFile: 'Open local file',
     noFile: 'Select a .fz or .cad file to view',
     emptyTitle: 'No file open',
-    emptyDesc: 'Open a BoardView (.fz, .cad, .bdv, .pcb, .brd) to see the board schematic, pins and components.',
+    emptyDesc: 'Open a BoardView (.fz, .cad, .bdv, .pcb, .brd, .tvw) to see the board schematic, pins and components.',
     loading: 'Loading...',
     error: 'Loading error',
     pinsCount: 'Pins',
@@ -75,6 +75,7 @@ export const common = {
       { name: 'CAD (GenCAD)', desc: 'Pins, components, traces, pads.' },
       { name: 'BDV / ASC', desc: 'eM-Test Expert. Pins and components (native outlines).' },
       { name: 'XZZ (.pcb)', desc: 'Nintendo Switch and others. XOR + DES. Traces, outlines, pins.' },
+      { name: 'TVW (Teleplan)', desc: 'Teleplan / TestView. Binary and ASCII. Pins, components, outline.' },
       { name: 'TOPTEST BRD2 (.brd)', desc: 'Text format. Pins, components, nets.' },
       { name: 'Apple BoardView (.brd)', desc: 'Apple / Mac. Obfuscated text. Pins and nets.' }
     ],
@@ -83,6 +84,7 @@ export const common = {
       'Click a pin to highlight the entire net.',
       'Search by component (e.g., Q21).',
       'Layers: pins, traces, components, routing.',
+      'TOP / BOTTOM switching for double-sided boards.',
       'Zoom and pan.',
       'Fullscreen mode.'
     ]

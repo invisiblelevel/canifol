@@ -40,6 +40,10 @@ export const datasheets = {
     "guidesCacheTitle": "Кэш гайдов",
     "guidesCacheHint": "Загруженные статьи и видео хранятся локально 6 часов. Очистка заставит приложение загрузить их заново.",
     "clearGuides": "Очистить кэш гайдов",
-    "confirmClearGuides": "Удалить кэш гайдов? Статьи будут загружены заново при следующем открытии раздела."
+    "confirmClearGuides": "Удалить кэш гайдов? Статьи будут загружены заново при следующем открытии раздела.",
+    
+    "downloadFavoritesBtn": "Скачать все избранные PDF",
+    "downloadNoFavorites": "В избранном нет даташитов для скачивания",
+    "downloadResult": "Скачано: {downloaded} · Уже было: {skipped} · Ошибок: {failed}"
   }
 };
