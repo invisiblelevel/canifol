@@ -2,5 +2,7 @@
   "arduino-uno": 20,
   "arduino-nano": 30,
   "esp32-devkit": 30,
-  "rpi-40pin": 40
+  "rpi-40pin": 40,
+  "arduino-mega": 20,
+  "raspberry-pi-pico": 40
 }

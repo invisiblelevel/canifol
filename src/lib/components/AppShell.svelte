@@ -70,9 +70,9 @@
           </div>
           
           <div class="footer-row">
-            <button type="button" class="drawer__link" onclick={toggleTheme}>
+            <!-- Тема: только иконка -->
+            <button type="button" class="drawer__link icon-only" onclick={toggleTheme} title="Theme">
               {#if theme === 'dark'}<Sun size={16} strokeWidth={2} />{:else}<Moon size={16} strokeWidth={2} />{/if}
-              <span>{theme === 'dark' ? 'Light theme' : 'Dark theme'}</span>
             </button>
             <button type="button" class="drawer__link" onclick={handleOpenAbout}>
               <Info size={16} strokeWidth={2} />
@@ -104,9 +104,9 @@
         </div>
         
         <div class="footer-row">
-          <button type="button" class="sidebar__link" onclick={toggleTheme} title="Theme">
+          <!-- Тема: только иконка -->
+          <button type="button" class="sidebar__link icon-only" onclick={toggleTheme} title="Theme">
             {#if theme === 'dark'}<Sun size={16} strokeWidth={2} />{:else}<Moon size={16} strokeWidth={2} />{/if}
-            <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
           </button>
           <button type="button" class="sidebar__link" onclick={handleOpenAbout}>
             <Info size={16} strokeWidth={2} />
@@ -132,7 +132,18 @@
   .shell:not(.mobile) { grid-template-columns: var(--sidebar-width) 1fr; }
   .shell.mobile { grid-template-rows: var(--header-height) 1fr; grid-template-columns: 1fr; }
 
-  .sidebar { display: flex; flex-direction: column; background: var(--bg-elevated); border-right: 1px solid var(--border-subtle); padding: var(--space-3); overflow-y: auto; }
+  /* ИСПРАВЛЕНО: жестко фиксируем ширину и убираем горизонтальный скролл */
+  .sidebar { 
+    display: flex; 
+    flex-direction: column; 
+    background: var(--bg-elevated); 
+    border-right: 1px solid var(--border-subtle); 
+    padding: var(--space-3); 
+    overflow-y: auto; 
+    overflow-x: hidden; /* УБИРАЕТ ТУ САМУЮ ПОЛОСОЧКУ */
+    min-width: 0;
+  }
+
   .sidebar__brand {
     display: flex; flex-direction: column; align-items: center; text-align: center;
     padding: var(--space-2) var(--space-3) var(--space-4);
@@ -143,8 +154,22 @@
   .sidebar__brand-name { font-size: var(--font-size-xl); font-weight: 700; color: var(--accent); letter-spacing: 0.5px; }
   .sidebar__brand-tagline { font-size: var(--font-size-sm); color: var(--text-muted); }
   
-  .sidebar__footer { margin-top: auto; padding-top: var(--space-3); border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: var(--space-2); padding-bottom: env(safe-area-inset-bottom); }
-  .footer-row { display: flex; align-items: center; gap: 2px; width: 100%; }
+  .sidebar__footer { 
+    margin-top: auto; 
+    padding-top: var(--space-3); 
+    border-top: 1px solid var(--border-subtle); 
+    display: flex; 
+    flex-direction: column; 
+    gap: var(--space-2); 
+    padding-bottom: env(safe-area-inset-bottom); 
+  }
+  
+  .footer-row { 
+    display: flex; 
+    align-items: center; 
+    gap: 2px; 
+    width: 100%; 
+  }
   
   .sidebar__link, .drawer__link {
     display: flex; align-items: center; gap: var(--space-1);
@@ -156,6 +181,14 @@
     flex: 1; justify-content: flex-start;
   }
   .sidebar__link:hover, .drawer__link:hover { background: var(--bg-elevated-2); color: var(--text-primary); }
+
+  /* НОВЫЙ СТИЛЬ: для кнопки без текста (только иконка) */
+  .sidebar__link.icon-only, .drawer__link.icon-only {
+    flex: 0 0 32px;
+    justify-content: center;
+    padding: 0;
+    height: 32px;
+  }
 
   .topbar { display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-3); padding-top: env(safe-area-inset-top); background: var(--bg-elevated); border-bottom: 1px solid var(--border-subtle); position: relative; z-index: 10; }
   .topbar__burger { display: flex; align-items: center; justify-content: center; width: var(--touch-target); height: var(--touch-target); color: var(--text-primary); border-radius: var(--radius-md); }

@@ -5,6 +5,7 @@
   import SupportModal from './lib/components/SupportModal.svelte';
   import { navStore } from './lib/stores/navigation.svelte.js';
   import { detectSystemLocale } from './lib/stores/locale.svelte.js';
+  import SketchView from './lib/views/SketchView.svelte';
 
   import FavoritesView from './lib/views/FavoritesView.svelte';
   import ResistorsView from './lib/views/ResistorsView.svelte';
@@ -25,6 +26,7 @@
 
   const views = {
     favorites:  FavoritesView,
+	sketch: SketchView,
     resistors:  ResistorsView,
     capacitors: CapacitorsView,
     inductors:  InductorsView,
@@ -52,6 +54,8 @@
 <AppShell onOpenAbout={() => showAbout = true}>
   {#if currentView === FavoritesView}
     <FavoritesView />
+  {:else if currentView === SketchView}
+    <SketchView />
   {:else if currentView === ResistorsView}
     <ResistorsView />
   {:else if currentView === CapacitorsView}

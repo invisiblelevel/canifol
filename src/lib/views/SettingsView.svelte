@@ -20,7 +20,10 @@
   let guidesClearing = $state(false);
   let guidesCleared = $state(false);
 
-  // ТЕМА
+  let dbSize = $state(0);
+  let dbClearing = $state(false);
+  let dbCleared = $state(false);
+
   let theme = $state(localStorage.getItem('canifol_theme') || 'dark');
   function setTheme(name) {
     theme = name;
@@ -44,6 +47,9 @@
   }
   async function loadGuidesSize() {
     try { guidesSize = await invoke('get_guides_cache_size'); } catch (e) { console.error(e); }
+  }
+  async function loadDbSize() {
+    try { dbSize = await invoke('get_database_size'); } catch (e) { console.error(e); }
   }
 
   async function clearCache() {
@@ -82,6 +88,18 @@
     finally { guidesClearing = false; }
   }
 
+  async function clearDb() {
+    if (!confirm(strings.database.localDbHint + ' ' + strings.database.clear + '?')) return;
+    dbClearing = true;
+    try {
+      await invoke('clear_database');
+      await loadDbSize();
+      dbCleared = true;
+      setTimeout(() => (dbCleared = false), 2000);
+    } catch (e) { console.error(e); alert('Error: ' + e); }
+    finally { dbClearing = false; }
+  }
+
   function setScale(value) {
     uiScaleStore.set(value);
   }
@@ -90,12 +108,12 @@
     loadCacheSize();
     loadFavSize();
     loadGuidesSize();
+    loadDbSize();
   });
 </script>
 
 <Card title={strings.settings.title}>
   <div class="settings">
-   <!-- Тема -->
     <div class="section">
       <div class="section__title">{strings.settings.themeTitle}</div>
       <div class="section__hint">{strings.settings.themeHint}</div>
@@ -109,7 +127,6 @@
       </div>
     </div>
 
-    <!-- Масштаб -->
     <div class="section">
       <div class="section__title">{strings.settings.scaleTitle}</div>
       <div class="section__hint">{strings.settings.scaleHint}</div>
@@ -130,7 +147,6 @@
       </div>
     </div>
 
-    <!-- Кэш даташитов -->
     <div class="section">
       <div class="section__title">{strings.settings.cacheTitle}</div>
       <div class="section__hint">{strings.settings.cacheHint}</div>
@@ -148,7 +164,6 @@
       </div>
     </div>
 
-    <!-- Кэш избранных PDF -->
     <div class="section">
       <div class="section__title">{strings.settings.favoritesCacheTitle}</div>
       <div class="section__hint">{strings.settings.favoritesCacheHint}</div>
@@ -168,7 +183,6 @@
       </div>
     </div>
 
-    <!-- Кэш гайдов -->
     <div class="section">
       <div class="section__title">{strings.settings.guidesCacheTitle}</div>
       <div class="section__hint">{strings.settings.guidesCacheHint}</div>
@@ -185,6 +199,23 @@
         </Button>
       </div>
     </div>
+
+    <div class="section">
+      <div class="section__title">{strings.database.localDbTitle}</div>
+      <div class="section__hint">{strings.database.localDbHint}</div>
+      <div class="cache-row">
+        <div class="cache-info">
+          <span class="cache-info__label">{strings.database.size}:</span>
+          <span class="cache-info__value">
+            {dbSize > 0 ? formatBytes(dbSize) : strings.database.empty}
+          </span>
+        </div>
+        <Button variant={dbSize > 0 ? 'danger' : 'ghost'} size="sm"
+          onclick={clearDb} loading={dbClearing} disabled={dbSize === 0}>
+          {dbCleared ? strings.database.cleared : strings.database.clear}
+        </Button>
+      </div>
+    </div>
   </div>
 </Card>
 
@@ -195,7 +226,6 @@
   .section__title { font-size: var(--font-size-base); font-weight: 600; color: var(--text-primary); }
   .section__hint { font-size: var(--font-size-sm); color: var(--text-muted); line-height: 1.5; }
 
-  /* Тема */
   .theme-switcher { display: flex; gap: var(--space-2); }
   .theme-btn {
     flex: 1;

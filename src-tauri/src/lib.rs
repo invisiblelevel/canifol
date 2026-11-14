@@ -7,12 +7,15 @@ mod guides;
 mod element14;
 mod bilibili;
 mod tvw_canifol;
+mod tme;
 
 use std::fs;
 use std::io::Write;
-use tauri::Manager;
+use std::path::PathBuf;
+use tauri::{Emitter, Manager};
 use reqwest::Client;
 use megalib::public;
+use serde::Serialize;
 
 #[tauri::command]
 fn get_system_locale() -> String {
@@ -144,6 +147,176 @@ async fn download_gdrive_file(app: tauri::AppHandle, file_id: String, filename: 
     Ok(dest_path.to_string_lossy().to_string())
 }
 
+#[derive(Clone, Serialize)]
+pub struct DbProgress {
+    pub current: usize,
+    pub total: usize,
+    pub bytes_downloaded: u64,
+    pub total_bytes: u64,
+    pub current_file: String,
+    pub speed_bps: f64,
+    pub eta_secs: f64,
+}
+
+#[tauri::command]
+async fn download_database_file(
+    app: tauri::AppHandle,
+    file_id: String,
+    filename: String,
+    dest_dir: String,
+) -> Result<String, String> {
+    let client = Client::builder()
+        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        .cookie_store(true)
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let base_dir = if dest_dir.is_empty() {
+        app.path().app_data_dir()
+            .map_err(|e| format!("No data dir: {}", e))?
+            .join("database")
+    } else {
+        PathBuf::from(&dest_dir)
+    };
+    if !base_dir.exists() {
+        fs::create_dir_all(&base_dir).map_err(|e| e.to_string())?;
+    }
+
+    let safe_filename = filename.replace(|c: char| !c.is_alphanumeric() && c != '.' && c != '-' && c != '_', "_");
+    let dest_path = base_dir.join(&safe_filename);
+
+    if dest_path.exists() {
+        return Ok(dest_path.to_string_lossy().to_string());
+    }
+
+    let url = format!("https://drive.google.com/uc?export=download&id={}", file_id);
+    let res = client.get(&url).send().await.map_err(|e| format!("Ошибка запроса: {}", e))?;
+    let cookies = res.cookies().collect::<Vec<_>>();
+    let mut confirm_token = None;
+    for cookie in cookies {
+        if cookie.name().starts_with("download_warning") {
+            confirm_token = Some(cookie.value().to_string());
+            break;
+        }
+    }
+
+    let bytes_res = if let Some(token) = confirm_token {
+        let confirm_url = format!("https://drive.google.com/uc?export=download&confirm={}&id={}", token, file_id);
+        client.get(&confirm_url).send().await.map_err(|e| format!("Ошибка подтверждения: {}", e))?
+    } else {
+        res
+    };
+
+    let final_bytes = bytes_res.bytes().await.map_err(|e| format!("Ошибка чтения байт: {}", e))?.to_vec();
+    if final_bytes.len() < 100 {
+        return Err("Файл слишком маленький (возможно, ошибка)".to_string());
+    }
+    fs::write(&dest_path, &final_bytes).map_err(|e| format!("Ошибка записи: {}", e))?;
+    Ok(dest_path.to_string_lossy().to_string())
+}
+
+#[derive(Clone, Serialize)]
+pub struct DatabaseDownloadResult {
+    downloaded: usize,
+    skipped: usize,
+    failed: usize,
+}
+
+#[tauri::command]
+async fn download_database_batch(
+    app: tauri::AppHandle,
+    files: Vec<(String, String)>,
+    dest_dir: String,
+) -> Result<DatabaseDownloadResult, String> {
+    let total = files.len();
+    let mut downloaded = 0usize;
+    let mut skipped = 0usize;
+    let mut failed = 0usize;
+
+    let mut total_bytes: u64 = 0;
+    let mut bytes_downloaded: u64 = 0;
+    let start_time = std::time::Instant::now();
+
+    let base_dir = if dest_dir.is_empty() {
+        app.path().app_data_dir()
+            .map_err(|e| format!("No data dir: {}", e))?
+            .join("database")
+    } else {
+        PathBuf::from(&dest_dir)
+    };
+
+    for (_, name) in &files {
+        let safe = name.replace(|c: char| !c.is_alphanumeric() && c != '.' && c != '-' && c != '_', "_");
+        if let Ok(meta) = fs::metadata(base_dir.join(&safe)) {
+            total_bytes += meta.len();
+        }
+    }
+
+    for (idx, (id, name)) in files.iter().enumerate() {
+        let safe = name.replace(|c: char| !c.is_alphanumeric() && c != '.' && c != '-' && c != '_', "_");
+        let dest = base_dir.join(&safe);
+        if dest.exists() {
+            skipped += 1;
+            if let Ok(meta) = fs::metadata(&dest) {
+                bytes_downloaded += meta.len();
+            }
+        } else {
+            match download_database_file(app.clone(), id.clone(), name.clone(), dest_dir.clone()).await {
+                Ok(_) => {
+                    downloaded += 1;
+                    if let Ok(meta) = fs::metadata(&dest) {
+                        bytes_downloaded += meta.len();
+                        total_bytes += meta.len();
+                    }
+                }
+                Err(_) => failed += 1,
+            }
+        }
+
+        let elapsed = start_time.elapsed().as_secs_f64();
+        let speed = if elapsed > 0.0 { bytes_downloaded as f64 / elapsed } else { 0.0 };
+        let eta = if speed > 0.0 { (total_bytes.saturating_sub(bytes_downloaded)) as f64 / speed } else { 0.0 };
+
+        let _ = app.emit("db-download-progress", DbProgress {
+            current: idx + 1,
+            total,
+            bytes_downloaded,
+            total_bytes,
+            current_file: name.clone(),
+            speed_bps: speed,
+            eta_secs: eta,
+        });
+    }
+
+    Ok(DatabaseDownloadResult { downloaded, skipped, failed })
+}
+
+#[tauri::command]
+fn get_database_size(app: tauri::AppHandle) -> Result<u64, String> {
+    let dir = app.path().app_data_dir()
+        .map_err(|e| format!("No data dir: {}", e))?
+        .join("database");
+    if !dir.exists() { return Ok(0); }
+    let mut total_size = 0;
+    if let Ok(entries) = fs::read_dir(&dir) {
+        for entry in entries.flatten() {
+            if let Ok(meta) = entry.metadata() {
+                if meta.is_file() { total_size += meta.len(); }
+            }
+        }
+    }
+    Ok(total_size)
+}
+
+#[tauri::command]
+fn clear_database(app: tauri::AppHandle) -> Result<(), String> {
+    let dir = app.path().app_data_dir()
+        .map_err(|e| format!("No data dir: {}", e))?
+        .join("database");
+    if dir.exists() { fs::remove_dir_all(&dir).map_err(|e| e.to_string())?; }
+    Ok(())
+}
+
 #[tauri::command]
 async fn download_mega_file(app: tauri::AppHandle, url: String, filename: String) -> Result<String, String> {
     let cache_dir = app.path().app_data_dir()
@@ -163,9 +336,6 @@ async fn download_mega_file(app: tauri::AppHandle, url: String, filename: String
     Ok(dest_path.to_string_lossy().to_string())
 }
 
-// ==========================================
-// НОВАЯ КОМАНДА: скачать все избранные PDF
-// ==========================================
 #[derive(serde::Serialize)]
 pub struct DownloadFavoritesResult {
     downloaded: usize,
@@ -198,7 +368,6 @@ async fn download_all_favorites(
     for url in &urls {
         if url.is_empty() { continue; }
 
-        // Имя файла: последняя часть URL, убираем query
         let raw_name = url.rsplit('/').next().unwrap_or("datasheet.pdf");
         let clean_name = raw_name.split('?').next().unwrap_or("datasheet.pdf");
         let mut filename = clean_name.to_string();
@@ -208,7 +377,6 @@ async fn download_all_favorites(
         let safe_filename = filename.replace(|c: char| !c.is_alphanumeric() && c != '.' && c != '-' && c != '_', "_");
         let dest = dir.join(&safe_filename);
 
-        // Уже есть валидный PDF — пропускаем
         if dest.exists() {
             if let Ok(meta) = fs::metadata(&dest) {
                 if meta.len() > 1024 {
@@ -218,7 +386,6 @@ async fn download_all_favorites(
             }
         }
 
-        // Качаем
         match client.get(url).send().await {
             Ok(resp) => {
                 if !resp.status().is_success() {
@@ -267,12 +434,18 @@ async fn open_pdf(path: String) -> Result<(), String> {
     tauri_plugin_opener::open_path(&path, None::<&str>).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+async fn open_url_in_browser(url: String) -> Result<(), String> {
+    tauri_plugin_opener::open_url(&url, None::<&str>).map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_dialog::init());
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_os::init()); // <-- ПЛАГИН OS ДОБАВЛЕН СЮДА
 
     #[cfg(target_os = "android")]
     {
@@ -291,6 +464,7 @@ pub fn run() {
             lcsc::find_analogs_lcsc,
             lcsc::find_by_params_lcsc,
             element14::search_element14,
+            tme::search_tme,
             transistors::search_soviet_analog,
             get_system_locale,
             get_cache_size,
@@ -299,11 +473,16 @@ pub fn run() {
             clear_favorites,
             delete_cached_file,
             download_gdrive_file,
+            download_database_file,
+            download_database_batch,
+            get_database_size,
+            clear_database,
             download_mega_file,
             download_all_favorites,
             read_text_file,
             read_binary_file,
             open_pdf,
+            open_url_in_browser,
             bilibili::fetch_bilibili_videos,
             boardview::read_boardview,
             guides::fetch_guides,

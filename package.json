@@ -1,6 +1,6 @@
 {
   "name": "fixitron",
-  "version": "1.5.3",
+  "version": "1.6.0",
   "description": "Fixitron — инструмент ремонтника: калькуляторы компонентов и даташиты",
   "type": "module",
   "scripts": {
@@ -17,6 +17,7 @@
     "@tauri-apps/plugin-fs": "^2.7.1",
     "@tauri-apps/plugin-http": "2.9.0",
     "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/plugin-os": "^2.4.0",
     "pdfjs-dist": "^5.7.284",
     "svelte-pdf-view": "^0.3.3"
   },

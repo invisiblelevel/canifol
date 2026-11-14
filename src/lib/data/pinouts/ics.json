@@ -90,5 +90,13 @@
   "irf540n": { "layout": "to220", "pins": 3 },
   "esp01": { "layout": "module8", "pins": 8 },
   "esp12": { "layout": "module22", "pins": 22 },
-  "hc05": { "layout": "module6", "pins": 6 }
+  "hc05": { "layout": "module6", "pins": 6 },
+  "max485": { "layout": "dip", "pins": 8 },
+  "mcp2515": { "layout": "dip", "pins": 18 },
+  "mcp23017": { "layout": "dip", "pins": 28 },
+  "pcf8574": { "layout": "dip", "pins": 16 },
+  "esp32-cam": { "layout": "module8", "pins": 10 },
+  "nrf24l01": { "layout": "module8", "pins": 8 },
+  "hm10": { "layout": "module4", "pins": 4 },
+  "rc522": { "layout": "module8", "pins": 8 }
 }

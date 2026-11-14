@@ -57,14 +57,58 @@
       routeBottom: '#ff6b6b',
       text: '#ffffff',
       labelBg: 'rgba(0, 0, 0, 0.8)',
+    },
+    light: {
+      bg: '#ffffff',
+      lineBoard: '#2563eb',
+      lineOutline: '#1e40af',
+      lineComp: '#9ca3af',
+      compTopIC: '#2563eb',
+      compTopP: '#6b7280',
+      compBotIC: '#dc2626',
+      compBotP: '#b91c1c',
+      fillTop: 'rgba(200, 200, 200, 0.4)',
+      fillBottom: 'rgba(220, 180, 180, 0.4)',
+      pinTop: '#ea580c',
+      pinBottom: '#b91c1c',
+      routeTop: '#2563eb',
+      routeBottom: '#dc2626',
+      text: '#1a1a1a',
+      labelBg: 'rgba(255, 255, 255, 0.85)',
     }
   };
-  let themeName = $state(localStorage.getItem('canifol_bv_theme') || 'canifol');
-  const theme = $derived(THEMES[themeName]);
+
+  const THEME_CYCLE = ['canifol', 'obv', 'light'];
+
+  // Ручной выбор темы Canvas из localStorage (если был)
+  let manualTheme = $state(localStorage.getItem('canifol_bv_theme') || null);
+
+  // Автоматическая тема — из общей темы интерфейса
+  const autoTheme = $derived(
+    (localStorage.getItem('canifol_theme') || 'dark') === 'light' ? 'light' : 'canifol'
+  );
+
+  // Итоговая тема: ручной выбор приоритетнее авто
+  let themeName = $state(manualTheme || autoTheme);
+  const theme = $derived(THEMES[themeName] || THEMES.canifol);
+
+  // Если общая тема изменилась, а ручного выбора нет — обновляем Canvas
+  $effect(() => {
+    if (!manualTheme) {
+      const next = autoTheme;
+      if (themeName !== next) {
+        themeName = next;
+        requestDraw();
+      }
+    }
+  });
 
   function toggleTheme() {
-    themeName = themeName === 'canifol' ? 'obv' : 'canifol';
-    localStorage.setItem('canifol_bv_theme', themeName);
+    const idx = THEME_CYCLE.indexOf(themeName);
+    const next = THEME_CYCLE[(idx + 1) % THEME_CYCLE.length];
+    themeName = next;
+    manualTheme = next;
+    localStorage.setItem('canifol_bv_theme', next);
     requestDraw();
   }
 
@@ -483,7 +527,6 @@
   {:else if error}
     <div class="error">{error}</div>
   {:else}
-    <!-- Верхняя панель -->
     <div class="bv-toolbar">
       {#if hasBottomLayer}
         <div class="side-group">
@@ -595,7 +638,6 @@
     z-index: 9999; height: 100vh; border-radius: 0;
   }
 
-  /* Toolbar */
   .bv-toolbar {
     display: flex;
     align-items: center;

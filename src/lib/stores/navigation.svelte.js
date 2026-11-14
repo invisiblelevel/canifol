@@ -1,8 +1,10 @@
-import { Zap, Battery, Cable, FileText, CircuitBoard, Cpu, Network, ScanLine, Layers, Star, Database, BookOpen } from '@lucide/svelte';
+import { Zap, Battery, Cable, FileText, CircuitBoard, Cpu, Network, ScanLine, Layers, Star, Database, BookOpen, Pencil } from '@lucide/svelte';
 import { localeStore } from './locale.svelte.js';
 
+// Только id + иконка. Локализация — в Tabs.svelte (strings.sections.*).
 export const SECTIONS = [
   { id: 'favorites',   icon: Star },
+  { id: 'sketch',      icon: Pencil },
   { id: 'transistors', icon: Cpu },
   { id: 'resistors',   icon: Zap },
   { id: 'capacitors',  icon: Battery },

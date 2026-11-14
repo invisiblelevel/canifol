@@ -8,7 +8,7 @@
   import HelpButton from '../components/HelpButton.svelte';
   import SectionHelpModal from '../components/SectionHelpModal.svelte';
   import StarButton from '../components/StarButton.svelte';
-  import { ArrowLeft } from '@lucide/svelte';
+  import { ArrowLeft, ExternalLink } from '@lucide/svelte';
   import { PdfViewer, PdfRenderer } from 'svelte-pdf-view';
   import PdfCustomToolbar from '../components/PdfCustomToolbar.svelte';
   import { getStrings } from '../strings.svelte.js';
@@ -19,7 +19,7 @@
   const F = $derived(strings.favorites);
 
   let query = $state('LM7805');
-  let source = $state('digikey'); // 'digikey' | 'lcsc' | 'farnell'
+  let source = $state('digikey'); // 'digikey' | 'lcsc' | 'farnell' | 'tme'
   let loading = $state(false);
   let results = $state([]);
   let error = $state('');
@@ -57,6 +57,7 @@
       let command = 'search_datasheets';
       if (source === 'lcsc') command = 'search_lcsc';
       if (source === 'farnell') command = 'search_element14';
+      if (source === 'tme') command = 'search_tme';
 
       const res = await invoke(command, { query });
       results = Array.isArray(res) ? res : [];
@@ -74,12 +75,25 @@
     return !!(item && item.datasheet_url && (item.datasheet_url.startsWith('http://') || item.datasheet_url.startsWith('https://')));
   }
 
+  function isCloudflareProtected(url) {
+    if (!url) return false;
+    return url.includes('www.tme.eu') || url.includes('tme.eu/Document');
+  }
+
   function isFav(item) {
     if (!hasPdf(item)) return false;
     try {
       return favoritesStore.isFavoriteDatasheet(item);
     } catch (e) {
       return false;
+    }
+  }
+
+  async function openUrlInBrowser(url) {
+    try {
+      await invoke('open_url_in_browser', { url });
+    } catch (e) {
+      pdfError = 'Не удалось открыть браузер: ' + e;
     }
   }
 
@@ -141,7 +155,9 @@
       return;
     }
 
-    const wantOffline = confirm(F.offlinePrompt);
+    // Cloudflare-защищённые не предлагаем офлайн
+    const canDownload = !isCloudflareProtected(item.datasheet_url);
+    const wantOffline = canDownload ? confirm(F.offlinePrompt) : false;
 
     favoritesStore.toggleDatasheet({
       ...item,
@@ -220,6 +236,9 @@
       <button type="button" class="source-btn" class:active={source === 'farnell'} onclick={() => { source = 'farnell'; results = []; error = ''; }}>
         Farnell
       </button>
+      <button type="button" class="source-btn" class:active={source === 'tme'} onclick={() => { source = 'tme'; results = []; error = ''; }}>
+        TME
+      </button>
     </div>
 
     <div class="search-bar">
@@ -275,9 +294,15 @@
                   {/if}
                 </div>
               </div>
-              <Button variant="secondary" size="sm" onclick={() => openPdf(item)} disabled={!hasPdf(item)}>
-                {strings.datasheets.openPdf}
-              </Button>
+              {#if hasPdf(item) && isCloudflareProtected(item.datasheet_url)}
+                <Button variant="secondary" size="sm" onclick={() => openUrlInBrowser(item.datasheet_url)}>
+                  <ExternalLink size={14} /> Открыть в браузере
+                </Button>
+              {:else}
+                <Button variant="secondary" size="sm" onclick={() => openPdf(item)} disabled={!hasPdf(item)}>
+                  {strings.datasheets.openPdf}
+                </Button>
+              {/if}
             </li>
           {/if}
         {/each}
@@ -304,7 +329,7 @@
 {/if}
 
 <style>
-  .source-switch { display: flex; gap: var(--space-1); padding: 4px; background: var(--bg-elevated-2); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); align-self: flex-start; margin-bottom: var(--space-4); }
+  .source-switch { display: flex; gap: var(--space-1); padding: 4px; background: var(--bg-elevated-2); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); align-self: flex-start; margin-bottom: var(--space-4); flex-wrap: wrap; }
   .source-btn { min-height: 36px; padding: 0 var(--space-4); border-radius: var(--radius-sm); font-size: var(--font-size-sm); font-weight: 600; color: var(--text-secondary); background: transparent; transition: background var(--transition-fast), color var(--transition-fast); }
   .source-btn:hover { color: var(--text-primary); }
   .source-btn.active { background: var(--accent-dim); color: var(--accent); }

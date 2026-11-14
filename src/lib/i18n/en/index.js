@@ -7,6 +7,7 @@ import { about } from './about.js';
 import { help } from './help.js';
 import { favorites } from './favorites.js';
 import { guides } from './guides.js';
+import { sketch } from './sketch.js';
 
 export const en = {
   ...common,
@@ -17,5 +18,6 @@ export const en = {
   ...about,
   ...help,
   ...favorites,
-  ...guides
+  ...guides,
+  ...sketch //
 };

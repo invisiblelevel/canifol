@@ -1,4 +1,7 @@
 import { pinoutsIcs } from './pinoutsIcs.js';
+import { pinoutsIcs2 } from './pinoutsIcs_2.js';
+
+const mergedIcsData = { ...pinoutsIcs, ...pinoutsIcs2 };
 
 export const pinouts = {
   pinoutsTabs: {
@@ -33,7 +36,7 @@ export const pinouts = {
     'atx-24': { name: 'ATX 24-pin (Power)', desc: 'Main motherboard power connector', pins: { '1': { name: '+3.3V', desc: 'Orange' }, '2': { name: '+3.3V', desc: 'Orange' }, '3': { name: 'GND', desc: 'Black' }, '4': { name: '+5V', desc: 'Red' }, '5': { name: 'GND', desc: 'Black' }, '6': { name: '+5V', desc: 'Red' }, '7': { name: 'GND', desc: 'Black' }, '8': { name: 'PWR_OK', desc: 'Grey' }, '9': { name: '+5VSB', desc: 'Purple' }, '10': { name: '+12V', desc: 'Yellow' }, '11': { name: '+12V', desc: 'Yellow' }, '12': { name: '+3.3V', desc: 'Orange' }, '13': { name: '+3.3V', desc: 'Orange' }, '14': { name: '-12V', desc: 'Blue' }, '15': { name: 'GND', desc: 'Black' }, '16': { name: 'PS-ON', desc: 'Green (turn on)' }, '17': { name: 'GND', desc: 'Black' }, '18': { name: 'GND', desc: 'Black' }, '19': { name: 'GND', desc: 'Black' }, '20': { name: '-5V (opt.)', desc: 'White (old ATX)' }, '21': { name: '+5V', desc: 'Red' }, '22': { name: '+5V', desc: 'Red' }, '23': { name: '+5V', desc: 'Red' }, '24': { name: 'GND', desc: 'Black' } } },
     'sata-power': { name: 'SATA Power', desc: 'SATA power (15 pins)', pins: { '1': { name: '+3.3V', desc: 'Orange' }, '2': { name: '+3.3V', desc: 'Orange' }, '3': { name: '+3.3V', desc: 'Orange' }, '4': { name: 'GND', desc: 'Black' }, '5': { name: 'GND', desc: 'Black' }, '6': { name: 'GND', desc: 'Black' }, '7': { name: '+5V', desc: 'Red' }, '8': { name: '+5V', desc: 'Red' }, '9': { name: '+5V', desc: 'Red' }, '10': { name: 'GND', desc: 'Black' }, '11': { name: 'GND', desc: 'Black' }, '12': { name: 'GND', desc: 'Black' }, '13': { name: '+12V', desc: 'Yellow' }, '14': { name: '+12V', desc: 'Yellow' }, '15': { name: '+12V', desc: 'Yellow' } } }
   },
-  pinoutsIcsData: pinoutsIcs,
+  pinoutsIcsData: mergedIcsData,
   pinoutsSovietData: {
     'k155la3': { name: 'K155LA3', desc: '4x 2-NAND gates (DIP-14)', pins: { '1': { name: '1A', desc: 'Input 1' }, '2': { name: '1B', desc: 'Input 2' }, '3': { name: '1Y', desc: 'Output 1' }, '4': { name: '2A', desc: 'Input 3' }, '5': { name: '2B', desc: 'Input 4' }, '6': { name: '2Y', desc: 'Output 2' }, '7': { name: 'GND', desc: 'Ground' }, '8': { name: '3Y', desc: 'Output 3' }, '9': { name: '3A', desc: 'Input 5' }, '10': { name: '3B', desc: 'Input 6' }, '11': { name: '4Y', desc: 'Output 4' }, '12': { name: '4A', desc: 'Input 7' }, '13': { name: '4B', desc: 'Input 8' }, '14': { name: 'VCC', desc: 'Power +5V' } } },
     'k155tm2': { name: 'K155TM2', desc: '2x D flip-flops (DIP-14)', pins: { '1': { name: '1R', desc: 'Reset 1' }, '2': { name: '1D', desc: 'Input D1' }, '3': { name: '1C', desc: 'Clock 1' }, '4': { name: '1S', desc: 'Set 1' }, '5': { name: '1Q', desc: 'Output Q1' }, '6': { name: '1~Q', desc: 'Output ~Q1' }, '7': { name: 'GND', desc: 'Ground' }, '8': { name: '2~Q', desc: 'Output ~Q2' }, '9': { name: '2Q', desc: 'Output Q2' }, '10': { name: '2S', desc: 'Set 2' }, '11': { name: '2C', desc: 'Clock 2' }, '12': { name: '2D', desc: 'Input D2' }, '13': { name: '2R', desc: 'Reset 2' }, '14': { name: 'VCC', desc: 'Power' } } },
@@ -76,6 +79,14 @@ export const pinouts = {
     'rpi-40pin': {
       name: 'Raspberry Pi 40-pin GPIO', desc: 'GPIO header of all models (except Pico)',
       pins: { '1': { name: '3V3', desc: 'Power 3.3 V' }, '2': { name: '5V', desc: 'Power 5 V' }, '3': { name: 'GPIO2', desc: 'I2C1 SDA' }, '4': { name: '5V', desc: 'Power 5 V' }, '5': { name: 'GPIO3', desc: 'I2C1 SCL' }, '6': { name: 'GND', desc: 'Ground' }, '7': { name: 'GPIO4', desc: 'GPCLK0' }, '8': { name: 'GPIO14', desc: 'UART TX' }, '9': { name: 'GND', desc: 'Ground' }, '10': { name: 'GPIO15', desc: 'UART RX' }, '11': { name: 'GPIO17', desc: 'GPIO' }, '12': { name: 'GPIO18', desc: 'PCM CLK / PWM0' }, '13': { name: 'GPIO27', desc: 'GPIO' }, '14': { name: 'GND', desc: 'Ground' }, '15': { name: 'GPIO22', desc: 'GPIO' }, '16': { name: 'GPIO23', desc: 'GPIO' }, '17': { name: '3V3', desc: 'Power 3.3 V' }, '18': { name: 'GPIO24', desc: 'GPIO' }, '19': { name: 'GPIO10', desc: 'SPI0 MOSI' }, '20': { name: 'GND', desc: 'Ground' }, '21': { name: 'GPIO9', desc: 'SPI0 MISO' }, '22': { name: 'GPIO25', desc: 'GPIO' }, '23': { name: 'GPIO11', desc: 'SPI0 SCLK' }, '24': { name: 'GPIO8', desc: 'SPI0 CE0' }, '25': { name: 'GND', desc: 'Ground' }, '26': { name: 'GPIO7', desc: 'SPI0 CE1' }, '27': { name: 'ID_SD', desc: 'I2C0 SDA (HAT ID)' }, '28': { name: 'ID_SC', desc: 'I2C0 SCL (HAT ID)' }, '29': { name: 'GPIO5', desc: 'GPIO' }, '30': { name: 'GND', desc: 'Ground' }, '31': { name: 'GPIO6', desc: 'GPIO' }, '32': { name: 'GPIO12', desc: 'PWM0' }, '33': { name: 'GPIO13', desc: 'PWM1' }, '34': { name: 'GND', desc: 'Ground' }, '35': { name: 'GPIO19', desc: 'PCM FS / PWM1' }, '36': { name: 'GPIO16', desc: 'GPIO' }, '37': { name: 'GPIO26', desc: 'GPIO' }, '38': { name: 'GPIO20', desc: 'PCM DIN' }, '39': { name: 'GND', desc: 'Ground' }, '40': { name: 'GPIO21', desc: 'PCM DOUT' } }
+    },
+    'arduino-mega': {
+      name: 'Arduino Mega 2560', desc: 'Powerful ATmega2560 board',
+      pins: { '1': { name: 'GND', desc: 'Ground' }, '2': { name: '5V', desc: '+5V Power' } }
+    },
+    'raspberry-pi-pico': {
+      name: 'Raspberry Pi Pico', desc: 'RP2040 Microcontroller (40 pins)',
+      pins: { '1': { name: 'GP0', desc: 'GPIO 0' }, '2': { name: 'GP1', desc: 'GPIO 1' } }
     }
   }
 };

@@ -51,6 +51,8 @@ jobs:
           DIGIKEY_CLIENT_ID: ${{ secrets.DIGIKEY_CLIENT_ID }}
           DIGIKEY_CLIENT_SECRET: ${{ secrets.DIGIKEY_CLIENT_SECRET }}
           ELEMENT14_API_KEY: ${{ secrets.ELEMENT14_API_KEY }}
+          TME_TOKEN: ${{ secrets.TME_TOKEN }}
+          TME_SECRET: ${{ secrets.TME_SECRET }}
 
       - name: Create Draft Release and Upload Linux Artifacts
         uses: tauri-apps/tauri-action@v0
@@ -64,6 +66,7 @@ jobs:
 
             - **RSS feed** — repair videos from YouTube (RU/EN).
             - **Farnell (element14)** — third datasheet source with direct PDFs.
+            - **TME** — fourth datasheet source with direct PDFs.
             - **Datasheet fix** — "No PDF" badge for unavailable files.
             - **Android fullscreen fix** — native video fullscreen.
 

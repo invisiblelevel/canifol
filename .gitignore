@@ -20,10 +20,15 @@ dist/
 .svelte-kit/
 .vite/
 
+# --- Build artifacts ---
+*.AppImage
+*.zsync
+*.deb
+*.rpm
+
 # --- Rust / Tauri ---
 src-tauri/target/
 src-tauri/gen/
-src-tauri/Cargo.lock
 
 # --- Секреты (НЕ КОММИТИТЬ НИКОГДА) ---
 keystore.properties

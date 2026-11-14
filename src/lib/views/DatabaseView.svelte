@@ -1,20 +1,25 @@
 <script>
+  import { onMount } from 'svelte';
   import { invoke } from '@tauri-apps/api/core';
+  import { listen } from '@tauri-apps/api/event';
+  import { open } from '@tauri-apps/plugin-dialog';
   import Card from '../components/Card.svelte';
   import Button from '../components/Button.svelte';
   import { getStrings } from '../strings.svelte.js';
   import BoardViewer from '../components/BoardViewer.svelte';
   import { PdfViewer, PdfRenderer } from 'svelte-pdf-view';
   import PdfCustomToolbar from '../components/PdfCustomToolbar.svelte';
-  import { ArrowLeft, Database as DatabaseIcon, Search } from '@lucide/svelte';
+  import { ArrowLeft, Database as DatabaseIcon, Search, FolderOpen } from '@lucide/svelte';
   import EmptyState from '../components/EmptyState.svelte';
 
   const strings = $derived(getStrings());
   const dbStrings = $derived(strings.database);
-  
+
   const CATALOG_FILE_ID = "10--ZxmNatSAOxNrQaidWYp_zyJubApaY";
   const CATALOG_MEGA_URL = "https://mega.nz/file/cyN1DIrJ#RuAXgTNRZlqrvM0I_UinIfcEAHlFl8DBOPWAHCE62EE";
+  const LS_DB_PATH = 'canifol_db_path';
 
+  let isMobile = $state(false);
   let catalog = $state(null);
   let loading = $state(false);
   let error = $state('');
@@ -30,9 +35,34 @@
   let loadingFileName = $state('');
   let fileLoading = $state(false);
 
+  let dbPath = $state(localStorage.getItem(LS_DB_PATH) || '');
+  let downloading = $state(false);
+  let downloadResult = $state(null);
+  let progress = $state({
+    current: 0,
+    total: 0,
+    bytes_downloaded: 0,
+    total_bytes: 0,
+    current_file: '',
+    speed_bps: 0,
+    eta_secs: 0,
+  });
+
+  onMount(() => {
+    const ua = navigator.userAgent.toLowerCase();
+    isMobile = ua.includes('android') || ua.includes('iphone') || ua.includes('ipad');
+  });
+
+  $effect(() => {
+    let unlisten;
+    listen('db-download-progress', (event) => {
+      progress = event.payload;
+    }).then(fn => unlisten = fn);
+    return () => { if (unlisten) unlisten(); };
+  });
+
   const filteredCatalog = $derived.by(() => {
     if (!catalog) return {};
-    
     const query = searchQuery.trim().toLowerCase();
     if (!query) {
       if (activeCategory && catalog[activeCategory]) {
@@ -40,20 +70,16 @@
       }
       return catalog;
     }
-
     const result = {};
     for (const [cat, models] of Object.entries(catalog)) {
       const matchedModels = {};
       for (const [model, files] of Object.entries(models)) {
         const modelLower = model.toLowerCase();
         const catLower = cat.toLowerCase();
-
         let matches = modelLower.includes(query) || catLower.includes(query);
-
         if (!matches) {
           matches = files.some(f => f.name.toLowerCase().includes(query));
         }
-
         if (matches) {
           matchedModels[model] = files;
         }
@@ -70,7 +96,6 @@
     error = '';
     try {
       await invoke('delete_cached_file', { filename: 'catalog.json' }).catch(() => {});
-      
       let localPath;
       try {
         localPath = await invoke('download_gdrive_file', { 
@@ -78,16 +103,13 @@
           filename: 'catalog.json' 
         });
       } catch (gdriveError) {
-        console.warn('GDrive failed, trying MEGA...', gdriveError);
         localPath = await invoke('download_mega_file', {
           url: CATALOG_MEGA_URL,
           filename: 'catalog.json'
         });
       }
-
       const content = await invoke('read_text_file', { path: localPath });
       catalog = JSON.parse(content);
-      
       const cats = Object.keys(catalog);
       if (cats.length > 0) {
         activeCategory = cats[0];
@@ -105,13 +127,12 @@
     error = '';
     currentBoard = null;
     currentPdf = null;
-    
     try {
-      const localPath = await invoke('download_gdrive_file', { 
+      const localPath = await invoke('download_database_file', { 
         fileId: file.id, 
-        filename: file.name 
+        filename: file.name,
+        destDir: dbPath,
       });
-      
       if (file.type === 'pdf') {
         const bytesArray = await invoke('read_binary_file', { path: localPath });
         const blob = new Blob([new Uint8Array(bytesArray)], { type: 'application/pdf' });
@@ -125,6 +146,57 @@
     } finally {
       fileLoading = false;
       loadingFileName = '';
+    }
+  }
+
+  async function pickFolder() {
+    if (isMobile) {
+      alert(dbStrings.mobileInternal);
+      return;
+    }
+    try {
+      const selected = await open({ directory: true, multiple: false });
+      if (selected) {
+        dbPath = selected;
+        localStorage.setItem(LS_DB_PATH, selected);
+      }
+    } catch (e) {
+      error = String(e);
+    }
+  }
+
+  async function downloadAll() {
+    if (!catalog) return;
+    const allFiles = [];
+    for (const [cat, models] of Object.entries(catalog)) {
+      for (const [model, files] of Object.entries(models)) {
+        for (const file of files) {
+          allFiles.push([file.id, file.name]);
+        }
+      }
+    }
+
+    if (!dbPath && !isMobile) {
+      const ok = confirm(dbStrings.mobileInternal);
+      if (!ok) return;
+    }
+
+    if (!confirm(`${dbStrings.downloadAll} (${allFiles.length})?`)) return;
+
+    downloading = true;
+    downloadResult = null;
+    progress = { current: 0, total: allFiles.length, bytes_downloaded: 0, total_bytes: 0, current_file: '', speed_bps: 0, eta_secs: 0 };
+
+    try {
+      const result = await invoke('download_database_batch', {
+        files: allFiles,
+        destDir: dbPath,
+      });
+      downloadResult = result;
+    } catch (e) {
+      error = String(e);
+    } finally {
+      downloading = false;
     }
   }
 
@@ -143,6 +215,22 @@
     const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
     return text.replace(regex, '<mark>$1</mark>');
   }
+
+  function formatBytes(bytes) {
+    if (bytes < 1024) return `${bytes} ${strings.units.b}`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} ${strings.units.kb}`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} ${strings.units.mb}`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} ${strings.units.gb}`;
+  }
+
+  function formatTime(secs) {
+    if (!secs || secs < 0) return '—';
+    if (secs < 60) return `${Math.round(secs)} ${strings.units.b}`;
+    if (secs < 3600) return `${Math.floor(secs / 60)} ${strings.units.b}`;
+    return `${Math.floor(secs / 3600)} ${strings.units.hz}`;
+  }
+
+  const percent = $derived(progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0);
 </script>
 
 {#if currentPdf}
@@ -212,7 +300,50 @@
         <Button variant="ghost" size="sm" onclick={loadCatalog} loading={loading}>
           {dbStrings.refresh}
         </Button>
+        {#if !isMobile}
+          <Button variant="ghost" size="sm" onclick={pickFolder}>
+            <FolderOpen size={16} /> {dbPath ? dbStrings.changeFolder : dbStrings.pickFolder}
+          </Button>
+        {/if}
+        <Button variant="primary" size="sm" onclick={downloadAll} loading={downloading}>
+          {dbStrings.downloadAll}
+        </Button>
       </div>
+
+      {#if dbPath && !isMobile}
+        <div class="path-hint">{dbStrings.folder}: <code>{dbPath}</code></div>
+      {/if}
+      {#if isMobile && !dbPath}
+        <div class="path-hint">{dbStrings.mobileInternal}</div>
+      {/if}
+
+      {#if downloading}
+        <div class="progress-box">
+          <div class="progress-header">
+            <span>{dbStrings.downloading}: {progress.current} / {progress.total}</span>
+            <span>{percent}%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: {percent}%"></div>
+          </div>
+          <div class="progress-details">
+            <span>{formatBytes(progress.bytes_downloaded)} / {formatBytes(progress.total_bytes)}</span>
+            <span>{dbStrings.speed}: {formatBytes(progress.speed_bps)}/с</span>
+            <span>{dbStrings.eta}: {formatTime(progress.eta_secs)}</span>
+          </div>
+          {#if progress.current_file}
+            <div class="progress-file">{dbStrings.currentFile}: {progress.current_file}</div>
+          {/if}
+        </div>
+      {/if}
+
+      {#if downloadResult}
+        <div class="download-result">
+          ✅ {dbStrings.downloaded}: {downloadResult.downloaded}, 
+          ⏭ {dbStrings.skipped}: {downloadResult.skipped}, 
+          ❌ {dbStrings.failed}: {downloadResult.failed}
+        </div>
+      {/if}
 
       {#if !searchQuery.trim() && activeCategory && catalog[activeCategory]}
         <div class="categories-tabs">
@@ -280,8 +411,7 @@
 {/if}
 
 <style>
-  /* ... стили без изменений ... */
-  .controls { margin-bottom: 16px; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+  .controls { margin-bottom: 16px; display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
   .search-wrapper { position: relative; flex: 1; max-width: 400px; }
   .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
   .search-input {
@@ -295,6 +425,32 @@
     transition: border-color var(--transition-fast);
   }
   .search-input:focus { outline: none; border-color: var(--accent); }
+
+  .path-hint { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+  .path-hint code { background: var(--bg-elevated-2); padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono); }
+
+  .progress-box {
+    padding: 16px;
+    background: var(--bg-elevated-2);
+    border-radius: var(--radius-md);
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .progress-header { display: flex; justify-content: space-between; font-size: 14px; color: var(--text-primary); }
+  .progress-bar { height: 8px; background: var(--bg-base); border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); transition: width 0.2s; }
+  .progress-details { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); flex-wrap: wrap; gap: 8px; }
+  .progress-file { font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .download-result {
+    padding: 12px;
+    background: var(--accent-dim);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    margin-bottom: 16px;
+  }
 
   .categories-tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px; overflow-x: auto; }
   .tab-btn { padding: 6px 12px; border-radius: var(--radius-sm); color: var(--text-secondary); white-space: nowrap; }

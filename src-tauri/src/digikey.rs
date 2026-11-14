@@ -9,7 +9,6 @@ const TOKEN_URL: &str = "https://api.digikey.com/v1/oauth2/token";
 const SEARCH_URL: &str = "https://api.digikey.com/products/v4/search/keyword";
 
 fn get_credentials() -> Result<(String, String), String> {
-    // 1. Пробуем env (для dev, где .env загружается через dotenvy)
     dotenvy::dotenv().ok();
     if let (Ok(id), Ok(secret)) = (
         std::env::var("DIGIKEY_CLIENT_ID"),
@@ -20,7 +19,6 @@ fn get_credentials() -> Result<(String, String), String> {
         }
     }
 
-    // 2. Fallback на compile-time инъекцию (для релиза / CI)
     let id = option_env!("DIGIKEY_CLIENT_ID")
         .ok_or("DIGIKEY_CLIENT_ID is not set. Please set it in .env (dev) or GitHub Secrets (CI)")?;
     let secret = option_env!("DIGIKEY_CLIENT_SECRET")
@@ -121,8 +119,13 @@ pub async fn download_pdf(
 async fn download_to_path(url: &str, file_path: &std::path::Path) -> Result<(), String> {
     let client = Client::new();
     
+    // Определяем Referer по домену
     let referer = if url.contains("lcsc.com") || url.contains("wmsc.lcsc.com") {
         "https://www.lcsc.com/"
+    } else if url.contains("farnell.com") || url.contains("element14.com") {
+        "https://www.farnell.com/"
+    } else if url.contains("tme.eu") || url.contains("tme.com") {
+        "https://www.tme.eu/"
     } else {
         "https://www.digikey.com/"
     };
@@ -131,12 +134,17 @@ async fn download_to_path(url: &str, file_path: &std::path::Path) -> Result<(), 
         .get(url)
         .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
         .header("Referer", referer)
+        .header("Accept", "application/pdf, */*")
         .send()
         .await
         .map_err(|e| format!("Download error: {}", e))?;
 
-    if !res.status().is_success() {
-        return Err(format!("Server returned error: {}", res.status()));
+    let status = res.status();
+    
+    if !status.is_success() {
+        let text = res.text().await.unwrap_or_default();
+        let snippet = if text.len() > 100 { &text[..100] } else { &text };
+        return Err(format!("Server returned error: {} — {}", status, snippet));
     }
 
     let bytes = res.bytes().await.map_err(|e| format!("Read error: {}", e))?;

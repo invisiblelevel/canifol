@@ -8,15 +8,15 @@
   const name = $derived(data?.name ?? activeId);
 
   // DIP
-  const dip8 = ['lm358', 'ne555', 'lm386', 'mc34063', 'tda2822', 'ne5532', 'lm393', 'tl072', 'tl082', 'lm833', 'ne5534', 'lm4562', 'tlc555', 'uc3842', 'uc3843', 'uc3844', 'tny267', 'attiny85', '24c02', 'k140ud6', 'k140ud7', 'kr1006vi1', 'kr140ud1208'];
+  const dip8 = ['lm358', 'ne555', 'lm386', 'mc34063', 'tda2822', 'ne5532', 'lm393', 'tl072', 'tl082', 'lm833', 'ne5534', 'lm4562', 'tlc555', 'uc3842', 'uc3843', 'uc3844', 'tny267', 'attiny85', '24c02', 'k140ud6', 'k140ud7', 'kr1006vi1', 'kr140ud1208', 'max485'];
   const dip4 = ['pc817'];
   const dip6 = ['4n35'];
-  const dip14 = ['lm324', 'lm339', '74hc00', '74hc02', '74hc04', '74hc08', '74hc14', '74hc32', '74hc74', '74hc86', 'cd4001', 'k155la3', 'k155tm2', 'k561la7', 'k561tm2', 'kr1533la3', 'kr1533tm2', 'k561kt3'];
-  const dip16 = ['tl494', 'ka7500', 'sg3524', 'sg3525', 'ka3525', '74hc138', '74hc139', '74hc595', 'cd4017', 'cd4060', 'cd4051', 'uln2003', 'l293d', 'ch340g', 'max232', 'ds3231', 'tea2025', 'k155ir1', 'k155ag3', 'k155kp1', 'k155ie7', 'k561ie10', 'k561ie11'];
-  const dip18 = ['uln2803'];
+  const dip14 = ['lm324', 'lm339', '74hc00', '74hc02', '74hc04', '74hc08', '74hc14', '74hc32', '74hc74', '74hc86', 'cd4001', 'k155la3', 'k155tm2', 'k561la7', 'k561tm2', 'kr1533la3', 'kr1533tm2', 'k561kt3', 'k176la7'];
+  const dip16 = ['tl494', 'ka7500', 'sg3524', 'sg3525', 'ka3525', '74hc138', '74hc139', '74hc595', 'cd4017', 'cd4060', 'cd4051', 'uln2003', 'l293d', 'ch340g', 'max232', 'ds3231', 'tea2025', 'k155ir1', 'k155ag3', 'k155kp1', 'k155ie7', 'k561ie10', 'k561ie11', 'pcf8574', 'k134id1'];
+  const dip18 = ['uln2803', 'mcp2515'];
   const dip20 = ['74hc244', '74hc245', '74hc373', 'kr1533ir22'];
   const dip24 = ['k155id3', 'kr580vi53'];
-  const dip28 = ['atmega328p', 'atmega8', 'tlc5940'];
+  const dip28 = ['atmega328p', 'atmega8', 'tlc5940', 'mcp23017'];
   const dip40 = ['kr580vm80a', 'kr580vv55a'];
   
   // TO-220
@@ -36,9 +36,9 @@
   const mw15 = ['tda7294', 'l298n', 'sta540'];
   
   // Модули
-  const module4 = ['dht11', 'ws2812b'];
+  const module4 = ['dht11', 'ws2812b', 'hm10'];
   const module6 = ['hc05'];
-  const module8 = ['esp01'];
+  const module8 = ['esp01', 'nrf24l01', 'rc522', 'esp32-cam'];
   const module22 = ['esp12'];
 </script>
 

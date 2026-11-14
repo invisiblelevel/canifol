@@ -1,4 +1,7 @@
 import { pinoutsIcs } from './pinoutsIcs.js';
+import { pinoutsIcs2 } from './pinoutsIcs_2.js';
+
+const mergedIcsData = { ...pinoutsIcs, ...pinoutsIcs2 };
 
 export const pinouts = {
   pinoutsTabs: {
@@ -33,7 +36,7 @@ export const pinouts = {
     'atx-24': { name: 'ATX 24-pin (Power)', desc: '主板主供电接口', pins: { '1': { name: '+3.3V', desc: '橙色' }, '2': { name: '+3.3V', desc: '橙色' }, '3': { name: 'GND', desc: '黑色' }, '4': { name: '+5V', desc: '红色' }, '5': { name: 'GND', desc: '黑色' }, '6': { name: '+5V', desc: '红色' }, '7': { name: 'GND', desc: '黑色' }, '8': { name: 'PWR_OK', desc: '灰色' }, '9': { name: '+5VSB', desc: '紫色' }, '10': { name: '+12V', desc: '黄色' }, '11': { name: '+12V', desc: '黄色' }, '12': { name: '+3.3V', desc: '橙色' }, '13': { name: '+3.3V', desc: '橙色' }, '14': { name: '-12V', desc: '蓝色' }, '15': { name: 'GND', desc: '黑色' }, '16': { name: 'PS-ON', desc: '绿色 (开机)' }, '17': { name: 'GND', desc: '黑色' }, '18': { name: 'GND', desc: '黑色' }, '19': { name: 'GND', desc: '黑色' }, '20': { name: '-5V (opt.)', desc: '白色 (旧ATX)' }, '21': { name: '+5V', desc: '红色' }, '22': { name: '+5V', desc: '红色' }, '23': { name: '+5V', desc: '红色' }, '24': { name: 'GND', desc: '黑色' } } },
     'sata-power': { name: 'SATA Power', desc: 'SATA 供电 (15 针)', pins: { '1': { name: '+3.3V', desc: '橙色' }, '2': { name: '+3.3V', desc: '橙色' }, '3': { name: '+3.3V', desc: '橙色' }, '4': { name: 'GND', desc: '黑色' }, '5': { name: 'GND', desc: '黑色' }, '6': { name: 'GND', desc: '黑色' }, '7': { name: '+5V', desc: '红色' }, '8': { name: '+5V', desc: '红色' }, '9': { name: '+5V', desc: '红色' }, '10': { name: 'GND', desc: '黑色' }, '11': { name: 'GND', desc: '黑色' }, '12': { name: 'GND', desc: '黑色' }, '13': { name: '+12V', desc: '黄色' }, '14': { name: '+12V', desc: '黄色' }, '15': { name: '+12V', desc: '黄色' } } }
   },
-  pinoutsIcsData: pinoutsIcs,
+  pinoutsIcsData: mergedIcsData,
   pinoutsSovietData: {
     'k155la3': { name: 'K155LA3', desc: '4 路 2 输入与非门 (DIP-14)', pins: { '1': { name: '1A', desc: '输入 1' }, '2': { name: '1B', desc: '输入 2' }, '3': { name: '1Y', desc: '输出 1' }, '4': { name: '2A', desc: '输入 3' }, '5': { name: '2B', desc: '输入 4' }, '6': { name: '2Y', desc: '输出 2' }, '7': { name: 'GND', desc: '地' }, '8': { name: '3Y', desc: '输出 3' }, '9': { name: '3A', desc: '输入 5' }, '10': { name: '3B', desc: '输入 6' }, '11': { name: '4Y', desc: '输出 4' }, '12': { name: '4A', desc: '输入 7' }, '13': { name: '4B', desc: '输入 8' }, '14': { name: 'VCC', desc: '电源 +5V' } } },
     'k155tm2': { name: 'K155TM2', desc: '2 路 D 触发器 (DIP-14)', pins: { '1': { name: '1R', desc: '复位 1' }, '2': { name: '1D', desc: '数据 D1' }, '3': { name: '1C', desc: '时钟 1' }, '4': { name: '1S', desc: '置位 1' }, '5': { name: '1Q', desc: '输出 Q1' }, '6': { name: '1~Q', desc: '输出 ~Q1' }, '7': { name: 'GND', desc: '地' }, '8': { name: '2~Q', desc: '输出 ~Q2' }, '9': { name: '2Q', desc: '输出 Q2' }, '10': { name: '2S', desc: '置位 2' }, '11': { name: '2C', desc: '时钟 2' }, '12': { name: '2D', desc: '数据 D2' }, '13': { name: '2R', desc: '复位 2' }, '14': { name: 'VCC', desc: '电源' } } },
@@ -76,6 +79,14 @@ export const pinouts = {
     'rpi-40pin': {
       name: 'Raspberry Pi 40-pin GPIO', desc: '所有型号的 GPIO 接口 (Pico 除外)',
       pins: { '1': { name: '3V3', desc: '3.3V 电源' }, '2': { name: '5V', desc: '5V 电源' }, '3': { name: 'GPIO2', desc: 'I2C1 SDA' }, '4': { name: '5V', desc: '5V 电源' }, '5': { name: 'GPIO3', desc: 'I2C1 SCL' }, '6': { name: 'GND', desc: '地' }, '7': { name: 'GPIO4', desc: 'GPCLK0' }, '8': { name: 'GPIO14', desc: 'UART TX' }, '9': { name: 'GND', desc: '地' }, '10': { name: 'GPIO15', desc: 'UART RX' }, '11': { name: 'GPIO17', desc: 'GPIO' }, '12': { name: 'GPIO18', desc: 'PCM CLK / PWM0' }, '13': { name: 'GPIO27', desc: 'GPIO' }, '14': { name: 'GND', desc: '地' }, '15': { name: 'GPIO22', desc: 'GPIO' }, '16': { name: 'GPIO23', desc: 'GPIO' }, '17': { name: '3V3', desc: '3.3V 电源' }, '18': { name: 'GPIO24', desc: 'GPIO' }, '19': { name: 'GPIO10', desc: 'SPI0 MOSI' }, '20': { name: 'GND', desc: '地' }, '21': { name: 'GPIO9', desc: 'SPI0 MISO' }, '22': { name: 'GPIO25', desc: 'GPIO' }, '23': { name: 'GPIO11', desc: 'SPI0 SCLK' }, '24': { name: 'GPIO8', desc: 'SPI0 CE0' }, '25': { name: 'GND', desc: '地' }, '26': { name: 'GPIO7', desc: 'SPI0 CE1' }, '27': { name: 'ID_SD', desc: 'I2C0 SDA (HAT ID)' }, '28': { name: 'ID_SC', desc: 'I2C0 SCL (HAT ID)' }, '29': { name: 'GPIO5', desc: 'GPIO' }, '30': { name: 'GND', desc: '地' }, '31': { name: 'GPIO6', desc: 'GPIO' }, '32': { name: 'GPIO12', desc: 'PWM0' }, '33': { name: 'GPIO13', desc: 'PWM1' }, '34': { name: 'GND', desc: '地' }, '35': { name: 'GPIO19', desc: 'PCM FS / PWM1' }, '36': { name: 'GPIO16', desc: 'GPIO' }, '37': { name: 'GPIO26', desc: 'GPIO' }, '38': { name: 'GPIO20', desc: 'PCM DIN' }, '39': { name: 'GND', desc: '地' }, '40': { name: 'GPIO21', desc: 'PCM DOUT' } }
+    },
+    'arduino-mega': {
+      name: 'Arduino Mega 2560', desc: '强大 ATmega2560 开发板',
+      pins: { '1': { name: 'GND', desc: '接地' }, '2': { name: '5V', desc: '+5V 电源' } }
+    },
+    'raspberry-pi-pico': {
+      name: 'Raspberry Pi Pico', desc: 'RP2040 微控制器 (40针)',
+      pins: { '1': { name: 'GP0', desc: 'GPIO 0' }, '2': { name: 'GP1', desc: 'GPIO 1' } }
     }
   }
 };

@@ -6,7 +6,8 @@ import { smd } from './smd.js';
 import { about } from './about.js';
 import { help } from './help.js';
 import { favorites } from './favorites.js';
-import { guides } from './guides.js';  // <-- ДОБАВИТЬ
+import { guides } from './guides.js';
+import { sketch } from './sketch.js';
 
 export const zh = {
   ...common,
@@ -17,5 +18,6 @@ export const zh = {
   ...about,
   ...help,
   ...favorites,
-  ...guides  // <-- ДОБАВИТЬ
+  ...guides,
+  ...sketch
 };

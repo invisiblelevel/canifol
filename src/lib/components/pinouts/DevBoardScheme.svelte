@@ -142,6 +142,52 @@
     <text x="160" y="110" fill="var(--text-primary)" font-size="12" font-family="var(--font-sans)" text-anchor="middle" font-weight="bold">{data?.name ?? 'Raspberry Pi 40-pin'}</text>
   </svg>
 
+{:else if activeId === 'arduino-mega'}
+  <!-- Arduino Mega 2560 -->
+  <svg viewBox="0 0 350 220" width="100%" height="auto" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="60" y="10" width="230" height="200" rx="6" fill="var(--bg-elevated)" stroke="var(--text-muted)" stroke-width="2"/>
+    <g fill="var(--text-secondary)">
+      {#each Array(10) as _, i}
+        <rect x="48" y={30 + i * 16} width="12" height="10" rx="1" />
+        <rect x="290" y={30 + i * 16} width="12" height="10" rx="1" />
+      {/each}
+    </g>
+    <g fill="var(--accent)" font-size="6" font-family="var(--font-mono)" text-anchor="end">
+      {#each Array(10) as _, i}
+        <text x="44" y={38 + i * 16}>{i + 1}</text>
+      {/each}
+    </g>
+    <g fill="var(--accent)" font-size="6" font-family="var(--font-mono)" text-anchor="start">
+      {#each Array(10) as _, i}
+        <text x="306" y={38 + i * 16}>{20 - i}</text>
+      {/each}
+    </g>
+    <text x="175" y="112" fill="var(--text-primary)" font-size="12" font-family="var(--font-sans)" text-anchor="middle" font-weight="bold">{data?.name ?? 'Arduino Mega'}</text>
+  </svg>
+
+{:else if activeId === 'raspberry-pi-pico'}
+  <!-- Raspberry Pi Pico -->
+  <svg viewBox="0 0 320 240" width="100%" height="auto" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="80" y="10" width="160" height="220" rx="6" fill="var(--bg-elevated)" stroke="var(--text-muted)" stroke-width="2"/>
+    <g fill="var(--text-secondary)">
+      {#each Array(20) as _, i}
+        <rect x="68" y={15 + i * 11} width="12" height="7" rx="1" />
+        <rect x="240" y={15 + i * 11} width="12" height="7" rx="1" />
+      {/each}
+    </g>
+    <g fill="var(--accent)" font-size="5" font-family="var(--font-mono)" text-anchor="end">
+      {#each Array(20) as _, i}
+        <text x="64" y={21 + i * 11}>{i + 1}</text>
+      {/each}
+    </g>
+    <g fill="var(--accent)" font-size="5" font-family="var(--font-mono)" text-anchor="start">
+      {#each Array(20) as _, i}
+        <text x="256" y={21 + i * 11}>{40 - i}</text>
+      {/each}
+    </g>
+    <text x="160" y="120" fill="var(--text-primary)" font-size="12" font-family="var(--font-sans)" text-anchor="middle" font-weight="bold">{data?.name ?? 'RP Pico'}</text>
+  </svg>
+
 {:else}
   <div class="scheme-placeholder">Нет схемы для этой платы</div>
 {/if}
