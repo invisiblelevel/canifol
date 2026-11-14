@@ -29,7 +29,7 @@ Canifol is a free tool for electronics repair technicians. Component calculators
 
 - **Light theme** — switch in Settings (two buttons) and a sun/moon icon in the header/sidebar. The choice is saved to `localStorage`.
 - **BoardView toolbar redesigned** — vertical checkbox column replaced with a horizontal toolbar of chip buttons. On mobile, one-letter shortcuts (P / T / C / L / R) keep it in a single row.
-- **Alternative BoardView color theme** — OpenBoardView / Discord style (blue-gray) with a palette toggle. Saved to `localStorage`.
+- **Alternative BoardView color theme** — (blue-gray) with a palette toggle. Saved to `localStorage`.
 - **RSS / YouTube fix** — YouTube now returns 404 for RSS endpoints en masse. Added a **fallback via `rss2json.com`** in `guides.rs`: if the direct request returns nothing, the feed is fetched through the proxy and parsed from JSON.
 - **Hardcoded labels fixed** — all BoardView layer labels (Top / Bottom / Both / Labels) now use i18n keys.
 
@@ -92,7 +92,7 @@ Canifol — бесплатный инструмент для ремонтник�
 
 - **Светлая тема** — переключатель в Настройках (две кнопки) и иконка солнца/луны в шапке/сайдбаре. Выбор сохраняется в `localStorage`.
 - **Тулбар BoardView переделан** — вертикальный столбец чекбоксов заменён на горизонтальную панель с кнопками-чипами. На мобилке — однобуквенные сокращения (P / T / C / L / R), чтобы всё влезло в одну строку.
-- **Альтернативная цветовая тема BoardView** — в стиле OpenBoardView / Discord (сине-серый), с переключателем-палитрой. Выбор сохраняется в `localStorage`.
+- **Альтернативная цветовая тема BoardView** —(сине-серый), с переключателем-палитрой. Выбор сохраняется в `localStorage`.
 - **Фикс RSS / YouTube** — YouTube массово отдаёт 404 на RSS-эндпоинты. Добавлен **фоллбэк через `rss2json.com`** в `guides.rs`: если прямой запрос ничего не вернул, фид забирается через прокси и парсится из JSON.
 - **Убраны хардкоды** — все подписи слоёв BoardView (Верхний / Нижний / Оба / Подписи) теперь берутся из локализаций.
 
@@ -155,7 +155,7 @@ Canifol 是一款免费的电子维修技术人员工具。内置元器件计算
 
 - **浅色主题** — 可在设置中切换（两个按钮），标题栏/侧边栏中也有太阳/月亮图标。选择会保存到 `localStorage`。
 - **BoardView 工具栏重新设计** — 垂直复选框列替换为水平工具栏，带有芯片按钮。在移动端，单字母缩写（P / T / C / L / R）可保持在一行内。
-- **BoardView 备选配色主题** — OpenBoardView / Discord 风格（蓝灰色），带调色板切换。选择会保存到 `localStorage`。
+- **BoardView 备选配色主题** — 风格（蓝灰色），带调色板切换。选择会保存到 `localStorage`。
 - **RSS / YouTube 修复** — YouTube 现在大批量返回 404 给 RSS 端点。在 `guides.rs` 中添加了 **通过 `rss2json.com` 的回退机制**：如果直接请求没有返回内容，则通过代理获取并解析 JSON。
 - **移除硬编码** — 所有 BoardView 图层标签（顶层 / 底层 / 两者 / 标签）现在使用 i18n 键。
 
