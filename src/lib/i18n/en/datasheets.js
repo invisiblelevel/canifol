@@ -25,6 +25,10 @@ export const datasheets = {
   },
   "settings": {
     "title": "Settings",
+	"themeTitle": "Theme",
+    "themeHint": "Dark or light interface theme.",
+    "themeDark": "🌙 Dark",
+    "themeLight": "☀️ Light",
     "scaleTitle": "Interface scale",
     "scaleHint": "Increase if you have a 4K monitor or poor eyesight.",
     "cacheTitle": "Datasheets cache",

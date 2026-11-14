@@ -2,6 +2,7 @@
   import { invoke } from '@tauri-apps/api/core';
   import { onMount, tick } from 'svelte';
   import { getStrings } from '../strings.svelte.js';
+  import { Palette, Search, Maximize2, Minimize2 } from '@lucide/svelte';
 
   const strings = $derived(getStrings());
   let { path = '', data: externalData = null } = $props();
@@ -19,10 +20,58 @@
   let lastX = 0, lastY = 0;
   let isFullscreen = $state(false);
 
+  // --- ТЕМЫ ---
+  const THEMES = {
+    canifol: {
+      bg: '#1a1a1a',
+      lineBoard: '#00aa00',
+      lineOutline: '#00ff88',
+      lineComp: '#00aaff',
+      compTopIC: '#00aaff',
+      compTopP: '#aaaaaa',
+      compBotIC: '#ff8800',
+      compBotP: '#aa6600',
+      fillTop: 'rgba(80, 80, 80, 0.4)',
+      fillBottom: 'rgba(120, 80, 40, 0.4)',
+      pinTop: '#ffaa00',
+      pinBottom: '#ff6600',
+      routeTop: '#00ff00',
+      routeBottom: '#ff8800',
+      text: '#ffffff',
+      labelBg: 'rgba(0, 0, 0, 0.7)',
+    },
+    obv: {
+      bg: '#2b2d31',
+      lineBoard: '#4a9eff',
+      lineOutline: '#a0c4ff',
+      lineComp: '#888888',
+      compTopIC: '#e0e0e0',
+      compTopP: '#aaaaaa',
+      compBotIC: '#ff6b6b',
+      compBotP: '#cc5555',
+      fillTop: 'rgba(60, 60, 60, 0.5)',
+      fillBottom: 'rgba(80, 50, 50, 0.5)',
+      pinTop: '#ffd93d',
+      pinBottom: '#ff9a3d',
+      routeTop: '#4a9eff',
+      routeBottom: '#ff6b6b',
+      text: '#ffffff',
+      labelBg: 'rgba(0, 0, 0, 0.8)',
+    }
+  };
+  let themeName = $state(localStorage.getItem('canifol_bv_theme') || 'canifol');
+  const theme = $derived(THEMES[themeName]);
+
+  function toggleTheme() {
+    themeName = themeName === 'canifol' ? 'obv' : 'canifol';
+    localStorage.setItem('canifol_bv_theme', themeName);
+    requestDraw();
+  }
+
   // Видимость слоёв
   let showTop = $state(true);
   let showBottom = $state(true);
-  let hasBottomLayer = $state(true); // есть ли вообще нижний слой
+  let hasBottomLayer = $state(true);
 
   // Что рисуем
   let showPins = $state(true);
@@ -86,19 +135,18 @@
       const result = await invoke('read_boardview', { path });
       data = result;
       
-      // АВТООПРЕДЕЛЕНИЕ СЛОЕВ
       const topPinsCount = data.pins.filter(p => p.side === 'top').length;
       const botPinsCount = data.pins.filter(p => p.side === 'bottom').length;
       const isSingleSided = botPinsCount < topPinsCount * 0.05;
       
       if (isSingleSided) {
-          showTop = true;
-          showBottom = false;
-          hasBottomLayer = false;
+        showTop = true;
+        showBottom = false;
+        hasBottomLayer = false;
       } else {
-          showTop = true;
-          showBottom = true;
-          hasBottomLayer = true;
+        showTop = true;
+        showBottom = true;
+        hasBottomLayer = true;
       }
 
       selectedPin = null; connectedNames = new Set();
@@ -206,7 +254,7 @@
     canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, rect.width, rect.height);
-    ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0, 0, rect.width, rect.height);
+    ctx.fillStyle = theme.bg; ctx.fillRect(0, 0, rect.width, rect.height);
 
     const { minX, minY, w, h } = bounds;
     const padding = 20;
@@ -220,7 +268,7 @@
     if (showLines && data.lines && data.lines.length > 0) {
       const boardLines = data.lines.filter(l => l.layer !== 'COMPONENT' && l.layer !== 'OUTLINE');
       if (boardLines.length > 0) {
-        ctx.strokeStyle = '#00aa00';
+        ctx.strokeStyle = theme.lineBoard;
         ctx.lineWidth = 1 / (scale * fitScale);
         ctx.beginPath();
         for (const line of boardLines) {
@@ -232,7 +280,7 @@
 
       const outlineLines = data.lines.filter(l => l.layer === 'OUTLINE' || l.layer === 'BOARD');
       if (outlineLines.length > 0) {
-        ctx.strokeStyle = '#00ff88';
+        ctx.strokeStyle = theme.lineOutline;
         ctx.lineWidth = 2 / (scale * fitScale);
         ctx.beginPath();
         for (const line of outlineLines) {
@@ -244,7 +292,7 @@
 
       const compLines = data.lines.filter(l => l.layer === 'COMPONENT');
       if (compLines.length > 0) {
-        ctx.strokeStyle = '#00aaff';
+        ctx.strokeStyle = theme.lineComp;
         ctx.lineWidth = 1.5 / (scale * fitScale);
         ctx.beginPath();
         for (const line of compLines) {
@@ -259,22 +307,22 @@
       const topRoutes = data.routes.filter(r => r.layer === 'TOP');
       const bottomRoutes = data.routes.filter(r => r.layer !== 'TOP');
       if (showTop && topRoutes.length > 0) {
-        ctx.strokeStyle = '#00ff00'; ctx.lineWidth = 1 / (scale * fitScale);
+        ctx.strokeStyle = theme.routeTop; ctx.lineWidth = 1 / (scale * fitScale);
         ctx.beginPath(); for (const r of topRoutes) { ctx.moveTo(r.x1, r.y1); ctx.lineTo(r.x2, r.y2); } ctx.stroke();
       }
       if (showBottom && bottomRoutes.length > 0) {
-        ctx.strokeStyle = '#ff8800'; ctx.lineWidth = 1 / (scale * fitScale);
+        ctx.strokeStyle = theme.routeBottom; ctx.lineWidth = 1 / (scale * fitScale);
         ctx.beginPath(); for (const r of bottomRoutes) { ctx.moveTo(r.x1, r.y1); ctx.lineTo(r.x2, r.y2); } ctx.stroke();
       }
     }
 
     if (showLines && data.arcs) {
-      ctx.strokeStyle = '#00aa00'; ctx.lineWidth = 1 / (scale * fitScale);
+      ctx.strokeStyle = theme.lineBoard; ctx.lineWidth = 1 / (scale * fitScale);
       for (const arc of data.arcs) { ctx.beginPath(); ctx.moveTo(arc.x1, arc.y1); ctx.lineTo(arc.x2, arc.y2); ctx.stroke(); }
     }
 
-        if (showComponents && data.components) {
-      const worldStroke = 0.8 / (scale * fitScale);
+    if (showComponents && data.components) {
+      const worldStroke = 0.5 / (scale * fitScale);
       for (const comp of data.components) {
         if (comp.bounds_x1 === undefined) continue;
         if (!isCompVisible(comp)) continue;
@@ -285,14 +333,24 @@
         const ic = isIC(comp.ref_name);
         const isSearched = searchedComponent && searchedComponent.ref_name === comp.ref_name;
 
-        // Тонкие контуры, без заливки
+        const strokeTop = ic ? theme.compTopIC : theme.compTopP;
+        const strokeBottom = ic ? theme.compBotIC : theme.compBotP;
+        const strokeColor = side === 'TOP' ? strokeTop : strokeBottom;
+
         if (isSearched) {
           ctx.strokeStyle = '#ff00ff';
           ctx.lineWidth = worldStroke * 4;
           ctx.strokeRect(comp.bounds_x1, comp.bounds_y1, cw, ch);
+        } else if (ic) {
+          ctx.strokeStyle = strokeColor;
+          ctx.lineWidth = worldStroke * 2;
+          ctx.strokeRect(comp.bounds_x1, comp.bounds_y1, cw, ch);
         } else {
-          ctx.strokeStyle = side === 'TOP' ? (ic ? '#00aaff' : '#777777') : (ic ? '#ff8800' : '#996633');
-          ctx.lineWidth = worldStroke * 1.5;
+          const fill = side === 'TOP' ? theme.fillTop : theme.fillBottom;
+          ctx.fillStyle = fill;
+          ctx.strokeStyle = strokeColor;
+          ctx.lineWidth = worldStroke * 2;
+          ctx.fillRect(comp.bounds_x1, comp.bounds_y1, cw, ch);
           ctx.strokeRect(comp.bounds_x1, comp.bounds_y1, cw, ch);
         }
       }
@@ -306,7 +364,7 @@
         if (x < -10 || x > rect.width + 10 || y < -10 || y > rect.height + 10) continue;
 
         const side = pinSide(p);
-        let fillColor = side === 'TOP' ? '#ffaa00' : '#ff6600';
+        let fillColor = side === 'TOP' ? theme.pinTop : theme.pinBottom;
         let radius = 3;
 
         if (selectedPin && selectedPin.name === p.name) { fillColor = '#00ff00'; radius = 5; }
@@ -336,22 +394,22 @@
         ctx.font = `${(ic || isSearched) ? 'bold ' : ''}${fontSize}px monospace`;
         const label = comp.device ? `${comp.ref_name} (${comp.device})` : comp.ref_name;
         const textW = ctx.measureText(label).width;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillStyle = theme.labelBg;
         ctx.fillRect(x - textW/2 - 2, y - fontSize/2 - 2, textW + 4, fontSize + 4);
-        ctx.fillStyle = isSearched ? '#ff00ff' : (side === 'TOP' ? (ic ? '#00aaff' : '#ffffff') : '#ffaa55');
+        ctx.fillStyle = isSearched ? '#ff00ff' : (side === 'TOP' ? (ic ? theme.compTopIC : theme.text) : theme.compBotIC);
         ctx.fillText(label, x, y); count++;
       }
     }
 
     if (hoveredPin && hoveredPin.name !== selectedPin?.name && isPinVisible(hoveredPin)) {
       const { x, y } = worldToScreen(hoveredPin.x, hoveredPin.y, rect);
-      ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI * 2); ctx.strokeStyle = '#ffaa00'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI * 2); ctx.strokeStyle = theme.pinTop; ctx.lineWidth = 2; ctx.stroke();
     }
   }
 
   $effect(() => {
     scale; offsetX; offsetY; hoveredPin; showPins; showLines; showComponents; showRoutes;
-    showTop; showBottom; showLabels;
+    showTop; showBottom; showLabels; themeName;
     selectedPin; connectedNames; searchedComponent; searchedPinNames;
     requestDraw();
   });
@@ -425,6 +483,75 @@
   {:else if error}
     <div class="error">{error}</div>
   {:else}
+    <!-- Верхняя панель -->
+    <div class="bv-toolbar">
+      {#if hasBottomLayer}
+        <div class="side-group">
+          <button class="chip" class:active={showTop && !showBottom} onclick={setOnlyTop}>{strings.boardview.onlyTop}</button>
+          <button class="chip" class:active={!showTop && showBottom} onclick={setOnlyBottom}>{strings.boardview.onlyBottom}</button>
+          <button class="chip" class:active={showTop && showBottom} onclick={setBoth}>{strings.boardview.both}</button>
+        </div>
+        <div class="divider"></div>
+      {/if}
+      
+      <button class="chip" class:active={showPins} onclick={() => { showPins = !showPins; requestDraw(); }}>
+        <span class="desktop-only">{strings.boardview.showPins}</span>
+        <span class="mobile-only">P</span>
+      </button>
+      <button class="chip" class:active={showLines} onclick={() => { showLines = !showLines; requestDraw(); }}>
+        <span class="desktop-only">{strings.boardview.showLines}</span>
+        <span class="mobile-only">T</span>
+      </button>
+      <button class="chip" class:active={showComponents} onclick={() => { showComponents = !showComponents; requestDraw(); }}>
+        <span class="desktop-only">{strings.boardview.showComponents}</span>
+        <span class="mobile-only">C</span>
+      </button>
+      <button class="chip" class:active={showLabels} onclick={() => { showLabels = !showLabels; requestDraw(); }}>
+        <span class="desktop-only">{strings.boardview.showLabels}</span>
+        <span class="mobile-only">L</span>
+      </button>
+      <button class="chip" class:active={showRoutes} onclick={() => { showRoutes = !showRoutes; requestDraw(); }}>
+        <span class="desktop-only">{strings.boardview.showRoutes}</span>
+        <span class="mobile-only">R</span>
+      </button>
+
+      <div class="spacer"></div>
+
+      <div class="search-box">
+        <Search size={14} />
+        <input
+          type="text"
+          bind:value={searchQuery}
+          oninput={() => {
+            const q = searchQuery.trim().toUpperCase();
+            if (!q) { searchedComponent = null; searchedPinNames = new Set(); searchNotFound = false; requestDraw(); return; }
+            const comp = data.components.find(c => c.ref_name.toUpperCase() === q);
+            if (comp) {
+              searchedComponent = comp;
+              const s = compSide(comp);
+              if (s === 'TOP') showTop = true; else showBottom = true;
+              const names = new Set();
+              for (const p of data.pins) {
+                if (p.name.startsWith(comp.ref_name + '.')) names.add(p.name);
+              }
+              searchedPinNames = names; searchNotFound = false;
+            } else {
+              searchedComponent = null; searchedPinNames = new Set(); searchNotFound = true;
+            }
+            requestDraw();
+          }}
+          placeholder={strings.boardview.searchPlaceholder || 'Search...'}
+        />
+      </div>
+
+      <button class="icon-btn" onclick={toggleTheme} title="Theme">
+        <Palette size={16} />
+      </button>
+      <button class="icon-btn" onclick={toggleFullscreen} title="Fullscreen">
+        {#if isFullscreen}<Minimize2 size={16} />{:else}<Maximize2 size={16} />{/if}
+      </button>
+    </div>
+
     <canvas
       bind:this={canvas}
       onwheel={handleWheel}
@@ -437,96 +564,159 @@
       ontouchend={handleTouchEnd}
     ></canvas>
 
-    <div class="layers-panel">
-      {#if hasBottomLayer}
-        <div class="side-switcher">
-          <button class="side-btn" class:active={showTop && !showBottom} onclick={setOnlyTop}>TOP</button>
-          <button class="side-btn" class:active={!showTop && showBottom} onclick={setOnlyBottom}>BOTTOM</button>
-          <button class="side-btn" class:active={showTop && showBottom} onclick={setBoth}>Оба</button>
-        </div>
-        <hr />
-      {/if}
-      <label><input type="checkbox" bind:checked={showTop} /> <span class="dot dot-top"></span> Верхний слой</label>
-      {#if hasBottomLayer}
-      <label><input type="checkbox" bind:checked={showBottom} /> <span class="dot dot-bottom"></span> Нижний слой</label>
-      {/if}
-      <hr />
-      <label><input type="checkbox" bind:checked={showPins} /> Пины</label>
-      <label><input type="checkbox" bind:checked={showLines} /> Линии/дорожки</label>
-      <label><input type="checkbox" bind:checked={showComponents} /> Компоненты</label>
-      <label><input type="checkbox" bind:checked={showLabels} /> Подписи</label>
-      <label><input type="checkbox" bind:checked={showRoutes} /> Routes</label>
-    </div>
-
     <div class="info">
       {#if data.format}<span class="fmt-badge">{data.format.toUpperCase()}</span> · {/if}
       {strings.boardview.pinsCount}: {data.pins.filter(isPinVisible).length}
-      · Компонентов: {data.components.filter(isCompVisible).length}
+      · {strings.boardview.componentsCount || 'Компонентов'}: {data.components.filter(isCompVisible).length}
       · {strings.boardview.zoom}: {scale.toFixed(2)}x
-      {#if selectedPin} · <span style="color: #00ff00;">{selectedPin.name}</span> (Net: {selectedPin.net || 'no net'}) · Связей: {connectedNames.size}
+      {#if selectedPin} · <span style="color: #00ff00;">{selectedPin.name}</span> ({selectedPin.net || 'no net'}) · {strings.boardview.connections || 'Связей'}: {connectedNames.size}
       {:else if hoveredPin} · {hoveredPin.name} ({hoveredPin.net || 'no net'}){/if}
     </div>
 
-    <div class="search-bar">
-      <input
-        type="text"
-        bind:value={searchQuery}
-        oninput={() => {
-          const q = searchQuery.trim().toUpperCase();
-          if (!q) { searchedComponent = null; searchedPinNames = new Set(); searchNotFound = false; requestDraw(); return; }
-          const comp = data.components.find(c => c.ref_name.toUpperCase() === q);
-          if (comp) {
-            searchedComponent = comp;
-            const s = compSide(comp);
-            if (s === 'TOP') showTop = true; else showBottom = true;
-            const names = new Set();
-            for (const p of data.pins) {
-              if (p.name.startsWith(comp.ref_name + '.')) names.add(p.name);
-            }
-            searchedPinNames = names; searchNotFound = false;
-          } else {
-            searchedComponent = null; searchedPinNames = new Set(); searchNotFound = true;
-          }
-          requestDraw();
-        }}
-        placeholder="Поиск: R123, Q21, U5..."
-        class="search-input"
-      />
-      {#if searchNotFound}<span class="not-found">Не найдено</span>{/if}
-    </div>
-
-    <button class="fullscreen-btn" onclick={toggleFullscreen} title="Fullscreen">{#if isFullscreen}✕{:else}⛶{/if}</button>
+    {#if searchNotFound}
+      <div class="not-found-toast">{strings.boardview.notFound || 'Not found'}</div>
+    {/if}
   {/if}
 </div>
 
 <style>
-  .board-viewer { position: relative; width: 100%; height: 70vh; background: #1a1a1a; border-radius: var(--radius-md); overflow: hidden; }
-  .board-viewer.fullscreen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999; height: 100vh; border-radius: 0; }
-  canvas { width: 100%; height: 100%; cursor: grab; display: block; touch-action: none; }
+  .board-viewer {
+    position: relative;
+    width: 100%;
+    height: 70vh;
+    background: #1a1a1a;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .board-viewer.fullscreen {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 9999; height: 100vh; border-radius: 0;
+  }
+
+  /* Toolbar */
+  .bv-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px;
+    background: rgba(20, 20, 20, 0.95);
+    border-bottom: 1px solid var(--border-subtle);
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    flex-shrink: 0;
+    scrollbar-width: none;
+  }
+  .bv-toolbar::-webkit-scrollbar { display: none; }
+
+  .side-group { display: flex; gap: 2px; flex-shrink: 0; }
+  .divider { width: 1px; height: 20px; background: var(--border-subtle); margin: 0 2px; flex-shrink: 0; }
+  .spacer { flex: 1; min-width: 8px; }
+
+  .chip {
+    padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-muted);
+    border: 1px solid transparent;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .chip:hover { background: rgba(255, 255, 255, 0.12); color: var(--text-primary); }
+  .chip.active {
+    background: var(--accent, #ffaa00);
+    color: #000;
+    border-color: var(--accent, #ffaa00);
+  }
+
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    padding: 3px 8px;
+    color: var(--text-muted);
+    min-width: 120px;
+    flex-shrink: 1;
+  }
+  .search-box input {
+    background: transparent; border: none; outline: none;
+    color: var(--text-primary); font-size: 12px; width: 100%;
+  }
+  .search-box input::placeholder { color: var(--text-muted); }
+
+  .icon-btn {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .icon-btn:hover { background: rgba(255, 255, 255, 0.15); color: var(--text-primary); }
+
+  .mobile-only { display: none; }
+  .desktop-only { display: inline; }
+
+  canvas {
+    flex: 1;
+    width: 100%;
+    cursor: grab;
+    display: block;
+    touch-action: none;
+    min-height: 0;
+  }
   canvas:active { cursor: grabbing; }
-  .loading, .error { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--text-muted); font-size: 1.2rem; }
+
+  .loading, .error {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--text-muted); font-size: 1.2rem;
+  }
   .error { color: var(--danger); }
-  .info { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 4px 12px; border-radius: var(--radius-sm); font-size: 0.8rem; color: var(--text-muted); pointer-events: none; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-  .fmt-badge { background: #ffaa00; color: #000; padding: 1px 6px; border-radius: 4px; font-weight: 600; font-size: 0.7rem; }
 
-  .layers-panel { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.85); padding: 8px 12px; border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #fff; border: 1px solid var(--border-subtle); }
-  .layers-panel hr { border: none; border-top: 1px solid var(--border-subtle); margin: 4px 0; }
-  .layers-panel label { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
-  .layers-panel input[type="checkbox"] { cursor: pointer; }
+  .info {
+    position: absolute; bottom: 10px; left: 10px;
+    background: rgba(0,0,0,0.7);
+    padding: 4px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    pointer-events: none;
+    display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+  }
+  .fmt-badge {
+    background: #ffaa00; color: #000;
+    padding: 1px 6px; border-radius: 4px;
+    font-weight: 600; font-size: 0.7rem;
+  }
+  .not-found-toast {
+    position: absolute; bottom: 50px; right: 20px;
+    background: rgba(239, 83, 80, 0.95);
+    color: white;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+  }
 
-  .side-switcher { display: flex; gap: 4px; margin-bottom: 4px; }
-  .side-btn { flex: 1; padding: 4px 8px; background: rgba(255,255,255,0.08); color: #ccc; border: 1px solid var(--border-subtle); border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
-  .side-btn:hover { background: rgba(255,255,255,0.15); }
-  .side-btn.active { background: var(--accent, #ffaa00); color: #000; border-color: var(--accent, #ffaa00); }
-
-  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
-  .dot-top { background: #00aaff; }
-  .dot-bottom { background: #ff8800; }
-
-  .search-bar { position: absolute; bottom: 50px; right: 10px; display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.85); padding: 6px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); }
-  .search-input { background: transparent; border: none; color: #fff; font-size: 14px; width: 220px; outline: none; }
-  .search-input::placeholder { color: #666; }
-  .not-found { color: #ff4444; font-size: 12px; white-space: nowrap; }
-  .fullscreen-btn { position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; background: rgba(0,0,0,0.7); color: #ffaa00; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
-  .fullscreen-btn:hover { background: rgba(255, 170, 0, 0.2); }
+  @media (max-width: 768px) {
+    .bv-toolbar { padding: 4px 6px; gap: 3px; }
+    .chip { padding: 3px 6px; font-size: 10px; }
+    .search-box { min-width: 80px; padding: 2px 6px; }
+    .search-box input { font-size: 11px; }
+    .icon-btn { width: 24px; height: 24px; }
+    
+    .desktop-only { display: none; }
+    .mobile-only { display: inline; }
+  }
 </style>

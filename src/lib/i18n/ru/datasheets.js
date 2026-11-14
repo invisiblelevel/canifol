@@ -25,6 +25,10 @@ export const datasheets = {
   },
   "settings": {
     "title": "Настройки",
+	"themeTitle": "Тема",
+    "themeHint": "Тёмная или светлая тема интерфейса.",
+    "themeDark": "🌙 Тёмная",
+    "themeLight": "☀️ Светлая",
     "scaleTitle": "Масштаб интерфейса",
     "scaleHint": "Увеличь, если у тебя 4K-монитор или плохое зрение.",
     "cacheTitle": "Кэш даташитов",

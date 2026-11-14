@@ -1,6 +1,7 @@
 /* ============================================================
    Canifol — глобальные стили и дизайн-переменные
    Версия 5: тёплый уголь + янтарный акцент ("мастерская")
+   + Светлая тема (data-theme="light")
    ============================================================ */
 
 :root {
@@ -26,17 +27,6 @@
   --accent-dim: rgba(245, 184, 61, 0.14);
   --accent-glow: rgba(245, 184, 61, 0.35);
   --grad-primary: linear-gradient(180deg, #f7c55c 0%, #e6a420 100%);
-
-  /* --- Вариант: Красный (закомментирован) --- */
-  /* 
-  --accent: #ef5350;
-  --accent-strong: #d32f2f;
-  --accent-dim: rgba(239, 83, 80, 0.14);
-  --accent-glow: rgba(239, 83, 80, 0.35);
-  --grad-primary: linear-gradient(180deg, #f26a6a 0%, #d32f2f 100%);
-  */
-
-  /* ========================================================= */
 
   /* Статусы — подогнаны под тёплую палитру */
   --danger: #e85a5a;
@@ -85,6 +75,41 @@
   --grad-elevated: linear-gradient(180deg, #2b2825 0%, #262321 100%);
 }
 
+/* ============================================================
+   СВЕТЛАЯ ТЕМА
+   ============================================================ */
+[data-theme="light"] {
+  --bg-base: #faf8f5;
+  --bg-elevated: #ffffff;
+  --bg-elevated-2: #f4f1ec;
+  --bg-elevated-3: #e8e3dc;
+  --bg-overlay: rgba(0, 0, 0, 0.35);
+
+  --border-subtle: #e0d9d0;
+  --border-strong: #c9c0b5;
+
+  --text-primary: #2a2521;
+  --text-secondary: #5a524a;
+  --text-muted: #8a8078;
+
+  --accent: #d97706;
+  --accent-strong: #b45309;
+  --accent-dim: rgba(217, 119, 6, 0.12);
+  --accent-glow: rgba(217, 119, 6, 0.25);
+  --grad-primary: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+
+  --danger: #dc2626;
+  --success: #16a34a;
+  --warning: #d97706;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
+  --shadow-accent: 0 0 0 1px var(--accent-glow), 0 0 20px var(--accent-dim);
+
+  --grad-elevated: linear-gradient(180deg, #ffffff 0%, #faf8f5 100%);
+}
+
 @media (max-width: 768px) {
   :root {
     --space-3: 0.75rem;
@@ -98,19 +123,9 @@
    Ресеты
    ============================================================ */
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html,
-body {
-  height: 100%;
-  overflow: hidden;
-}
+html, body { height: 100%; overflow: hidden; }
 
 body {
   font-family: var(--font-sans);
@@ -121,92 +136,31 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  
-  /* Безопасные зоны для Android */
   padding-top: env(safe-area-inset-top, 24px);
   padding-bottom: env(safe-area-inset-bottom, 48px);
   padding-left: env(safe-area-inset-left, 0);
   padding-right: env(safe-area-inset-right, 0);
+  transition: background 0.2s, color 0.2s;
 }
 
-#app {
-  height: 100vh;
-  height: 100dvh;
-  overflow: hidden;
-}
+#app { height: 100vh; height: 100dvh; overflow: hidden; }
 
-button,
-input,
-select,
-textarea {
-  font: inherit;
-  color: inherit;
-}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; border: none; background: none; }
+a { color: var(--accent); text-decoration: none; transition: color var(--transition-fast); }
+a:hover { color: var(--accent-strong); text-decoration: underline; }
+h1, h2, h3, h4 { font-weight: 600; line-height: 1.25; letter-spacing: -0.01em; }
+.no-select { user-select: none; -webkit-user-select: none; }
 
-button {
-  cursor: pointer;
-  border: none;
-  background: none;
-}
+/* Скроллбары */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 5px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); background-clip: content-box; }
+.scroll-hidden::-webkit-scrollbar { display: none; }
+.scroll-hidden { scrollbar-width: none; }
 
-a {
-  color: var(--accent);
-  text-decoration: none;
-  transition: color var(--transition-fast);
-}
-
-a:hover {
-  color: var(--accent-strong);
-  text-decoration: underline;
-}
-
-h1, h2, h3, h4 {
-  font-weight: 600;
-  line-height: 1.25;
-  letter-spacing: -0.01em;
-}
-
-.no-select {
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-/* ============================================================
-   Скроллбары
-   ============================================================ */
-
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: 5px;
-  border: 2px solid transparent;
-  background-clip: content-box;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
-  background-clip: content-box;
-}
-
-.scroll-hidden::-webkit-scrollbar {
-  display: none;
-}
-.scroll-hidden {
-  scrollbar-width: none;
-}
-
-/* ============================================================
-   Автозаполнение
-   ============================================================ */
-
+/* Автозаполнение */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
@@ -223,62 +177,31 @@ textarea:-webkit-autofill:focus {
   transition: background-color 9999s ease-in-out 0s;
   caret-color: var(--text-primary);
 }
+select option { background-color: var(--bg-elevated-2); color: var(--text-primary); }
 
-select option {
-  background-color: var(--bg-elevated-2);
-  color: var(--text-primary);
-}
-
-/* ============================================================
-   Утилиты
-   ============================================================ */
-
+/* Утилиты */
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
+.animate-in { animation: fadeInUp var(--transition-base) both; }
+.glow { box-shadow: var(--shadow-accent); }
 
-.animate-in {
-  animation: fadeInUp var(--transition-base) both;
-}
-
-.glow {
-  box-shadow: var(--shadow-accent);
-}
-/* --- Жёсткий полноэкранный режим для PDF --- */
-body.pdf-is-maximized {
-  overflow: hidden !important;
-}
-
-body.pdf-is-maximized #app {
-  overflow: visible !important;
-}
-
-/* Заставляем все родительские контейнеры пропускать элемент */
+/* PDF полный экран */
+body.pdf-is-maximized { overflow: hidden !important; }
+body.pdf-is-maximized #app { overflow: visible !important; }
 body.pdf-is-maximized .content,
 body.pdf-is-maximized .shell,
 body.pdf-is-maximized .card {
   overflow: visible !important;
   transform: none !important;
 }
-
-/* Растягиваем сам контейнер с PDF */
 body.pdf-is-maximized .pdf-main-container {
   position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
+  top: 0 !important; left: 0 !important;
+  width: 100vw !important; height: 100vh !important;
   z-index: 999999 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border-radius: 0 !important;
-  border: none !important;
+  margin: 0 !important; padding: 0 !important;
+  border-radius: 0 !important; border: none !important;
   background: var(--bg-base) !important;
 }

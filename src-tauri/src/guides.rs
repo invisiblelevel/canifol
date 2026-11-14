@@ -102,14 +102,68 @@ fn parse_youtube_feed(xml: &str, source_name: &str) -> Vec<Guide> {
     guides
 }
 
+/// Парсит JSON-ответ от rss2json.com (фоллбэк, когда прямой YouTube RSS отдаёт 404/пустоту).
+fn parse_rss2json_feed(json: &str, source_name: &str) -> Vec<Guide> {
+    let mut guides = Vec::new();
+    let Ok(v) = serde_json::from_str::<serde_json::Value>(json) else { return guides; };
+    let Some(items) = v.get("items").and_then(|i| i.as_array()) else { return guides; };
+
+    for item in items {
+        let title = item.get("title").and_then(|t| t.as_str()).unwrap_or("").to_string();
+        let link = item.get("link").and_then(|l| l.as_str()).unwrap_or("").to_string();
+        let pub_date = item.get("pubDate").and_then(|p| p.as_str()).unwrap_or("").to_string();
+        let thumbnail = item.get("thumbnail").and_then(|t| t.as_str()).map(|s| s.to_string());
+
+        if title.is_empty() || link.is_empty() { continue; }
+
+        let embed_link = if let Some(vid) = link.split("v=").nth(1) {
+            format!("https://www.youtube.com/embed/{}", vid.split('&').next().unwrap_or(vid))
+        } else { link.clone() };
+
+        guides.push(Guide {
+            id: make_id(&link), title, link: embed_link, image: thumbnail,
+            description: String::new(), source: source_name.to_string(),
+            r#type: "video".to_string(), published: pub_date,
+        });
+    }
+    guides
+}
+
 async fn fetch_youtube_feeds(channels: &[(&str, &str)]) -> Vec<Guide> {
     let client = reqwest::Client::new();
     let mut all = Vec::new();
     for (name, channel_id) in channels {
-        let url = format!("https://www.youtube.com/feeds/videos.xml?channel_id={}", channel_id);
-        if let Ok(resp) = client.get(&url).send().await {
-            if let Ok(text) = resp.text().await {
-                all.extend(parse_youtube_feed(&text, name));
+        let yt_url = format!("https://www.youtube.com/feeds/videos.xml?channel_id={}", channel_id);
+        let mut got = false;
+
+        // 1. Пробуем прямой запрос
+        if let Ok(resp) = client.get(&yt_url).send().await {
+            if resp.status().is_success() {
+                if let Ok(text) = resp.text().await {
+                    let parsed = parse_youtube_feed(&text, name);
+                    if !parsed.is_empty() {
+                        all.extend(parsed);
+                        got = true;
+                    }
+                }
+            }
+        }
+
+        // 2. Фоллбэк через rss2json (если прямой не дал результатов)
+        if !got {
+            let proxy_url = format!(
+                "https://api.rss2json.com/v1/api.json?rss_url={}",
+                urlencoding::encode(&yt_url)
+            );
+            if let Ok(resp) = client.get(&proxy_url).send().await {
+                if resp.status().is_success() {
+                    if let Ok(text) = resp.text().await {
+                        let parsed = parse_rss2json_feed(&text, name);
+                        if !parsed.is_empty() {
+                            all.extend(parsed);
+                        }
+                    }
+                }
             }
         }
     }

@@ -25,6 +25,10 @@ export const datasheets = {
   },
   "settings": {
     "title": "设置",
+	"themeTitle": "主题",
+    "themeHint": "深色或浅色界面主题。",
+    "themeDark": "🌙 深色",
+    "themeLight": "☀️ 浅色",
     "scaleTitle": "界面缩放",
     "scaleHint": "如果你使用 4K 显示器或视力不佳，请调大。",
     "cacheTitle": "数据表缓存",

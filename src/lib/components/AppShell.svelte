@@ -5,17 +5,24 @@
   const strings = $derived(getStrings());
   import Tabs from './Tabs.svelte';
   import Logo from './Logo.svelte';
-  import { Menu, X, Info, Settings } from '@lucide/svelte';
+  import { Menu, X, Info, Settings, Sun, Moon } from '@lucide/svelte';
   import { navStore } from '../stores/navigation.svelte.js';
 
   let { children, title = '', onOpenAbout = () => {} } = $props();
 
   let menuOpen = $state(false);
+  let theme = $state(localStorage.getItem('canifol_theme') || 'dark');
 
   function toggleMenu() { menuOpen = !menuOpen; }
   function closeMenu() { menuOpen = false; }
   function handleOpenAbout() { menuOpen = false; onOpenAbout(); }
   function openSettings() { navStore.setSettings(); menuOpen = false; }
+
+  function toggleTheme() {
+    theme = theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('canifol_theme', theme);
+  }
 
   $effect(() => {
     if (!layoutStore.isMobile) menuOpen = false;
@@ -32,6 +39,10 @@
         <Logo size={28} />
         <span class="topbar__title">{strings.app.name}</span>
       </div>
+
+      <button type="button" class="topbar__icon" aria-label="Theme" onclick={toggleTheme}>
+        {#if theme === 'dark'}<Sun size={20} strokeWidth={2} />{:else}<Moon size={20} strokeWidth={2} />{/if}
+      </button>
 
       <button type="button" class="topbar__icon" aria-label="Info" onclick={handleOpenAbout}>
         <Info size={20} strokeWidth={2} />
@@ -59,6 +70,10 @@
           </div>
           
           <div class="footer-row">
+            <button type="button" class="drawer__link" onclick={toggleTheme}>
+              {#if theme === 'dark'}<Sun size={16} strokeWidth={2} />{:else}<Moon size={16} strokeWidth={2} />{/if}
+              <span>{theme === 'dark' ? 'Light theme' : 'Dark theme'}</span>
+            </button>
             <button type="button" class="drawer__link" onclick={handleOpenAbout}>
               <Info size={16} strokeWidth={2} />
               <span>About</span>
@@ -74,10 +89,10 @@
   {:else}
     <aside class="sidebar">
       <div class="sidebar__brand">
-  <Logo size={72} />
-  <div class="sidebar__brand-name">{strings.app.name}</div>
-  <div class="sidebar__brand-tagline">{strings.app.tagline}</div>
-</div>
+        <Logo size={72} />
+        <div class="sidebar__brand-name">{strings.app.name}</div>
+        <div class="sidebar__brand-tagline">{strings.app.tagline}</div>
+      </div>
 
       <Tabs />
 
@@ -89,6 +104,10 @@
         </div>
         
         <div class="footer-row">
+          <button type="button" class="sidebar__link" onclick={toggleTheme} title="Theme">
+            {#if theme === 'dark'}<Sun size={16} strokeWidth={2} />{:else}<Moon size={16} strokeWidth={2} />{/if}
+            <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
+          </button>
           <button type="button" class="sidebar__link" onclick={handleOpenAbout}>
             <Info size={16} strokeWidth={2} />
             <span>About</span>
@@ -114,51 +133,29 @@
   .shell.mobile { grid-template-rows: var(--header-height) 1fr; grid-template-columns: 1fr; }
 
   .sidebar { display: flex; flex-direction: column; background: var(--bg-elevated); border-right: 1px solid var(--border-subtle); padding: var(--space-3); overflow-y: auto; }
-  .sidebar__brand { padding: var(--space-2) var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-subtle); margin-bottom: var(--space-3); }
   .sidebar__brand {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: var(--space-2) var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--border-subtle);
-  margin-bottom: var(--space-3);
-  gap: var(--space-2);
-}
-.sidebar__brand-name {
-  font-size: var(--font-size-xl);
-  font-weight: 700;
-  color: var(--accent);
-  letter-spacing: 0.5px;
-}
-.sidebar__brand-tagline {
-  font-size: var(--font-size-sm);
-  color: var(--text-muted);
-}
-  .sidebar__brand-name { font-size: var(--font-size-xl); font-weight: 700; letter-spacing: 0.5px; }
-  .sidebar__brand-tagline { font-size: var(--font-size-sm); color: var(--text-muted); margin-top: var(--space-1); }
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    padding: var(--space-2) var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: var(--space-3);
+    gap: var(--space-2);
+  }
+  .sidebar__brand-name { font-size: var(--font-size-xl); font-weight: 700; color: var(--accent); letter-spacing: 0.5px; }
+  .sidebar__brand-tagline { font-size: var(--font-size-sm); color: var(--text-muted); }
   
   .sidebar__footer { margin-top: auto; padding-top: var(--space-3); border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: var(--space-2); padding-bottom: env(safe-area-inset-bottom); }
   .footer-row { display: flex; align-items: center; gap: 2px; width: 100%; }
   
   .sidebar__link, .drawer__link {
-    display: flex;
-    align-items: center;
-    gap: var(--space-1);
+    display: flex; align-items: center; gap: var(--space-1);
     padding: var(--space-2) var(--space-2);
     border-radius: var(--radius-md);
-    color: var(--text-secondary);
-    font-size: var(--font-size-sm);
+    color: var(--text-secondary); font-size: var(--font-size-sm);
     white-space: nowrap;
     transition: background var(--transition-fast), color var(--transition-fast);
-    flex: 1;
-    justify-content: flex-start;
+    flex: 1; justify-content: flex-start;
   }
-  
-  .sidebar__link:hover, .drawer__link:hover { 
-    background: var(--bg-elevated-2); 
-    color: var(--text-primary); 
-  }
+  .sidebar__link:hover, .drawer__link:hover { background: var(--bg-elevated-2); color: var(--text-primary); }
 
   .topbar { display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-3); padding-top: env(safe-area-inset-top); background: var(--bg-elevated); border-bottom: 1px solid var(--border-subtle); position: relative; z-index: 10; }
   .topbar__burger { display: flex; align-items: center; justify-content: center; width: var(--touch-target); height: var(--touch-target); color: var(--text-primary); border-radius: var(--radius-md); }

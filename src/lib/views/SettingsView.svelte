@@ -5,7 +5,6 @@
   import Button from '../components/Button.svelte';
   import { getStrings } from '../strings.svelte.js';
   import { uiScaleStore } from '../stores/uiScale.svelte.js';
-  import { favoritesStore } from '../stores/favorites.svelte.js';
 
   const strings = $derived(getStrings());
 
@@ -17,13 +16,17 @@
   let favClearing = $state(false);
   let favCleared = $state(false);
 
-  // Временно отключено: вернём в 1.6.0 вместе с "Добавить файл в избранное"
-  // let downloadingFavs = $state(false);
-  // let downloadResult = $state('');
-
   let guidesSize = $state(0);
   let guidesClearing = $state(false);
   let guidesCleared = $state(false);
+
+  // ТЕМА
+  let theme = $state(localStorage.getItem('canifol_theme') || 'dark');
+  function setTheme(name) {
+    theme = name;
+    document.documentElement.setAttribute('data-theme', name);
+    localStorage.setItem('canifol_theme', name);
+  }
 
   function formatBytes(bytes) {
     if (bytes === 0) return `0 ${strings.units.b}`;
@@ -79,38 +82,6 @@
     finally { guidesClearing = false; }
   }
 
-  // Временно отключено
-  // async function downloadAllFavorites() {
-  //   const datasheets = favoritesStore.datasheets;
-  //   if (!datasheets || datasheets.length === 0) {
-  //     downloadResult = strings.settings.downloadNoFavorites;
-  //     return;
-  //   }
-  //   const urls = datasheets
-  //     .map(d => d.datasheet_url)
-  //     .filter(u => u && typeof u === 'string' && u.length > 0);
-  //
-  //   if (urls.length === 0) {
-  //     downloadResult = strings.settings.downloadNoFavorites;
-  //     return;
-  //   }
-  //
-  //   downloadingFavs = true;
-  //   downloadResult = '';
-  //   try {
-  //     const res = await invoke('download_all_favorites', { urls });
-  //     downloadResult = strings.settings.downloadResult
-  //       .replace('{downloaded}', res.downloaded)
-  //       .replace('{skipped}', res.skipped)
-  //       .replace('{failed}', res.failed);
-  //     await loadFavSize();
-  //   } catch (e) {
-  //     downloadResult = 'Error: ' + e;
-  //   } finally {
-  //     downloadingFavs = false;
-  //   }
-  // }
-
   function setScale(value) {
     uiScaleStore.set(value);
   }
@@ -124,6 +95,20 @@
 
 <Card title={strings.settings.title}>
   <div class="settings">
+   <!-- Тема -->
+    <div class="section">
+      <div class="section__title">{strings.settings.themeTitle}</div>
+      <div class="section__hint">{strings.settings.themeHint}</div>
+      <div class="theme-switcher">
+        <button class="theme-btn" class:active={theme === 'dark'} onclick={() => setTheme('dark')}>
+          {strings.settings.themeDark}
+        </button>
+        <button class="theme-btn" class:active={theme === 'light'} onclick={() => setTheme('light')}>
+          {strings.settings.themeLight}
+        </button>
+      </div>
+    </div>
+
     <!-- Масштаб -->
     <div class="section">
       <div class="section__title">{strings.settings.scaleTitle}</div>
@@ -163,7 +148,7 @@
       </div>
     </div>
 
-    <!-- Кэш избранных PDF (кнопка "Скачать все" временно скрыта) -->
+    <!-- Кэш избранных PDF -->
     <div class="section">
       <div class="section__title">{strings.settings.favoritesCacheTitle}</div>
       <div class="section__hint">{strings.settings.favoritesCacheHint}</div>
@@ -175,23 +160,12 @@
           </span>
         </div>
         <div class="cache-buttons">
-          <!--
-          <Button variant="primary" size="sm"
-            onclick={downloadAllFavorites} loading={downloadingFavs}>
-            {strings.settings.downloadFavoritesBtn}
-          </Button>
-          -->
           <Button variant={favSize > 0 ? 'danger' : 'ghost'} size="sm"
             onclick={clearFavorites} loading={favClearing} disabled={favSize === 0}>
             {favCleared ? strings.settings.cacheCleared : strings.settings.clearFavorites}
           </Button>
         </div>
       </div>
-      <!--
-      {#if downloadResult}
-        <div class="download-result">{downloadResult}</div>
-      {/if}
-      -->
     </div>
 
     <!-- Кэш гайдов -->
@@ -221,6 +195,27 @@
   .section__title { font-size: var(--font-size-base); font-weight: 600; color: var(--text-primary); }
   .section__hint { font-size: var(--font-size-sm); color: var(--text-muted); line-height: 1.5; }
 
+  /* Тема */
+  .theme-switcher { display: flex; gap: var(--space-2); }
+  .theme-btn {
+    flex: 1;
+    padding: 10px 16px;
+    background: var(--bg-elevated-2);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .theme-btn:hover { border-color: var(--border-strong); }
+  .theme-btn.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
   .scale-control { display: flex; align-items: center; gap: var(--space-3); }
   .scale-slider { flex: 1; accent-color: var(--accent); }
   .scale-value { min-width: 60px; text-align: right; font-family: var(--font-mono); font-weight: 600; color: var(--accent); }
@@ -235,5 +230,4 @@
   .cache-info__label { font-size: var(--font-size-sm); color: var(--text-muted); }
   .cache-info__value { font-family: var(--font-mono); font-size: var(--font-size-base); color: var(--text-primary); font-weight: 600; }
   .cache-buttons { display: flex; gap: var(--space-2); flex-wrap: wrap; }
-  .download-result { font-size: var(--font-size-sm); color: var(--accent); padding: var(--space-2) 0; }
 </style>
