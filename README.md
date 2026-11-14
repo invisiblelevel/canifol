@@ -7,7 +7,7 @@
 **Кросс-платформенный инструмент ремонтника: калькуляторы компонентов, поиск даташитов, распиновки, база SMD-кодов, BoardView, RSS-лента и База знаний.**
 **跨平台电子维修工具包：元器件计算器、数据表搜索、引脚图、SMD 代码数据库、BoardView、RSS 订阅和知识库。**
 
-[![Version](https://img.shields.io/badge/version-1.5.2-blue.svg)](../../releases)
+[![Version](https://img.shields.io/badge/version-1.5.3-blue.svg)](../../releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android%20%7C%20Linux-0078D6.svg)](#install)
 [![Tauri](https://img.shields.io/badge/tauri-2-24C8DB.svg)](https://tauri.app/)
@@ -25,16 +25,13 @@ Canifol is a free tool for electronics repair technicians. Component calculators
 
 **Available on Windows, Android and Linux.** The desktop build ships as a standard Windows installer (`.exe`), the mobile build as a standalone Android APK (`.apk`), and the Linux build as `.deb`, `.rpm` and `.AppImage` (auto-built via GitHub Actions). All files are attached to every release.
 
-### What's new in 1.5.2
+### What's new in 1.5.3
 
-- **New BoardView format: TVW (Teleplan / TestView)** — binary and ASCII-obfuscated variants. Pins, components and board outline are parsed. Layer switching (TOP / BOTTOM) now works for double-sided boards.
-- **FZ / CAE parser improved** — dynamic column reading from the `A!SECTION!COL1!COL2!` header (no more shifted indices), board outline (`BOARD OUTLINE`) and traces (`ETCH`) are parsed with garbage protection.
-- **Apple BRD parser** — real refdes (`U1`, `C2`) and components instead of `P1`, `P2`. Pins are grouped into components automatically.
-- **XZZ (.pcb) parser** — coordinates are in mils now (the `* 250` hack is gone), layer detection for pins (`TOP` / `BOTTOM`), net table parsing.
-- **Unified BoardView layer:** auto-format detection by content (not by extension), `catch_unwind` protection, auto-generated outline when the format has none, arc tessellation.
-- **BoardView UI:** TOP / BOTTOM / Both switch, mirror mode for the bottom side, layer colors (TOP — blue, BOTTOM — orange), smart search that jumps to the component's layer.
-- **Android BoardView:** `read_boardview_uri` uses the same parser as desktop, no temp files.
-- **Help updated:** `.tvw` added to the supported formats (RU / EN / ZH), empty state and file filter.
+- **Light theme** — switch in Settings (two buttons) and a sun/moon icon in the header/sidebar. The choice is saved to `localStorage`.
+- **BoardView toolbar redesigned** — vertical checkbox column replaced with a horizontal toolbar of chip buttons. On mobile, one-letter shortcuts (P / T / C / L / R) keep it in a single row.
+- **Alternative BoardView color theme** — OpenBoardView / Discord style (blue-gray) with a palette toggle. Saved to `localStorage`.
+- **RSS / YouTube fix** — YouTube now returns 404 for RSS endpoints en masse. Added a **fallback via `rss2json.com`** in `guides.rs`: if the direct request returns nothing, the feed is fetched through the proxy and parsed from JSON.
+- **Hardcoded labels fixed** — all BoardView layer labels (Top / Bottom / Both / Labels) now use i18n keys.
 
 ### Features
 
@@ -47,11 +44,11 @@ Canifol is a free tool for electronics repair technicians. Component calculators
 - **Pinouts** — connectors, imported ICs, Soviet microchips, and development boards.
 - **SMD Code Search** — database of 270,974 components. Search by the code printed on the package.
 - **Favorites** — save SMD codes, pinouts, and datasheets. Offline PDF support.
-- **BoardView** — open `.fz`, `.cae`, `.cad`, `.bdv`, `.asc`, `.pcb`, `.tvw`, and `.brd` files, highlight nets, search components, toggle layers (TOP / BOTTOM / Both).
+- **BoardView** — open `.fz`, `.cae`, `.cad`, `.bdv`, `.asc`, `.pcb`, `.tvw`, and `.brd` files, highlight nets, search components, toggle layers (TOP / BOTTOM / Both), two color themes.
 - **RSS feed** — YouTube videos (RU/EN) and Bilibili videos (ZH) from repair channels. Native fullscreen on Android, iframe on desktop.
 - **Knowledge Base** — 6,000+ schematics and BoardViews (10+ GB) for laptops, GPUs and consoles. Synced from Google Drive with MEGA fallback, smart search (by model, category and file name), built-in PDF and BoardView viewers.
 - **Localization** — English, Russian, and Chinese, with automatic system language detection.
-- **Settings** — interface zoom (70–150%), unified cache size and cleanup, offline favorites cleanup, RSS cache cleanup.
+- **Settings** — interface zoom (70–150%), light/dark theme, unified cache size and cleanup, offline favorites cleanup, RSS cache cleanup.
 
 ### Tech Stack
 
@@ -91,16 +88,13 @@ Canifol — бесплатный инструмент для ремонтник�
 
 **Доступно на Windows, Android и Linux.** Десктопная версия поставляется как обычный установщик (`.exe`), мобильная — как отдельный APK (`.apk`), Linux — как `.deb`, `.rpm` и `.AppImage`. Все файлы прикрепляются к каждому релизу.
 
-### Что нового в 1.5.2
+### Что нового в 1.5.3
 
-- **Новый формат BoardView: TVW (Teleplan / TestView)** — бинарный и ASCII-обфусцированный варианты. Парсятся пины, компоненты и контур платы. Переключение слоёв (TOP / BOTTOM) теперь работает для двусторонних плат.
-- **Улучшен FZ / CAE-парсер** — динамическое чтение колонок из заголовка `A!SECTION!COL1!COL2!` (больше не сдвигаются индексы), читается контур платы (`BOARD OUTLINE`) и дорожки (`ETCH`) с защитой от мусора.
-- **Apple BRD-парсер** — реальные refdes (`U1`, `C2`) и компоненты вместо `P1`, `P2`. Пины автоматически группируются в компоненты.
-- **XZZ (.pcb)-парсер** — координаты теперь в милах (убран костыль `* 250`), разделение слоёв пинов (`TOP` / `BOTTOM`), парсинг net-таблицы.
-- **Унификация BoardView:** автоопределение формата по содержимому (а не по расширению), защита через `catch_unwind`, авто-генерация контура, если формат его не даёт, разбиение дуг на отрезки.
-- **UI BoardView:** переключатель TOP / BOTTOM / Оба, зеркалирование нижней стороны, цвета по слоям (TOP — голубой, BOTTOM — оранжевый), умный поиск, который переключает слой на нужный компонент.
-- **Android BoardView:** `read_boardview_uri` использует тот же парсер, что и десктоп, без временных файлов.
-- **Обновлена справка:** `.tvw` добавлен в список поддерживаемых форматов (RU / EN / ZH), пустое состояние и фильтр выбора файла.
+- **Светлая тема** — переключатель в Настройках (две кнопки) и иконка солнца/луны в шапке/сайдбаре. Выбор сохраняется в `localStorage`.
+- **Тулбар BoardView переделан** — вертикальный столбец чекбоксов заменён на горизонтальную панель с кнопками-чипами. На мобилке — однобуквенные сокращения (P / T / C / L / R), чтобы всё влезло в одну строку.
+- **Альтернативная цветовая тема BoardView** — в стиле OpenBoardView / Discord (сине-серый), с переключателем-палитрой. Выбор сохраняется в `localStorage`.
+- **Фикс RSS / YouTube** — YouTube массово отдаёт 404 на RSS-эндпоинты. Добавлен **фоллбэк через `rss2json.com`** в `guides.rs`: если прямой запрос ничего не вернул, фид забирается через прокси и парсится из JSON.
+- **Убраны хардкоды** — все подписи слоёв BoardView (Верхний / Нижний / Оба / Подписи) теперь берутся из локализаций.
 
 ### Что умеет
 
@@ -113,11 +107,11 @@ Canifol — бесплатный инструмент для ремонтник�
 - **Распиновки** — разъёмы, импортные микросхемы, советские, платы разработчика.
 - **Поиск по SMD-кодам** — база на 270 974 компонента.
 - **Избранное** — сохранение SMD-кодов, распиновок и даташитов. Офлайн-доступ к PDF.
-- **BoardView** — открытие `.fz`, `.cae`, `.cad`, `.bdv`, `.asc`, `.pcb`, `.tvw` и `.brd` файлов, подсветка цепей, поиск компонентов, слои (TOP / BOTTOM / Оба).
+- **BoardView** — открытие `.fz`, `.cae`, `.cad`, `.bdv`, `.asc`, `.pcb`, `.tvw` и `.brd` файлов, подсветка цепей, поиск компонентов, слои (TOP / BOTTOM / Оба), две цветовые темы.
 - **RSS-лента** — видео с YouTube (RU/EN) и Bilibili (ZH) каналов по ремонту. Нативный фуллскрин на Android, iframe на десктопе.
 - **База знаний** — 6 000+ схем и BoardView (10+ ГБ) для ноутбуков, видеокарт и консолей. Синхронизируется с Google Drive (с фоллбэком на MEGA), умный поиск (по модели, категории и имени файла), встроенный просмотр PDF и BoardView.
 - **Локализация** — русский, английский, китайский. Автоопределение языка системы.
-- **Настройки** — масштаб интерфейса, размер единого кэша и его очистка, очистка офлайн-избранного, очистка кэша RSS.
+- **Настройки** — масштаб интерфейса, светлая/тёмная тема, размер единого кэша и его очистка, очистка офлайн-избранного, очистка кэша RSS.
 
 ### Стек
 
@@ -157,16 +151,13 @@ Canifol 是一款免费的电子维修技术人员工具。内置元器件计算
 
 **支持 Windows、Android 和 Linux。** 桌面版为标准 Windows 安装程序 (`.exe`)，移动版为独立的 Android APK (`.apk`)，Linux 版为 `.deb`、`.rpm` 和 `.AppImage`。所有文件均附在每次发布中。
 
-### 1.5.2 新功能
+### 1.5.3 新功能
 
-- **全新 BoardView 格式：TVW (Teleplan / TestView)** — 支持二进制和 ASCII 混淆两种变体。解析引脚、元件和电路板轮廓。双面板现在支持图层切换 (TOP / BOTTOM)。
-- **改进 FZ / CAE 解析器** — 从 `A!SECTION!COL1!COL2!` 头部动态读取列（不再有索引偏移），解析电路板轮廓（`BOARD OUTLINE`）和走线（`ETCH`）并进行垃圾防护。
-- **Apple BRD 解析器** — 使用真实 refdes（`U1`、`C2`）和元件，而不是 `P1`、`P2`。引脚自动分组成元件。
-- **XZZ (.pcb) 解析器** — 坐标现在使用 mil（移除了 `* 250` 的 hack），支持引脚图层检测（`TOP` / `BOTTOM`），解析网络表。
-- **统一 BoardView：** 按内容自动检测格式（而不是按扩展名），使用 `catch_unwind` 保护，当格式没有轮廓时自动生成轮廓，将圆弧分割为线段。
-- **BoardView UI：** TOP / BOTTOM / 两者切换、底部镜像模式、图层颜色（TOP — 蓝色，BOTTOM — 橙色）、智能搜索自动切换到元件所在图层。
-- **Android BoardView：** `read_boardview_uri` 与桌面使用相同的解析器，无需临时文件。
-- **更新帮助：** `.tvw` 已添加到支持的格式列表（俄语 / 英语 / 中文）、空状态和文件过滤器。
+- **浅色主题** — 可在设置中切换（两个按钮），标题栏/侧边栏中也有太阳/月亮图标。选择会保存到 `localStorage`。
+- **BoardView 工具栏重新设计** — 垂直复选框列替换为水平工具栏，带有芯片按钮。在移动端，单字母缩写（P / T / C / L / R）可保持在一行内。
+- **BoardView 备选配色主题** — OpenBoardView / Discord 风格（蓝灰色），带调色板切换。选择会保存到 `localStorage`。
+- **RSS / YouTube 修复** — YouTube 现在大批量返回 404 给 RSS 端点。在 `guides.rs` 中添加了 **通过 `rss2json.com` 的回退机制**：如果直接请求没有返回内容，则通过代理获取并解析 JSON。
+- **移除硬编码** — 所有 BoardView 图层标签（顶层 / 底层 / 两者 / 标签）现在使用 i18n 键。
 
 ### 功能
 
@@ -179,11 +170,11 @@ Canifol 是一款免费的电子维修技术人员工具。内置元器件计算
 - **引脚图** — 连接器、进口 IC、苏联微芯片和开发板。
 - **SMD 代码搜索** — 270,974 个元器件数据库。按封装上印刷的代码进行搜索。
 - **收藏夹** — 保存 SMD 代码、引脚图和数据表。支持离线 PDF。
-- **BoardView** — 打开 `.fz`、`.cae`、`.cad`、`.bdv`、`.asc`、`.pcb`、`.tvw` 和 `.brd` 文件，高亮网络，搜索元器件，切换图层（TOP / BOTTOM / 两者）。
+- **BoardView** — 打开 `.fz`、`.cae`、`.cad`、`.bdv`、`.asc`、`.pcb`、`.tvw` 和 `.brd` 文件，高亮网络，搜索元器件，切换图层（TOP / BOTTOM / 两者），两种配色主题。
 - **RSS 订阅** — 来自 YouTube（俄语/英语）和 Bilibili（中文）维修频道的视频。Android 上原生全屏，桌面端使用 iframe。
 - **知识库** — 6000+ 个原理图和 BoardView（10+ GB），适用于笔记本电脑、显卡和游戏机。从 Google Drive 同步（带 MEGA 备用源），智能搜索（按型号、类别和文件名），内置查看 PDF 和 BoardView 文件。
 - **本地化** — 英语、俄语和中文，自动检测系统语言。
-- **设置** — 界面缩放 (70–150%)、统一缓存大小和清理、离线收藏夹清理、RSS 缓存清理。
+- **设置** — 界面缩放 (70–150%)、浅色/深色主题、统一缓存大小和清理、离线收藏夹清理、RSS 缓存清理。
 
 ### 技术栈
 
