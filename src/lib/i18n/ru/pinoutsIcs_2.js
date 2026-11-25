@@ -1,5 +1,17 @@
 import { pinoutsIcs } from './pinoutsIcs.js';
 
+// Все 25-серии SPI BIOS-флеш используют этот 8-выводной корпус.
+const spiFlashPins = {
+  '1': { name: '~CS', desc: 'Выбор чипа' },
+  '2': { name: 'DO / IO1', desc: 'Выход данных' },
+  '3': { name: '~WP / IO2', desc: 'Защита от записи' },
+  '4': { name: 'GND', desc: 'Земля' },
+  '5': { name: 'DI / IO0', desc: 'Вход данных' },
+  '6': { name: 'CLK', desc: 'Тактирование' },
+  '7': { name: '~HOLD / ~RESET', desc: 'Удержание / сброс' },
+  '8': { name: 'VCC', desc: 'Питание 3.3 В' }
+};
+
 export const pinoutsIcs2 = {
   // --- Интерфейсные и специализированные микросхемы ---
   'max485': {
@@ -275,5 +287,124 @@ export const pinoutsIcs2 = {
       '15': { name: 'OUT 9', desc: 'Катод 9', side: 'right', num: 15 },
       '16': { name: 'VCC', desc: 'Питание (+5В)', side: 'right', num: 16 }
     }
-  }
+  },
+  // --- Дополнительные импортные микросхемы ---
+  'max7219': {
+    name: 'MAX7219', desc: 'Драйвер 8-разрядного LED-дисплея (DIP-24)', package: 'dip24',
+    pins: {
+      '1': { name: 'DIN', desc: 'Последовательные данные' }, '2': { name: 'DIG0', desc: 'Разряд 0' },
+      '3': { name: 'DIG4', desc: 'Разряд 4' }, '4': { name: 'GND', desc: 'Земля' },
+      '5': { name: 'DIG6', desc: 'Разряд 6' }, '6': { name: 'DIG2', desc: 'Разряд 2' },
+      '7': { name: 'DIG3', desc: 'Разряд 3' }, '8': { name: 'DIG7', desc: 'Разряд 7' },
+      '9': { name: 'DIG5', desc: 'Разряд 5' }, '10': { name: 'DIG1', desc: 'Разряд 1' },
+      '11': { name: 'LOAD/~CS', desc: 'Загрузка / выбор чипа' }, '12': { name: 'CLK', desc: 'Тактирование' },
+      '13': { name: 'NC', desc: 'Не подключён' }, '14': { name: 'DOUT', desc: 'Выход данных' },
+      '15': { name: 'SEG D', desc: 'Сегмент D' }, '16': { name: 'SEG DP', desc: 'Десятичная точка' },
+      '17': { name: 'SEG E', desc: 'Сегмент E' }, '18': { name: 'SEG C', desc: 'Сегмент C' },
+      '19': { name: 'V+', desc: 'Питание +5 В' }, '20': { name: 'SEG B', desc: 'Сегмент B' },
+      '21': { name: 'SEG F', desc: 'Сегмент F' }, '22': { name: 'SEG A', desc: 'Сегмент A' },
+      '23': { name: 'SEG G', desc: 'Сегмент G' }, '24': { name: 'NC', desc: 'Не подключён' }
+    }
+  },
+  'ds1307': {
+    name: 'DS1307', desc: 'Часы реального времени I2C (DIP-8)', package: 'dip8',
+    pins: {
+      '1': { name: 'X1', desc: 'Кварц 32.768 кГц' }, '2': { name: 'X2', desc: 'Кварц 32.768 кГц' },
+      '3': { name: 'VBAT', desc: 'Питание от батареи' }, '4': { name: 'GND', desc: 'Земля' },
+      '5': { name: 'SDA', desc: 'I2C данные' }, '6': { name: 'SCL', desc: 'I2C тактирование' },
+      '7': { name: 'SQW/OUT', desc: 'Выход меандра' }, '8': { name: 'VCC', desc: 'Питание +5 В' }
+    }
+  },
+  'pcf8591': {
+    name: 'PCF8591', desc: '8-битный АЦП/ЦАП I2C (DIP-16)', package: 'dip16',
+    pins: {
+      '1': { name: 'AIN0', desc: 'Аналоговый вход 0' }, '2': { name: 'AIN1', desc: 'Аналоговый вход 1' },
+      '3': { name: 'AIN2', desc: 'Аналоговый вход 2' }, '4': { name: 'AIN3', desc: 'Аналоговый вход 3' },
+      '5': { name: 'A0', desc: 'Адрес I2C 0' }, '6': { name: 'A1', desc: 'Адрес I2C 1' },
+      '7': { name: 'A2', desc: 'Адрес I2C 2' }, '8': { name: 'VSS', desc: 'Земля' },
+      '9': { name: 'SDA', desc: 'I2C данные' }, '10': { name: 'SCL', desc: 'I2C тактирование' },
+      '11': { name: 'OSC', desc: 'Генератор' }, '12': { name: 'EXT', desc: 'Внешний такт' },
+      '13': { name: 'AGND', desc: 'Аналоговая земля' }, '14': { name: 'VREF', desc: 'Опорное напряжение' },
+      '15': { name: 'AOUT', desc: 'Аналоговый выход' }, '16': { name: 'VDD', desc: 'Питание' }
+    }
+  },
+  'max3232': {
+    name: 'MAX3232', desc: 'Преобразователь RS-232 3.3 В (DIP-16)', package: 'dip16',
+    pins: {
+      '1': { name: 'C1+', desc: 'Конденсатор 1+' }, '2': { name: 'V+', desc: 'Положительное напряжение' },
+      '3': { name: 'C1-', desc: 'Конденсатор 1-' }, '4': { name: 'C2+', desc: 'Конденсатор 2+' },
+      '5': { name: 'C2-', desc: 'Конденсатор 2-' }, '6': { name: 'V-', desc: 'Отрицательное напряжение' },
+      '7': { name: 'T2OUT', desc: 'Передатчик 2 выход' }, '8': { name: 'R2IN', desc: 'Приёмник 2 вход' },
+      '9': { name: 'R2OUT', desc: 'Приёмник 2 выход' }, '10': { name: 'T2IN', desc: 'Передатчик 2 вход' },
+      '11': { name: 'T1IN', desc: 'Передатчик 1 вход' }, '12': { name: 'R1OUT', desc: 'Приёмник 1 выход' },
+      '13': { name: 'R1IN', desc: 'Приёмник 1 вход' }, '14': { name: 'T1OUT', desc: 'Передатчик 1 выход' },
+      '15': { name: 'GND', desc: 'Земля' }, '16': { name: 'VCC', desc: 'Питание 3.3 В' }
+    }
+  },
+  '74hc165': {
+    name: '74HC165', desc: '8-битный сдвиговый регистр (DIP-16)', package: 'dip16',
+    pins: {
+      '1': { name: '~PL', desc: 'Параллельная загрузка' }, '2': { name: 'CP', desc: 'Тактирование' },
+      '3': { name: 'D4', desc: 'Вход D4' }, '4': { name: 'D5', desc: 'Вход D5' },
+      '5': { name: 'D6', desc: 'Вход D6' }, '6': { name: 'D7', desc: 'Вход D7' },
+      '7': { name: '~Q7', desc: 'Инверсный выход' }, '8': { name: 'GND', desc: 'Земля' },
+      '9': { name: 'Q7', desc: 'Последовательный выход' }, '10': { name: 'DS', desc: 'Последовательный вход' },
+      '11': { name: 'D0', desc: 'Вход D0' }, '12': { name: 'D1', desc: 'Вход D1' },
+      '13': { name: 'D2', desc: 'Вход D2' }, '14': { name: 'D3', desc: 'Вход D3' },
+      '15': { name: '~CE', desc: 'Блокировка такта' }, '16': { name: 'VCC', desc: 'Питание' }
+    }
+  },
+  'acs712': {
+    name: 'ACS712', desc: 'Датчик тока Холла (SOIC-8)', package: 'sop8',
+    pins: {
+      '1': { name: 'IP+', desc: 'Ток +' }, '2': { name: 'IP+', desc: 'Ток +' },
+      '3': { name: 'GND', desc: 'Земля' }, '4': { name: 'NC', desc: 'Не подключён' },
+      '5': { name: 'VCC', desc: 'Питание +5 В' }, '6': { name: 'FILTER', desc: 'Фильтр' },
+      '7': { name: 'VOUT', desc: 'Аналоговый выход' }, '8': { name: 'IP-', desc: 'Ток -' }
+    }
+  },
+  'max6675': {
+    name: 'MAX6675', desc: 'Контроллер термопары K (SOIC-8)', package: 'sop8',
+    pins: {
+      '1': { name: 'GND', desc: 'Земля' }, '2': { name: 'T-', desc: 'Термопара -' },
+      '3': { name: 'T+', desc: 'Термопара +' }, '4': { name: 'VCC', desc: 'Питание 3-5 В' },
+      '5': { name: 'SCK', desc: 'SPI тактирование' }, '6': { name: '~CS', desc: 'SPI выбор чипа' },
+      '7': { name: 'SO', desc: 'SPI выход данных' }, '8': { name: 'NC', desc: 'Не подключён' }
+    }
+  },
+  'tp4056': {
+    name: 'TP4056', desc: 'Зарядное устройство Li-Ion 1 А (SOP-8)', package: 'sop8',
+    pins: {
+      '1': { name: 'TEMP', desc: 'Температура батареи' }, '2': { name: 'PROG', desc: 'Ток заряда' },
+      '3': { name: 'GND', desc: 'Земля' }, '4': { name: 'VCC', desc: 'Вход питания' },
+      '5': { name: 'BAT', desc: 'Батарея' }, '6': { name: 'STDBY', desc: 'Индикатор ожидания' },
+      '7': { name: 'CHRG', desc: 'Индикатор заряда' }, '8': { name: 'CE', desc: 'Включение' }
+    }
+  },
+  'ncp1117': {
+    name: 'NCP1117', desc: 'Линейный стабилизатор LDO (SOT-223)', package: 'sot223',
+    pins: {
+      '1': { name: 'ADJ/GND', desc: 'Регулировка / земля' }, '2': { name: 'OUT', desc: 'Выход' },
+      '3': { name: 'IN', desc: 'Вход' }
+    }
+  },
+  'lm2576': {
+    name: 'LM2576', desc: 'Импульсный стабилизатор 3 А (TO-220-5)', package: 'to220_5',
+    pins: {
+      '1': { name: 'VIN', desc: 'Входное напряжение' }, '2': { name: 'OUT', desc: 'Импульсный выход' },
+      '3': { name: 'GND', desc: 'Земля' }, '4': { name: 'FB', desc: 'Обратная связь' },
+      '5': { name: 'ON/~OFF', desc: 'Включение' }
+    }
+  },
+  // --- BIOS / прошивочные SPI-флеш (SOIC-8) ---
+  'w25q32jv': { name: 'W25Q32JV', desc: 'SPI BIOS-флеш 32 Мбит (SOIC-8)', package: 'sop8', pins: spiFlashPins },
+  'w25q64jv': { name: 'W25Q64JV', desc: 'SPI BIOS-флеш 64 Мбит (SOIC-8)', package: 'sop8', pins: spiFlashPins },
+  'w25q128jv': { name: 'W25Q128JV', desc: 'SPI BIOS-флеш 128 Мбит (SOIC-8)', package: 'sop8', pins: spiFlashPins },
+  'w25q256jv': { name: 'W25Q256JV', desc: 'SPI BIOS-флеш 256 Мбит (SOIC-8/WSON-8)', package: 'sop8', pins: spiFlashPins },
+  'mx25l6406e': { name: 'MX25L6406E', desc: 'SPI BIOS-флеш 64 Мбит (SOIC-8)', package: 'sop8', pins: spiFlashPins },
+  'mx25l12835f': { name: 'MX25L12835F', desc: 'SPI BIOS-флеш 128 Мбит (SOIC-8)', package: 'sop8', pins: spiFlashPins },
+  'gd25q64c': { name: 'GD25Q64C', desc: 'SPI BIOS-флеш 64 Мбит (SOIC-8)', package: 'sop8', pins: spiFlashPins },
+  'gd25q128c': { name: 'GD25Q128C', desc: 'SPI BIOS-флеш 128 Мбит (SOIC-8)', package: 'sop8', pins: spiFlashPins },
+  'sst25vf016b': { name: 'SST25VF016B', desc: 'SPI BIOS-флеш 16 Мбит (SOIC-8)', package: 'sop8', pins: spiFlashPins },
+  'en25q128': { name: 'EN25Q128', desc: 'SPI BIOS-флеш 128 Мбит (SOIC-8)', package: 'sop8', pins: spiFlashPins }
 };

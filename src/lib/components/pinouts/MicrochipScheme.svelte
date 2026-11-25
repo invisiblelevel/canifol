@@ -8,23 +8,23 @@
   const name = $derived(data?.name ?? activeId);
 
   // DIP
-  const dip8 = ['lm358', 'ne555', 'lm386', 'mc34063', 'tda2822', 'ne5532', 'lm393', 'tl072', 'tl082', 'lm833', 'ne5534', 'lm4562', 'tlc555', 'uc3842', 'uc3843', 'uc3844', 'tny267', 'attiny85', '24c02', 'k140ud6', 'k140ud7', 'kr1006vi1', 'kr140ud1208', 'max485'];
+  const dip8 = ['lm358', 'ne555', 'lm386', 'mc34063', 'tda2822', 'ne5532', 'lm393', 'tl072', 'tl082', 'lm833', 'ne5534', 'lm4562', 'tlc555', 'uc3842', 'uc3843', 'uc3844', 'tny267', 'attiny85', '24c02', 'k140ud6', 'k140ud7', 'kr1006vi1', 'kr140ud1208', 'max485', 'ds1307', 'kr544ud1', 'k157ud2'];
   const dip4 = ['pc817'];
   const dip6 = ['4n35'];
-  const dip14 = ['lm324', 'lm339', '74hc00', '74hc02', '74hc04', '74hc08', '74hc14', '74hc32', '74hc74', '74hc86', 'cd4001', 'k155la3', 'k155tm2', 'k561la7', 'k561tm2', 'kr1533la3', 'kr1533tm2', 'k561kt3', 'k176la7'];
-  const dip16 = ['tl494', 'ka7500', 'sg3524', 'sg3525', 'ka3525', '74hc138', '74hc139', '74hc595', 'cd4017', 'cd4060', 'cd4051', 'uln2003', 'l293d', 'ch340g', 'max232', 'ds3231', 'tea2025', 'k155ir1', 'k155ag3', 'k155kp1', 'k155ie7', 'k561ie10', 'k561ie11', 'pcf8574', 'k134id1'];
+  const dip14 = ['lm324', 'lm339', '74hc00', '74hc02', '74hc04', '74hc08', '74hc14', '74hc32', '74hc74', '74hc86', 'cd4001', 'k155la3', 'k155tm2', 'k561la7', 'k561tm2', 'kr1533la3', 'kr1533tm2', 'k561kt3', 'k176la7', 'k155le1', 'k155la1', 'k155ln1', 'k555ir1', 'k555lp5', 'k555li1'];
+  const dip16 = ['tl494', 'ka7500', 'sg3524', 'sg3525', 'ka3525', '74hc138', '74hc139', '74hc595', 'cd4017', 'cd4060', 'cd4051', 'uln2003', 'l293d', 'ch340g', 'max232', 'ds3231', 'tea2025', 'k155ir1', 'k155ag3', 'k155kp1', 'k155ie7', 'k561ie10', 'k561ie11', 'pcf8574', 'k134id1', 'pcf8591', 'max3232', '74hc165', 'k555id7', 'k155ie6'];
   const dip18 = ['uln2803', 'mcp2515'];
   const dip20 = ['74hc244', '74hc245', '74hc373', 'kr1533ir22'];
-  const dip24 = ['k155id3', 'kr580vi53'];
+  const dip24 = ['k155id3', 'kr580vi53', 'max7219'];
   const dip28 = ['atmega328p', 'atmega8', 'tlc5940', 'mcp23017'];
   const dip40 = ['kr580vm80a', 'kr580vv55a'];
   
   // TO-220
   const to220_3 = ['lm7805', 'lm317', 'lm7812', 'lm7905', 'lm337', 'irfz44n', 'irf540n', 'kr142en5a', 'kr142en8b'];
-  const to220_5 = ['lm2596', 'tda2030', 'tda2050', 'lm1875'];
+  const to220_5 = ['lm2596', 'tda2030', 'tda2050', 'lm1875', 'lm2576'];
   
   // SOT
-  const sot223 = ['ams1117'];
+  const sot223 = ['ams1117', 'ncp1117'];
   const sot23 = ['ob2263', 'al8805', 'al8860'];
   const sot89 = ['pt4115', 'cl6807'];
   const to92 = ['ds18b20'];
@@ -285,7 +285,10 @@
     <text x="160" y="65" fill="var(--text-primary)" font-size="14" font-family="var(--font-sans)" text-anchor="middle" font-weight="bold">{name.toUpperCase()}</text>
   </svg>
 
-{:else if ['25q64', 'cp2102', 'hv9910', 'bp3102'].includes(activeId)}
+{:else if ['25q64', 'cp2102', 'hv9910', 'bp3102',
+  'w25q32jv', 'w25q64jv', 'w25q128jv', 'w25q256jv',
+  'mx25l6406e', 'mx25l12835f', 'gd25q64c', 'gd25q128c',
+  'sst25vf016b', 'en25q128', 'acs712', 'max6675', 'tp4056'].includes(activeId)}
   <!-- SOP-8 -->
   <svg viewBox="0 0 340 180" width="100%" height="auto" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect x="80" y="40" width="180" height="100" rx="2" fill="var(--bg-elevated)" stroke="var(--text-muted)" stroke-width="1.5"/>

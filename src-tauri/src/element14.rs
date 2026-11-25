@@ -12,18 +12,17 @@ pub struct Element14Result {
 }
 
 fn get_api_key() -> Result<String, String> {
-    // 1. Пробуем env (для dev)
-    dotenvy::dotenv().ok();
+    // 1. Runtime environment (useful for overriding a build on the fly)
     if let Ok(key) = std::env::var("ELEMENT14_API_KEY") {
         if !key.is_empty() {
             return Ok(key);
         }
     }
 
-    // 2. Fallback на compile-time инъекцию (для релиза / CI)
+    // 2. Compile-time injection from src-tauri/.env or CI secrets (build.rs)
     option_env!("ELEMENT14_API_KEY")
         .map(|s| s.to_string())
-        .ok_or("ELEMENT14_API_KEY is not set. Please set it in .env (dev) or GitHub Secrets (CI)".to_string())
+        .ok_or("ELEMENT14_API_KEY is not set. Put it in src-tauri/.env and rebuild, or pass it as an environment variable".to_string())
 }
 
 #[tauri::command]

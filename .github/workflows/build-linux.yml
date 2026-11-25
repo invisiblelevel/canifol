@@ -62,13 +62,12 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'Canifol ${{ github.ref_name }}'
           releaseBody: |
-            **Canifol 1.6.1 - bug-fix release**
+            **Canifol 1.6.2 - bug-fix and content release**
 
-            - **Knowledge Base downloads fixed** - no more 2 KB "corrupt PDF" files: HTTP and payload validation, corrupt-cache repair, Google Drive confirmation handling and clearer errors.
-            - **BoardView parsers** - GenCAD units and pad positions, plain-text FZ, outline sanity checks for Apple BRD/BRD2, faster TVW and hardened XZZ.
-            - **Datasheets** - offline favorites fixed, PDF save to any folder, raw binary transfer, LCSC errors and parallel datasheet lookup.
-            - **UI/UX** - list crash and HTML-injection fixes, theme/locale sync, EN/ZH pinout fallback, unit fixes, Sketch fixes.
-            - **Stability** - 33 Rust unit tests; a parser panic no longer aborts the app.
+            - **Portable builds fixed** - datasheet API credentials are embedded at compile time from `src-tauri/.env` or CI secrets, so the portable exe and APK can search DigiKey, LCSC, Farnell and TME.
+            - **30 new pinouts** - 10 BIOS/firmware SPI flash chips (W25Q32JV, W25Q64JV, W25Q128JV, W25Q256JV, MX25L6406E, MX25L12835F, GD25Q64C, GD25Q128C, SST25VF016B, EN25Q128), 10 import ICs and 10 Soviet ICs.
+            - **Localized** in Russian, English and Chinese, with package drawings.
+            - **Build scripts** no longer contain hardcoded API keys.
 
             **Downloads:**
             - Windows: `.exe` (NSIS installer) - *attach manually*

@@ -11,7 +11,7 @@
 <p><em>跨平台电子维修工具包 — 计算器、数据表、引脚图、SMD 数据库、BoardView、草图板、RSS 和 10+ GB 知识库。</em></p>
 
 <p>
-  <a href="https://github.com/invisiblelevel/canifol/releases"><img src="https://img.shields.io/badge/version-1.6.1-blue.svg" alt="Version 1.6.1" /></a>
+  <a href="https://github.com/invisiblelevel/canifol/releases"><img src="https://img.shields.io/badge/version-1.6.2-blue.svg" alt="Version 1.6.2" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License" /></a>
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Android%20%7C%20Linux-0078D6.svg" alt="Windows, Android, Linux" />
   <a href="https://tauri.app/"><img src="https://img.shields.io/badge/tauri-2-24C8DB.svg" alt="Tauri 2" /></a>
@@ -48,7 +48,13 @@ Canifol is a free toolkit for electronics repair technicians. It combines compon
 
 **Available on Windows, Android and Linux.** The desktop build ships as a standard Windows installer (`.exe`), the mobile build as a standalone Android APK (`.apk`), and the Linux build as `.deb`, `.rpm` and `.AppImage` (auto-built via GitHub Actions). All files are attached to every release.
 
-### What's new in 1.6.1
+### What's new in 1.6.2
+
+- **Portable builds fixed** — datasheet API credentials are embedded at compile time from `src-tauri/.env` or CI secrets, so a portable `.exe`/APK can search DigiKey, LCSC, Farnell and TME without a local `.env` file.
+- **30 new pinouts** — 10 BIOS/firmware SPI flash chips (W25Q32JV, W25Q64JV, W25Q128JV, W25Q256JV, MX25L6406E, MX25L12835F, GD25Q64C, GD25Q128C, SST25VF016B, EN25Q128), 10 import ICs (MAX7219, DS1307, PCF8591, MAX3232, 74HC165, ACS712, MAX6675, TP4056, NCP1117, LM2576) and 10 Soviet ICs (K155LE1, K155LA1, K155LN1, K555ID7, K555IR1, K555LP5, K555LI1, K155IE6, KR544UD1, K157UD2).
+- **Cleaner build scripts** — API keys are no longer hardcoded in the local PowerShell scripts; local builds read `src-tauri/.env`, CI uses repository secrets.
+
+#### Also included from 1.6.1
 
 - **Knowledge Base downloads fixed** — files are no longer saved as a "2 KB corrupt PDF". The app now validates HTTP status and payload type, verifies PDF/JSON integrity, retries Google Drive confirmations, and automatically re-downloads corrupt cached files.
 - **Clear download errors** — if Google Drive is blocked or a quota is exceeded, you get the real reason and an **Open in browser** fallback instead of a broken file. System proxy is honored.
@@ -84,8 +90,8 @@ Tauri 2 · Svelte 5 (runes) · Rust · Vite · `svelte-pdf-view` · `pcbrepair` 
 
 | Platform | File | How |
 | --- | --- | --- |
-| **Windows** | `Canifol_1.6.1_x64-setup.exe` | Download from [Releases](https://github.com/invisiblelevel/canifol/releases) and run the installer. |
-| **Android** | `Canifol v1.6.1.apk` | Download the APK, allow installation from unknown sources, install. |
+| **Windows** | `Canifol_1.6.2_x64-setup.exe` | Download from [Releases](https://github.com/invisiblelevel/canifol/releases) and run the installer. |
+| **Android** | `Canifol v1.6.2.apk` | Download the APK, allow installation from unknown sources, install. |
 | **Linux** | `.deb`, `.rpm`, `.AppImage` | Download from Releases. For AppImage: `chmod +x` and run. |
 
 ### Build from source
@@ -104,6 +110,8 @@ npm run tauri android build -- --apk --debug   # debug APK
 
 > **Note:** always produce release binaries with `npm run tauri build`. It enables Tauri's `custom-protocol` feature. A plain `cargo build --release` produces a dev-mode binary that tries to open `http://localhost:1420` and shows a connection error.
 
+> **Datasheet search:** copy `src-tauri/.env.example` to `src-tauri/.env` and fill in your API keys before building. The keys are embedded at compile time, so the portable exe/APK does not need a `.env` file.
+
 ---
 
 ## Русский
@@ -112,7 +120,13 @@ Canifol — бесплатный инструмент для ремонтник�
 
 **Доступно на Windows, Android и Linux.** Десктопная версия поставляется как обычный установщик (`.exe`), мобильная — как отдельный APK (`.apk`), Linux — как `.deb`, `.rpm` и `.AppImage` (автосборка через GitHub Actions). Все файлы прикрепляются к каждому релизу.
 
-### Что нового в 1.6.1
+### Что нового в 1.6.2
+
+- **Починены портативные сборки** — ключи API даташитов вшиваются при компиляции из `src-tauri/.env` или секретов CI, поэтому портативный `.exe`/APK ищет даташиты на DigiKey, LCSC, Farnell и TME без локального `.env`.
+- **30 новых распиновок** — 10 микросхем BIOS/прошивок SPI Flash (W25Q32JV, W25Q64JV, W25Q128JV, W25Q256JV, MX25L6406E, MX25L12835F, GD25Q64C, GD25Q128C, SST25VF016B, EN25Q128), 10 импортных (MAX7219, DS1307, PCF8591, MAX3232, 74HC165, ACS712, MAX6675, TP4056, NCP1117, LM2576) и 10 советских (К155ЛЕ1, К155ЛА1, К155ЛН1, К555ИД7, К555ИР1, К555ЛП5, К555ЛИ1, К155ИЕ6, КР544УД1, К157УД2).
+- **Чище сборочные скрипты** — ключи API больше не захардкожены в отслеживаемых PowerShell-скриптах; локальная сборка читает `src-tauri/.env`, CI — секреты репозитория.
+
+#### Также включены исправления 1.6.1
 
 - **Починена загрузка Базы знаний** — файлы больше не сохраняются как «2 КБ битый PDF». Проверяются HTTP-статус и тип ответа, целостность PDF/JSON, обрабатываются подтверждения Google Drive, а битый кэш перекачивается автоматически.
 - **Понятные ошибки загрузки** — если Google Drive заблокирован или превышена квота, приложение показывает реальную причину и предлагает **«Открыть в браузере»** вместо повреждённого файла. Системный прокси учитывается.
@@ -148,8 +162,8 @@ Tauri 2 · Svelte 5 (руны) · Rust · Vite · `svelte-pdf-view` · `pcbrepai
 
 | Платформа | Файл | Как установить |
 | --- | --- | --- |
-| **Windows** | `Canifol_1.6.1_x64-setup.exe` | Скачать из [Releases](https://github.com/invisiblelevel/canifol/releases) и запустить установщик. |
-| **Android** | `Canifol v1.6.1.apk` | Скачать APK, разрешить установку из неизвестных источников, установить. |
+| **Windows** | `Canifol_1.6.2_x64-setup.exe` | Скачать из [Releases](https://github.com/invisiblelevel/canifol/releases) и запустить установщик. |
+| **Android** | `Canifol v1.6.2.apk` | Скачать APK, разрешить установку из неизвестных источников, установить. |
 | **Linux** | `.deb`, `.rpm`, `.AppImage` | Скачать из Releases. Для AppImage: `chmod +x` и запустить. |
 
 ### Сборка из исходников
@@ -168,6 +182,8 @@ npm run tauri android build -- --apk --debug   # debug APK
 
 > **Важно:** релизные бинарники собирай только через `npm run tauri build` — эта команда включает фичу Tauri `custom-protocol`. Обычный `cargo build --release` даёт dev-сборку, которая пытается открыть `http://localhost:1420` и показывает ошибку соединения.
 
+> **Поиск даташитов:** скопируй `src-tauri/.env.example` в `src-tauri/.env` и заполни ключи API перед сборкой. Ключи вшиваются при компиляции, поэтому портативному exe/APK файл `.env` не нужен.
+
 ---
 
 ## 中文
@@ -176,7 +192,13 @@ Canifol 是一款免费的电子维修技术人员工具。内置元器件计算
 
 **支持 Windows、Android 和 Linux。** 桌面版为标准 Windows 安装程序 (`.exe`)，移动版为独立的 Android APK (`.apk`)，Linux 版为 `.deb`、`.rpm` 和 `.AppImage`（通过 GitHub Actions 自动构建）。所有文件均附在每次发布中。
 
-### 1.6.1 新功能与修复
+### 1.6.2 新功能与修复
+
+- **修复便携版** — 数据表 API 密钥在编译时从 `src-tauri/.env` 或 CI Secrets 嵌入，便携版 `.exe`/APK 无需本地 `.env` 即可搜索 DigiKey、LCSC、Farnell 和 TME。
+- **新增 30 个引脚图** — 10 个 BIOS/固件 SPI 闪存（W25Q32JV、W25Q64JV、W25Q128JV、W25Q256JV、MX25L6406E、MX25L12835F、GD25Q64C、GD25Q128C、SST25VF016B、EN25Q128）、10 个进口芯片（MAX7219、DS1307、PCF8591、MAX3232、74HC165、ACS712、MAX6675、TP4056、NCP1117、LM2576）和 10 个苏联芯片（K155LE1、K155LA1、K155LN1、K555ID7、K555IR1、K555LP5、K555LI1、K155IE6、KR544UD1、K157UD2）。
+- **构建脚本更干净** — API 密钥不再硬编码在受版本控制的 PowerShell 脚本中；本地构建读取 `src-tauri/.env`，CI 使用仓库 Secrets。
+
+#### 同时包含 1.6.1 修复
 
 - **修复知识库下载** — 文件不再被保存成“2 KB 的损坏 PDF”。现在会校验 HTTP 状态和响应类型、检查 PDF/JSON 完整性、处理 Google Drive 确认流程，并自动重新下载损坏的缓存。
 - **明确的下载错误** — 如果 Google Drive 被屏蔽或超出配额，会显示真实原因并提供 **在浏览器中打开**，而不是损坏文件。支持系统代理。
@@ -212,8 +234,8 @@ Tauri 2 · Svelte 5 (runes) · Rust · Vite · `svelte-pdf-view` · `pcbrepair` 
 
 | 平台 | 文件 | 安装方法 |
 | --- | --- | --- |
-| **Windows** | `Canifol_1.6.1_x64-setup.exe` | 从 [Releases](https://github.com/invisiblelevel/canifol/releases) 下载并运行安装程序。 |
-| **Android** | `Canifol v1.6.1.apk` | 下载 APK，允许从未知来源安装，然后安装。 |
+| **Windows** | `Canifol_1.6.2_x64-setup.exe` | 从 [Releases](https://github.com/invisiblelevel/canifol/releases) 下载并运行安装程序。 |
+| **Android** | `Canifol v1.6.2.apk` | 下载 APK，允许从未知来源安装，然后安装。 |
 | **Linux** | `.deb`、`.rpm`、`.AppImage` | 从 Releases 下载。AppImage 需 `chmod +x` 后运行。 |
 
 ### 从源码构建
@@ -231,6 +253,8 @@ npm run tauri android build -- --apk --debug   # 调试 APK
 ```
 
 > **重要：** 发布版本必须使用 `npm run tauri build` 构建，它会启用 Tauri 的 `custom-protocol` 功能。直接运行 `cargo build --release` 会得到开发版，尝试打开 `http://localhost:1420` 并显示连接错误。
+
+> **数据表搜索：** 构建前请将 `src-tauri/.env.example` 复制为 `src-tauri/.env` 并填写 API 密钥。密钥会在编译时嵌入，因此便携版 exe/APK 不需要 `.env` 文件。
 
 ---
 

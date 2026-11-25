@@ -93,8 +93,7 @@ fn get_credentials() -> Result<(String, String), String> {
         return Ok((t.to_string(), s.to_string()));
     }
 
-    // Fallback на runtime env (для ПК, если запускаешь без скрипта)
-    dotenvy::dotenv().ok();
+    // Fallback на runtime env (для переопределения без пересборки)
     let token = std::env::var("TME_TOKEN")
         .map_err(|_| "TME_TOKEN is not set (compile-time or runtime)")?;
     let secret = std::env::var("TME_SECRET")

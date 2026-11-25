@@ -9,7 +9,6 @@ const TOKEN_URL: &str = "https://api.digikey.com/v1/oauth2/token";
 const SEARCH_URL: &str = "https://api.digikey.com/products/v4/search/keyword";
 
 fn get_credentials() -> Result<(String, String), String> {
-    dotenvy::dotenv().ok();
     if let (Ok(id), Ok(secret)) = (
         std::env::var("DIGIKEY_CLIENT_ID"),
         std::env::var("DIGIKEY_CLIENT_SECRET"),
@@ -20,9 +19,9 @@ fn get_credentials() -> Result<(String, String), String> {
     }
 
     let id = option_env!("DIGIKEY_CLIENT_ID")
-        .ok_or("DIGIKEY_CLIENT_ID is not set. Please set it in .env (dev) or GitHub Secrets (CI)")?;
+        .ok_or("DIGIKEY_CLIENT_ID is not set. Put it in src-tauri/.env and rebuild, or pass it as an environment variable")?;
     let secret = option_env!("DIGIKEY_CLIENT_SECRET")
-        .ok_or("DIGIKEY_CLIENT_SECRET is not set. Please set it in .env (dev) or GitHub Secrets (CI)")?;
+        .ok_or("DIGIKEY_CLIENT_SECRET is not set. Put it in src-tauri/.env and rebuild, or pass it as an environment variable")?;
 
     Ok((id.to_string(), secret.to_string()))
 }

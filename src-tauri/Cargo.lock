@@ -481,12 +481,11 @@ dependencies = [
 
 [[package]]
 name = "canifol"
-version = "1.6.1"
+version = "1.6.2"
 dependencies = [
  "base64 0.22.1",
  "des",
  "dirs 5.0.1",
- "dotenvy",
  "encoding_rs",
  "flate2",
  "gencad",
@@ -1199,12 +1198,6 @@ dependencies = [
  "selectors 0.38.0",
  "tendril 0.5.1",
 ]
-
-[[package]]
-name = "dotenvy"
-version = "0.15.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
 
 [[package]]
 name = "dpi"
