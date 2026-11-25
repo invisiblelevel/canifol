@@ -5,6 +5,8 @@ export const datasheets = {
     "digikey": "DigiKey",
     "lcsc": "LCSC",
     "openPdf": "打开 PDF",
+    "openInBrowser": "在浏览器中打开",
+    "browserError": "无法打开浏览器：",
     "download": "下载",
     "back": "返回搜索",
     "searchBtn": "搜索",

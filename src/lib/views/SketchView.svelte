@@ -88,6 +88,8 @@
       case 'Delete':
       case 'Backspace':
         e.preventDefault();
+        canvasRef?.delete_?.();
+        refreshFlags();
         break;
       case 'Escape':
         activeStamp = null;
@@ -146,9 +148,9 @@
   </div>
 </div>
 
-<SectionHelpModal open={showHelp} onClose={() => showHelp = false} title={strings?.sketch?.helpTitle || 'Набросок'}>
-  <p>{strings?.sketch?.helpDesc || 'Рисуй схемы как карандашом на бумаге.'}</p>
-  <h3>{strings?.sketch?.helpKeys || 'Горячие клавиши'}</h3>
+<SectionHelpModal open={showHelp} onClose={() => showHelp = false} title={strings?.sketch?.helpTitle || 'Sketch'}>
+  <p>{strings?.sketch?.helpDesc || ''}</p>
+  <h3>{strings?.sketch?.helpKeys || 'Hotkeys'}</h3>
   <ul>
     <li><b>V</b> — {strings?.sketch?.helpV || ''}</li>
     <li><b>P</b> — {strings?.sketch?.helpP || ''}</li>
@@ -160,16 +162,16 @@
     <li><b>Del</b> — {strings?.sketch?.helpDel || ''}</li>
     <li><b>Ctrl+Z</b> / <b>Ctrl+Y</b> — {strings?.sketch?.helpUndo || ''}</li>
   </ul>
-  <h3>Управление холстом</h3>
-  <p>{strings?.sketch?.helpZoom || 'Зум: колёсико мыши или + / − на клавиатуре.'}</p>
-  <p>{strings?.sketch?.helpPan || 'Панорамирование: Shift + левая кнопка мыши или средняя кнопка мыши.'}</p>
-  <p>{strings?.sketch?.helpMobile || 'На телефоне: рисуй одним пальцем, масштабируй и двигай холст двумя пальцами.'}</p>
-  <h3>Штампы</h3>
-  <p>{strings?.sketch?.helpStamps || 'Штампы: выбери элемент из палитры и кликни на холст, чтобы поставить его.'}</p>
-  <h3>Фон (фото платы)</h3>
-  <p>Загрузи фото платы через кнопку с иконкой картинки. В режиме «Выбрать» можно перетаскивать фон. Ctrl + колесо — масштабирование фона.</p>
-  <h3>Автоматическое распознавание</h3>
-  <p>{strings?.sketch?.helpMagnet || 'Провода автоматически цепляются к поинтам.'}</p>
+  <h3>{strings?.sketch?.helpCanvasTitle || 'Canvas'}</h3>
+  <p>{strings?.sketch?.helpZoom || ''}</p>
+  <p>{strings?.sketch?.helpPan || ''}</p>
+  <p>{strings?.sketch?.helpMobile || ''}</p>
+  <h3>{strings?.sketch?.helpStampsTitle || 'Stamps'}</h3>
+  <p>{strings?.sketch?.helpStamps || ''}</p>
+  <h3>{strings?.sketch?.helpBgTitle || 'Background'}</h3>
+  <p>{strings?.sketch?.helpBg || ''}</p>
+  <h3>{strings?.sketch?.helpRecognizeTitle || 'Recognition'}</h3>
+  <p>{strings?.sketch?.helpMagnet || ''}</p>
 </SectionHelpModal>
 
 <style>

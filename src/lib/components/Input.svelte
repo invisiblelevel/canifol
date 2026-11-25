@@ -1,4 +1,6 @@
 <script>
+  import { getStrings } from '../strings.svelte.js';
+
   let {
     value = $bindable(''),
     label = '',
@@ -17,6 +19,7 @@
   } = $props();
 
   let inputEl = $state(null);
+  const strings = $derived(getStrings());
 
   const inputId = $derived(id || `inp-${Math.random().toString(36).slice(2, 9)}`);
   const hasError = $derived(!!error);
@@ -41,7 +44,7 @@
     <label class="field__label" for={inputId}>
       {label}
       {#if computed}
-        <span class="field__computed-badge">вычислено</span>
+        <span class="field__computed-badge">{strings.common.computed}</span>
       {/if}
     </label>
   {/if}

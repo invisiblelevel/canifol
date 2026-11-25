@@ -213,6 +213,8 @@ export const calculators = {
       "parallelCountNeeded": "并联数量",
       "calcFailed": "计算失败。请检查数值（电流过大或 R_DS(on) 过高）。",
       "visualStrongHeat": "严重发热",
+      "visualModerateHeat": "中等发热",
+      "visualNormalHeat": "正常",
       "visualCurrent": "电流"
     }
   },

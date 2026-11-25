@@ -175,7 +175,7 @@ fn rect_lines(b: &Bounds, margin: f64, layer: &str) -> Vec<GenCadLine> {
 
 /// Если у формата нет контура платы — рисуем рамку по габаритам пинов,
 /// чтобы плата не «висела в воздухе».
-fn ensure_outline(board: &mut BoardData) {
+pub(crate) fn ensure_outline(board: &mut BoardData) {
     if !board.lines.is_empty() || board.pins.is_empty() {
         return;
     }
@@ -349,9 +349,10 @@ fn parse_fz_content(content: &[u8], description: &[u8]) -> Result<BoardData, Str
     let mut is_mm = false;
     for line in text.lines() {
         let l = line.trim();
-        if l.len() > 5 && l[..5].eq_ignore_ascii_case("UNIT:") {
-            let first = l.split('!').next().unwrap_or("");
-            if first.eq_ignore_ascii_case("UNIT:millimeters") {
+        if l.len() > 5 && l.get(..5).is_some_and(|prefix| prefix.eq_ignore_ascii_case("UNIT:")) {
+            let first = l.split('!').next().unwrap_or("").trim();
+            let unit = first.to_ascii_lowercase();
+            if unit == "unit:millimeters" || unit == "unit:millimeter" || unit == "unit:mm" {
                 is_mm = true;
             }
         }
@@ -463,7 +464,7 @@ fn parse_fz_content(content: &[u8], description: &[u8]) -> Result<BoardData, Str
     let mut pin_counter: HashMap<String, usize> = HashMap::new();
     for p in &pins_raw {
         let is_bottom = syms.get(&p.refdes).map(|s| s.mirror).unwrap_or(false);
-        let (x, y, r) = (p.x * scale, p.y * scale, p.radius * scale);
+        let (x, y, r) = (p.x * scale, p.y * scale, (p.radius * scale).min(5.0));
         let cnt = pin_counter.entry(p.refdes.clone()).or_insert(0);
         *cnt += 1;
         // как в интерпретаторе крейта: номер пина, а если он пустой/"0" — имя пина
@@ -557,9 +558,42 @@ fn parse_fz_content(content: &[u8], description: &[u8]) -> Result<BoardData, Str
     Ok(board)
 }
 
+/// Проверяет, что найденный контур действительно похож на контур платы:
+/// охватывает почти все пины и не больше габаритов пинов более чем в 6 раз.
+/// Без этого мусорная секция Format/BRDOUT уводила камеру далеко от платы.
+fn outline_is_sane(outline: &[(f64, f64)], pins: &[BoardPin]) -> bool {
+    if outline.is_empty() || pins.is_empty() {
+        return false;
+    }
+    let mut ob = Bounds::empty();
+    for &(x, y) in outline {
+        ob.add(x, y);
+    }
+    if ob.is_empty() {
+        return false;
+    }
+    let pb = pins_bounds(pins);
+    if pb.is_empty() {
+        return false;
+    }
+    let inside = pins
+        .iter()
+        .filter(|p| ob.expanded(ob.width() * 0.01, ob.height() * 0.01).contains(p.x, p.y))
+        .count();
+    let sane_size = ob.width() <= pb.width().max(1.0) * 6.0
+        && ob.height() <= pb.height().max(1.0) * 6.0;
+    inside * 100 >= pins.len() * 90 && sane_size
+}
+
 fn parse_fz_bytes(bytes: &[u8]) -> Result<BoardData, String> {
-    let decoded = DecodedPcbRepairFile::new(Cursor::new(bytes)).map_err(|e| format!("FZ decode error: {}", e))?;
-    parse_fz_content(&decoded.content, &decoded.description)
+    match DecodedPcbRepairFile::new(Cursor::new(bytes)) {
+        Ok(decoded) => parse_fz_content(&decoded.content, &decoded.description),
+        // Some tools save FZ as plain text; the decoder rejects those, but the
+        // content parser can still handle them.
+        Err(decode_err) => parse_fz_content(bytes, b"").map_err(|content_err| {
+            format!("FZ decode error: {}; plain-text fallback: {}", decode_err, content_err)
+        }),
+    }
 }
 
 // ==========================================================================
@@ -738,7 +772,11 @@ fn parse_apple_brd_text(text: &str) -> Result<BoardData, String> {
         .map(|(name, (b, bottom))| make_component(name, &b, layer_name(bottom), String::new(), String::new(), 0.0, false))
         .collect();
 
-    let lines = polyline_lines(&outline, true, "BOARD");
+    let lines = if outline_is_sane(&outline, &pins) {
+        polyline_lines(&outline, true, "BOARD")
+    } else {
+        Vec::new()
+    };
     let mut board =
         BoardData { format: "apple_brd".to_string(), pins, lines, arcs: vec![], components, pads: vec![], routes: vec![] };
     ensure_outline(&mut board);
@@ -867,7 +905,11 @@ fn parse_brd2_text(content: &str) -> Result<BoardData, String> {
         }
     }
 
-    let lines = polyline_lines(&outline, true, "BOARD");
+    let lines = if outline_is_sane(&outline, &pins) {
+        polyline_lines(&outline, true, "BOARD")
+    } else {
+        Vec::new()
+    };
     let mut board =
         BoardData { format: "brd2".to_string(), pins, lines, arcs: vec![], components, pads: vec![], routes: vec![] };
     ensure_outline(&mut board);
@@ -1071,7 +1113,9 @@ fn parse_xzz_bytes(file_data: &[u8]) -> Result<BoardData, String> {
     };
 
     // Таблица цепей: пробуем смещения из заголовка и позицию сразу за основным блоком
-    let main_end = main_data_offset + 4 + main_data_size;
+    let main_end = main_data_offset
+        .saturating_add(4)
+        .saturating_add(main_data_size);
     let mut net_candidates: Vec<usize> = Vec::new();
     for h in [0x24usize, 0x28, 0x2C] {
         if let Some(v) = rd_u32(&data, h) {
@@ -1103,7 +1147,7 @@ fn parse_xzz_bytes(file_data: &[u8]) -> Result<BoardData, String> {
     let mut used_refs: HashMap<String, usize> = HashMap::new();
 
     let mut current_offset = main_data_offset + 4;
-    let end_offset = (current_offset + main_data_size).min(data.len());
+    let end_offset = current_offset.saturating_add(main_data_size).min(data.len());
 
     while current_offset + 5 <= end_offset {
         let block_type = data[current_offset];
@@ -1139,10 +1183,11 @@ fn parse_xzz_bytes(file_data: &[u8]) -> Result<BoardData, String> {
                     let mut local = 26usize;
 
                     let mut footprint_name = String::new();
-                    if pad_size_len > 0 && local + pad_size_len <= dec.len() {
-                        footprint_name = String::from_utf8_lossy(&dec[local..local + pad_size_len]).trim().to_string();
+                    let pad_end = local.checked_add(pad_size_len).filter(|end| *end <= dec.len());
+                    if let Some(pad_end) = pad_end {
+                        footprint_name = String::from_utf8_lossy(&dec[local..pad_end]).trim().to_string();
                     }
-                    local += pad_size_len;
+                    local = local.saturating_add(pad_size_len);
 
                     let mut ref_name =
                         if !footprint_name.is_empty() { footprint_name.clone() } else { format!("COMP_{}", components.len()) };
@@ -1151,7 +1196,7 @@ fn parse_xzz_bytes(file_data: &[u8]) -> Result<BoardData, String> {
                     let mut comp_pins: Vec<(String, f64, f64, u32)> = Vec::new();
                     let mut comp_lines: Vec<(f64, f64, f64, f64)> = Vec::new();
 
-                    while local + 5 <= dec.len() {
+                    while local.checked_add(5).is_some_and(|end| end <= dec.len()) {
                         let sub_type = dec[local];
                         local += 1;
                         if sub_type == 0x00 {
@@ -1180,7 +1225,7 @@ fn parse_xzz_bytes(file_data: &[u8]) -> Result<BoardData, String> {
                             0x06 => {
                                 if sub.len() >= 30 {
                                     let name_size = rd_u32(sub, 26).unwrap_or(0) as usize;
-                                    if 30 + name_size <= sub.len() {
+                                    if 30usize.checked_add(name_size).is_some_and(|end| end <= sub.len()) {
                                         let lbl = String::from_utf8_lossy(&sub[30..30 + name_size]).trim().to_string();
                                         if !lbl.is_empty() {
                                             ref_name = lbl;
@@ -1200,7 +1245,9 @@ fn parse_xzz_bytes(file_data: &[u8]) -> Result<BoardData, String> {
 
                                     // имя пина — по порядку внутри детали, а не глобальный счётчик
                                     let mut pin_name = format!("{}", comp_pins.len() + 1);
-                                    if pin_name_size > 0 && 24 + pin_name_size <= sub.len() {
+                                    if pin_name_size > 0
+                                        && 24usize.checked_add(pin_name_size).is_some_and(|end| end <= sub.len())
+                                    {
                                         let n = String::from_utf8_lossy(&sub[24..24 + pin_name_size]).trim().to_string();
                                         if !n.is_empty() {
                                             pin_name = n;
@@ -1369,9 +1416,31 @@ fn parse_boardview_safe(raw: &[u8], ext: &str) -> Result<BoardData, String> {
 // ==========================================================================
 #[tauri::command]
 pub async fn read_boardview(path: String) -> Result<BoardData, String> {
-    let raw = std::fs::read(&path).map_err(|e| format!("Read error: {}", e))?;
-    let ext = std::path::Path::new(&path).extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
-    parse_boardview_safe(&raw, &ext)
+    let meta = std::fs::metadata(&path).map_err(|e| format!("Read error: {}", e))?;
+    if !meta.is_file() {
+        return Err("The selected path is not a file".to_string());
+    }
+    // A boardview is never this big; a multi-GB file would otherwise be read into
+    // memory (and copied again by the XZZ decoder) and freeze/OOM the app.
+    const MAX_BOARDVIEW_BYTES: u64 = 128 * 1024 * 1024;
+    if meta.len() > MAX_BOARDVIEW_BYTES {
+        return Err(format!(
+            "File is too large ({:.1} MB) — the limit for boardview files is 128 MB",
+            meta.len() as f64 / (1024.0 * 1024.0)
+        ));
+    }
+
+    tauri::async_runtime::spawn_blocking(move || {
+        let raw = std::fs::read(&path).map_err(|e| format!("Read error: {}", e))?;
+        let ext = std::path::Path::new(&path)
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("")
+            .to_lowercase();
+        parse_boardview_safe(&raw, &ext)
+    })
+    .await
+    .map_err(|e| format!("Parse task failed: {}", e))?
 }
 
 #[cfg(target_os = "android")]
@@ -1385,6 +1454,9 @@ pub async fn read_boardview_uri(app: tauri::AppHandle, uri: String) -> Result<Bo
     let mut file = api.open_file_readable(&file_uri).await.map_err(|e| e.to_string())?;
     let mut buffer = Vec::new();
     file.read_to_end(&mut buffer).map_err(|e| e.to_string())?;
+    if buffer.len() > 128 * 1024 * 1024 {
+        return Err("File is too large — the limit for boardview files is 128 MB".to_string());
+    }
 
     // у content:// URI расширения обычно нет -> определяем по содержимому
     parse_boardview_safe(&buffer, "")
@@ -1484,8 +1556,21 @@ S!BAD!C5!3!3!oops!4000!!8!
     }
 
     #[test]
-    fn brd2_outline_and_pins() {
-        let t = "BRDOUT: 4 100 100\n0 0\n100 0\n100 100\n0 100\nNETS: 2\n1 GND\n2 VCC\nPARTS: 2\nC1 0 0 10 10 1 1\nU1 20 20 40 40 3 2\nPINS: 5\n0 0 1 1\n10 10 2 1\n20 20 1 2\n30 30 2 2\n40 40 1 2\nNAILS: 0\n";
+    fn brd2_garbage_outline_is_rejected() {
+        let t = "BRDOUT: 4\n1000000 1000000\n2000000 1000000\n2000000 2000000\n1000000 2000000\nNETS: 1\n1 GND\nPARTS: 1\nU1 0 0 40 40 1 1\nPINS: 2\n10 10 1 1\n30 30 1 1\n";
+        let b = parse_brd2_text(t).unwrap();
+        // The fallback frame must be around the pins, not around the garbage.
+        assert!(b.lines.iter().all(|l| l.x1 < 100.0 && l.y1 < 100.0 && l.x2 < 100.0 && l.y2 < 100.0));
+    }
+
+    #[test]
+    fn plain_text_fz_is_parsed() {
+        let b = parse_fz_bytes(FZ_SAMPLE.as_bytes()).unwrap();
+        assert_eq!(b.pins.len(), 4);
+    }
+
+    #[test]
+    fn brd2_outline_and_pins() {        let t = "BRDOUT: 4 100 100\n0 0\n100 0\n100 100\n0 100\nNETS: 2\n1 GND\n2 VCC\nPARTS: 2\nC1 0 0 10 10 1 1\nU1 20 20 40 40 3 2\nPINS: 5\n0 0 1 1\n10 10 2 1\n20 20 1 2\n30 30 2 2\n40 40 1 2\nNAILS: 0\n";
         let b = parse_brd2_text(t).unwrap();
         assert_eq!(b.lines.len(), 4);
         assert_eq!(b.components.len(), 2);

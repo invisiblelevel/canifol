@@ -1,7 +1,8 @@
 <script>
   import { invoke } from '@tauri-apps/api/core';
-  import { onMount, tick } from 'svelte';
+  import { onMount, onDestroy, tick } from 'svelte';
   import { getStrings } from '../strings.svelte.js';
+  import { themeStore } from '../stores/theme.svelte.js';
   import { Palette, Search, Maximize2, Minimize2 } from '@lucide/svelte';
 
   const strings = $derived(getStrings());
@@ -84,9 +85,7 @@
   let manualTheme = $state(localStorage.getItem('canifol_bv_theme') || null);
 
   // Автоматическая тема — из общей темы интерфейса
-  const autoTheme = $derived(
-    (localStorage.getItem('canifol_theme') || 'dark') === 'light' ? 'light' : 'canifol'
-  );
+  const autoTheme = $derived(themeStore.isDark ? 'canifol' : 'light');
 
   // Итоговая тема: ручной выбор приоритетнее авто
   let themeName = $state(manualTheme || autoTheme);
@@ -173,6 +172,10 @@
 
   async function loadFile() {
     if (!path) { loading = false; return; }
+    // Claim the path before awaiting: otherwise the $effect below fires again
+    // while the first read_boardview() is still in flight and the board is
+    // parsed twice (multi-MB files => visible delay).
+    loadedPath = path;
     loading = true;
     error = '';
     try {
@@ -222,16 +225,20 @@
       setTimeout(() => requestDraw(), 100);
     } catch (e) {
       error = String(e); loading = false;
+      // Allow a retry when the user re-selects the same file.
+      loadedPath = '';
     }
   }
+
+  let resizeObserver = null;
 
   onMount(async () => {
     await tick();
     if (canvas) ctx = canvas.getContext('2d');
 
     if (canvas && canvas.parentElement) {
-      const ro = new ResizeObserver(() => requestDraw());
-      ro.observe(canvas.parentElement);
+      resizeObserver = new ResizeObserver(() => requestDraw());
+      resizeObserver.observe(canvas.parentElement);
     }
 
     if (externalData) {
@@ -244,19 +251,24 @@
       bounds = { minX, minY, maxX, maxY, w: (maxX - minX) || 1, h: (maxY - minY) || 1 };
       loading = false;
       setTimeout(() => requestDraw(), 200);
-    } else {
-      await loadFile();
     }
+    // No explicit loadFile() here: the $effect below performs the initial load
+    // (calling it in both places parsed every board twice).
   });
 
   $effect(() => {
     if (path && path !== loadedPath) loadFile();
   });
 
+  onDestroy(() => {
+    resizeObserver?.disconnect();
+    resizeObserver = null;
+  });
+
   function worldToScreen(x, y, rect) {
     const { minX, minY, w, h } = bounds;
     const padding = 20;
-    const fitScale = Math.min((rect.width - padding * 2) / w, (rect.height - padding * 2) / h);
+    const fitScale = Math.max(0.0001, Math.min((rect.width - padding * 2) / w, (rect.height - padding * 2) / h));
     const sx = (x - (minX + w / 2)) * scale * fitScale + rect.width / 2 + offsetX;
     const sy = (y - (minY + h / 2)) * scale * fitScale + rect.height / 2 + offsetY;
     return { x: sx, y: sy, fitScale };
@@ -302,7 +314,7 @@
 
     const { minX, minY, w, h } = bounds;
     const padding = 20;
-    const fitScale = Math.min((rect.width - padding * 2) / w, (rect.height - padding * 2) / h);
+    const fitScale = Math.max(0.0001, Math.min((rect.width - padding * 2) / w, (rect.height - padding * 2) / h));
 
     ctx.save();
     ctx.translate(rect.width / 2 + offsetX, rect.height / 2 + offsetY);
@@ -458,7 +470,13 @@
     requestDraw();
   });
 
-  function handleWheel(e) { e.preventDefault(); scale *= e.deltaY > 0 ? 0.9 : 1.1; requestDraw(); }
+  function handleWheel(e) {
+    e.preventDefault();
+    // Clamp: an unclamped zoom could drift to absurd values and break drawing.
+    const factor = e.deltaY > 0 ? 0.9 : 1.1;
+    scale = Math.min(12, Math.max(0.1, scale * factor));
+    requestDraw();
+  }
   function handleMouseMove(e) {
     const rect = canvas.getBoundingClientRect(); const mx = e.clientX - rect.left; const my = e.clientY - rect.top;
     if (isDragging) { offsetX += e.clientX - lastX; offsetY += e.clientY - lastY; lastX = e.clientX; lastY = e.clientY; requestDraw(); return; }

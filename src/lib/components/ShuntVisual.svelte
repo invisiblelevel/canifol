@@ -1,12 +1,17 @@
 <script>
+  import { getStrings } from '../strings.svelte.js';
+
   let { rShunt = 10, iMax = 100, powerW = 10 } = $props();
+  const strings = $derived(getStrings());
 
   // Цвет индикатора нагрева
   const heatColor = $derived(
     powerW > 5 ? '#e85a5a' : powerW > 2 ? '#f7b24a' : '#8bc47a'
   );
   const heatLabel = $derived(
-    powerW > 5 ? 'Сильный нагрев' : powerW > 2 ? 'Умеренный нагрев' : 'Норма'
+    powerW > 5 ? (strings.bms.labels.visualStrongHeat || 'Strong heating')
+      : powerW > 2 ? (strings.bms.labels.visualModerateHeat || 'Moderate heating')
+      : (strings.bms.labels.visualNormalHeat || 'Normal')
   );
 
   // Геометрия
@@ -43,7 +48,7 @@
 
     <!-- Подпись шунта -->
     <text x={shuntX + shuntW/2} y={shuntY + shuntH/2 + 5} text-anchor="middle" fill="var(--accent)" font-size="14" font-weight="bold">
-      {rShunt.toFixed(1)} мОм
+      {rShunt.toFixed(1)} {strings.units.mohm_short}
     </text>
 
     <!-- Провод справа -->
@@ -51,7 +56,7 @@
 
     <!-- Стрелка тока (I max) -->
     <path d={`M 90 ${shuntY + shuntH/2 - 25} L 110 ${shuntY + shuntH/2 - 35} L 110 ${shuntY + shuntH/2 - 15} Z`} fill="var(--accent)" />
-    <text x="115" y={shuntY + shuntH/2 - 25} fill="var(--accent)" font-size="12" font-weight="bold">I = {iMax} А</text>
+    <text x="115" y={shuntY + shuntH/2 - 25} fill="var(--accent)" font-size="12" font-weight="bold">I = {iMax} {strings.units.a}</text>
 
     <!-- Падение напряжения (V sense) -->
     <line x1={shuntX} y1={shuntY - 15} x2={shuntX + shuntW} y2={shuntY - 15} stroke="var(--warning)" stroke-width="2" stroke-dasharray="4,2" />
@@ -64,7 +69,7 @@
       {heatLabel}
     </text>
     <text x={VB_W - 20} y={shuntY + shuntH/2 + 12} text-anchor="end" fill="var(--text-muted)" font-size="10">
-      {powerW.toFixed(1)} Вт
+      {powerW.toFixed(1)} {strings.units.w}
     </text>
   </svg>
 </div>

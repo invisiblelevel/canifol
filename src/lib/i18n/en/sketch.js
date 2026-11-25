@@ -1,4 +1,4 @@
-export const sketch = {
+const sketchStrings = {
   title: 'Sketch',
   toolSelect: 'Select (V)',
   toolPencil: 'Pencil (P)',
@@ -38,10 +38,22 @@ export const sketch = {
   helpR: 'rotate selected element',
   helpDel: 'delete selected',
   helpUndo: 'undo / redo',
-  helpZoom: 'zoom',
   helpStamps: 'Stamps: pick an element from the palette and click on the canvas to place it. Faster than drawing by hand.',
   helpMobile: 'On mobile: draw with one finger, pinch/pan with two fingers.',
   helpZoom: 'Zoom: mouse wheel or + / − on keyboard.',
   helpPan: 'Pan: Shift + left mouse button or middle mouse button.',
   helpMagnet: 'Wires snap to pins automatically. If drawn almost horizontally/vertically, they align.',
+  helpCanvasTitle: 'Canvas controls',
+  helpStampsTitle: 'Stamps',
+  helpBgTitle: 'Background (board photo)',
+  helpBg: 'Load a board photo with the image button. In Select mode you can drag the background. Ctrl + wheel zooms the background.',
+  helpRecognizeTitle: 'Automatic recognition',
+  imageLoadError: 'Failed to load the image: ',
+  cancel: 'Cancel',
+  stamps: 'Stamps',
+  storageFull: 'Not enough browser storage to save the sketch automatically. Export it as PNG to keep your work.',
+  loadBoardPhoto: 'Load board photo',
+  removeBackground: 'Remove background',
 };
+
+export const sketch = { sketch: sketchStrings };

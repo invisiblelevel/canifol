@@ -1,11 +1,12 @@
 const STORAGE_KEY = 'canifol_favorites';
 
 function makeDatasheetKey(item) {
-  return `${item.name}_${item.manufacturer}_${item.datasheet_url}`;
+  // JSON encoding avoids collisions like name "A_B" + mfr "C" vs "A" + "B_C".
+  return JSON.stringify([item.name ?? '', item.manufacturer ?? '', item.datasheet_url ?? '']);
 }
 
 function makeSmdKey(item) {
-  return `${item.code}_${item.model}_${item.package}`;
+  return JSON.stringify([item.code ?? '', item.model ?? '', item.package ?? '']);
 }
 
 function loadFavorites() {
@@ -28,8 +29,12 @@ function loadFavorites() {
 let current = $state(loadFavorites());
 
 function save() {
-  if (typeof window !== 'undefined') {
+  if (typeof window === 'undefined') return;
+  try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+  } catch (e) {
+    // QuotaExceededError / SecurityError must not break the click handler.
+    console.warn('Failed to save favorites', e);
   }
 }
 

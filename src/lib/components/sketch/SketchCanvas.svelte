@@ -1,7 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { save, open } from '@tauri-apps/plugin-dialog';
-  import { writeFile, readFile } from '@tauri-apps/plugin-fs';
+  import { invoke } from '@tauri-apps/api/core';
   import { matchTemplates } from '../../utils/sketch/recognition.js';
   import { SYMBOLS, THEME, getPins, pinWorldPos, drawElement } from '../../utils/sketch/symbols.js';
   import { smoothStroke, findNearestPin, alignWire, pointInRotatedRect, saveSketch, loadSketch, exportCanvasPNG } from '../../utils/sketch/sketch-utils.js';
@@ -45,6 +45,7 @@
   let isDragging = $state(false);
   let dragStart = null;
   let dragOffset = null;
+  let dragSnapshotTaken = false;
 
   let isPanning = $state(false);
   let panStart = { x: 0, y: 0, panX: 0, panY: 0 };
@@ -112,19 +113,35 @@
       });
       if (!selected) return;
 
-      const bytes = await readFile(selected);
+      // Read through Rust: the fs plugin only has a read scope for app folders,
+      // so pictures picked from Desktop/Downloads failed to load.
+      const bytes = new Uint8Array(await invoke('read_binary_file', { path: selected }));
       const blob = new Blob([bytes]);
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = reader.result;
-        loadBackgroundFromBase64(base64).then(() => {
-          persist();
-          redraw();
-        });
-      };
-      reader.readAsDataURL(blob);
+
+      // Downscale large photos before they are stored in localStorage — a phone
+      // photo as base64 exceeds the ~5 MB quota, after which every save fails
+      // silently and the sketch is lost on restart.
+      const bitmap = await createImageBitmap(blob);
+      const MAX_SIDE = 1600;
+      let width = bitmap.width;
+      let height = bitmap.height;
+      if (width > MAX_SIDE || height > MAX_SIDE) {
+        const k = MAX_SIDE / Math.max(width, height);
+        width = Math.max(1, Math.round(width * k));
+        height = Math.max(1, Math.round(height * k));
+      }
+      const offscreen = document.createElement('canvas');
+      offscreen.width = width;
+      offscreen.height = height;
+      offscreen.getContext('2d').drawImage(bitmap, 0, 0, width, height);
+      bitmap.close?.();
+      const dataUrl = offscreen.toDataURL('image/jpeg', 0.82);
+
+      await loadBackgroundFromBase64(dataUrl);
+      persist();
+      redraw();
     } catch (e) {
-      alert('Ошибка загрузки картинки: ' + e);
+      alert((strings?.sketch?.imageLoadError || 'Failed to load image: ') + e);
     }
   }
 
@@ -172,9 +189,11 @@
     redraw();
   }
 
+  let storageWarned = false;
+
   function persist() {
     const cleanStrokes = strokes.map(({ smooth, ...rest }) => rest);
-    saveSketch({
+    const saved = saveSketch({
       strokes: cleanStrokes,
       elements,
       wires,
@@ -182,6 +201,10 @@
       texts,
       background: backgroundImage ? backgroundImage.src : null,
     });
+    if (!saved && !storageWarned) {
+      storageWarned = true;
+      alert(strings?.sketch?.storageFull || 'Not enough browser storage to save the sketch automatically.');
+    }
     onEmptyChange(
       strokes.length === 0 && elements.length === 0 && wires.length === 0 &&
       points.length === 0 && texts.length === 0 && !backgroundImage
@@ -468,10 +491,12 @@
       }
       for (const el of elements.slice().reverse()) {
         const sym = SYMBOLS[el.type];
+        if (!sym) continue;
         const w = sym.w + 16, h = sym.h + 16;
         if (pointInRotatedRect(pos.x, pos.y, el.x, el.y, w, h, el.rotation || 0)) {
           selection = { kind: 'element', id: el.id };
           isDragging = true;
+          dragSnapshotTaken = false;
           dragStart = pos;
           dragOffset = { x: el.x - pos.x, y: el.y - pos.y };
           redraw();
@@ -482,6 +507,7 @@
         if (Math.hypot(t.x - pos.x, t.y - pos.y) < 40 / zoom) {
           selection = { kind: 'text', id: t.id };
           isDragging = true;
+          dragSnapshotTaken = false;
           dragStart = pos;
           dragOffset = { x: t.x - pos.x, y: t.y - pos.y };
           redraw();
@@ -495,6 +521,7 @@
         if (Math.hypot(vx - pos.x, vy - pos.y) < 25 / zoom) {
           selection = { kind: 'element', id: el.id };
           isDragging = 'value';
+          dragSnapshotTaken = false;
           dragStart = pos;
           dragOffset = { x: offset.x, y: offset.y };
           redraw();
@@ -566,6 +593,8 @@
     }
 
     if (mode === 'select' && isDragging && dragStart) {
+      // Take the undo snapshot on the first actual movement, before mutating.
+      if (!dragSnapshotTaken) { snapshot(); dragSnapshotTaken = true; }
       if (isDragging === 'value') {
         const el = elements.find(e => e.id === selection.id);
         if (el) { el.valueOffset = { x: pos.x - el.x, y: pos.y - el.y }; redraw(); }
@@ -614,7 +643,8 @@
     }
 
     if (mode === 'select' && isDragging) {
-      snapshot(); isDragging = false; dragStart = null; dragOffset = null;
+      // The undo snapshot was taken in onPointerDown, before the drag.
+      isDragging = false; dragStart = null; dragOffset = null;
       persist(); redraw();
     }
   }
@@ -630,18 +660,15 @@
     if (popup || textModal || confirmModal) return;
     for (const t of e.changedTouches) touchPoints.set(t.identifier, { x: t.clientX, y: t.clientY });
 
+    // Single-finger input is handled by the pointer events above. Synthesising
+    // extra pointer events here made every Android tap run twice (double
+    // stamps, select-then-deselect, two coincident dots).
     if (touchPoints.size === 2) {
       isPinching = true; isTouchPanning = true; pointerDown = false;
       currentStroke = null; wireStart = null; wirePreview = null;
       const pts = Array.from(touchPoints.values());
       lastPinchDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
       lastPinchCenter = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
-      return;
-    }
-
-    if (touchPoints.size === 1 && !isPinching) {
-      const t = e.changedTouches[0];
-      onPointerDown({ clientX: t.clientX, clientY: t.clientY, button: 0, shiftKey: false, preventDefault: () => {} });
     }
   }
 
@@ -649,7 +676,7 @@
     if (popup || textModal || confirmModal) return;
     for (const t of e.changedTouches) touchPoints.set(t.identifier, { x: t.clientX, y: t.clientY });
 
-    if (isPinching && touchPoints.size === 2) {
+    if (isPinching && touchPoints.size >= 2) {
       const pts = Array.from(touchPoints.values());
       const dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
       const center = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
@@ -669,24 +696,15 @@
       }
       lastPinchDist = dist; lastPinchCenter = center;
       redraw();
-      return;
-    }
-
-    if (touchPoints.size === 1 && !isPinching) {
-      const t = e.changedTouches[0];
-      onPointerMove({ clientX: t.clientX, clientY: t.clientY, preventDefault: () => {} });
     }
   }
 
   function onTouchEnd(e) {
     for (const t of e.changedTouches) touchPoints.delete(t.identifier);
-    if (isPinching) {
-      if (touchPoints.size < 2) { isPinching = false; isTouchPanning = false; lastPinchDist = 0; }
-      return;
-    }
-    if (touchPoints.size === 0) {
-      const t = e.changedTouches[0];
-      onPointerUp({ clientX: t.clientX, clientY: t.clientY, preventDefault: () => {} });
+    if (isPinching && touchPoints.size < 2) {
+      isPinching = false;
+      isTouchPanning = false;
+      lastPinchDist = 0;
     }
   }
 
@@ -822,7 +840,7 @@
   export function zoomFit_() { zoom = 1; panX = 0; panY = 0; redraw(); }
   export function clearAll() {
     confirmModal = {
-      message: strings?.sketch?.confirmClear || 'Очистить всё?',
+      message: strings?.sketch?.confirmClear || 'Clear everything?',
       onConfirm: () => {
         snapshot();
         strokes = []; elements = []; wires = []; points = []; texts = []; selection = null;
@@ -836,7 +854,7 @@
     const path = await save({ filters: [{ name: 'PNG', extensions: ['png'] }], defaultPath: 'sketch.png' });
     if (path) {
       const bytes = new Uint8Array(await blob.arrayBuffer());
-      await writeFile(path, bytes);
+      await invoke('save_binary_file', { dest: path, data: Array.from(bytes) });
     }
   }
   export function getState() { return { strokes, elements, wires, points, texts, backgroundImage }; }
@@ -902,7 +920,7 @@
   {#if textModal}
     <div class="modal-overlay">
       <div class="modal-box">
-        <h3>{strings?.sketch?.promptText || 'Текст'}</h3>
+        <h3>{strings?.sketch?.promptText || 'Text'}</h3>
         <input
           type="text"
           bind:value={textModal.value}
@@ -910,7 +928,7 @@
           onkeydown={(e) => { if (e.key === 'Enter') addText(); }}
         />
         <div class="modal-actions">
-          <button onclick={() => textModal = null}>Отмена</button>
+          <button onclick={() => textModal = null}>{strings?.sketch?.cancel || 'Cancel'}</button>
           <button onclick={addText}>OK</button>
         </div>
       </div>
@@ -922,7 +940,7 @@
       <div class="modal-box">
         <h3>{confirmModal.message}</h3>
         <div class="modal-actions">
-          <button onclick={() => confirmModal = null}>Отмена</button>
+          <button onclick={() => confirmModal = null}>{strings?.sketch?.cancel || 'Cancel'}</button>
           <button onclick={() => { confirmModal.onConfirm(); confirmModal = null; }}>OK</button>
         </div>
       </div>

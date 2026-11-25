@@ -17,7 +17,8 @@ export const pinouts = {
     pinNumber: 'Пин',
     pinName: 'Название',
     pinDesc: 'Описание',
-    nothingFound: 'Ничего не найдено'
+    nothingFound: 'Ничего не найдено',
+    noSchemeForBoard: 'Схемы для этой платы пока нет'
   },
   pinoutsData: {
     'usb-a': { name: 'USB Type-A', desc: 'Стандартный USB 2.0/3.0 порт', pins: { '1': { name: 'VBUS', desc: '+5V питание' }, '2': { name: 'D-', desc: 'Данные минус' }, '3': { name: 'D+', desc: 'Данные плюс' }, '4': { name: 'GND', desc: 'Земля' } } },

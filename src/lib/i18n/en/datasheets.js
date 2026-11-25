@@ -5,6 +5,8 @@ export const datasheets = {
     "digikey": "DigiKey",
     "lcsc": "LCSC",
     "openPdf": "Open PDF",
+    "openInBrowser": "Open in browser",
+    "browserError": "Failed to open the browser: ",
     "download": "Download",
     "back": "Back to search",
     "searchBtn": "Search",

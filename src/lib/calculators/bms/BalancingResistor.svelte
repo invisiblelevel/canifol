@@ -29,7 +29,7 @@
 <div class="calc">
   <div class="fields">
     <Input bind:value={vCell} label={strings.bms.labels.cellVoltage} placeholder="4.2" suffix={strings.units.v} inputmode="decimal" />
-    <Input bind:value={iCb} label={strings.bms.labels.balancingCurrent} placeholder="100" suffix="мА" inputmode="decimal" />
+    <Input bind:value={iCb} label={strings.bms.labels.balancingCurrent} placeholder="100" suffix={strings.units.ma} inputmode="decimal" />
     <Input bind:value={rDsOn} label={strings.bms.labels.rdsOn} placeholder="0" suffix={strings.units.ohm} inputmode="decimal" hint={strings.bms.labels.rdsOnHint} />
   </div>
 
@@ -45,7 +45,7 @@
       </div>
       <div class="result__meta">
         <span class="badge">{strings.bms.labels.powerAtLeast} {result.powerW.toFixed(2)} {strings.units.w}</span>
-        <span class="badge">{strings.bms.labels.worstCurrent}: {Math.round(result.iCbWorst * 1000)} мА</span>
+        <span class="badge">{strings.bms.labels.worstCurrent}: {Math.round(result.iCbWorst * 1000)} {strings.units.ma}</span>
       </div>
       <div class="result__actions">
         <Button variant="ghost" size="sm" onclick={reset}>{strings.buttons.reset}</Button>

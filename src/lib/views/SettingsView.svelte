@@ -5,6 +5,7 @@
   import Button from '../components/Button.svelte';
   import { getStrings } from '../strings.svelte.js';
   import { uiScaleStore } from '../stores/uiScale.svelte.js';
+  import { themeStore } from '../stores/theme.svelte.js';
 
   const strings = $derived(getStrings());
 
@@ -23,12 +24,13 @@
   let dbSize = $state(0);
   let dbClearing = $state(false);
   let dbCleared = $state(false);
+  // The database can live in a user-selected folder; without passing it, the
+  // Settings block always reported 0 B and "Clear" removed nothing.
+  let dbPath = $state(localStorage.getItem('canifol_db_path') || '');
 
-  let theme = $state(localStorage.getItem('canifol_theme') || 'dark');
+  const theme = $derived(themeStore.current);
   function setTheme(name) {
-    theme = name;
-    document.documentElement.setAttribute('data-theme', name);
-    localStorage.setItem('canifol_theme', name);
+    themeStore.set(name);
   }
 
   function formatBytes(bytes) {
@@ -49,7 +51,7 @@
     try { guidesSize = await invoke('get_guides_cache_size'); } catch (e) { console.error(e); }
   }
   async function loadDbSize() {
-    try { dbSize = await invoke('get_database_size'); } catch (e) { console.error(e); }
+    try { dbSize = await invoke('get_database_size', { path: dbPath || null }); } catch (e) { console.error(e); }
   }
 
   async function clearCache() {
@@ -92,7 +94,7 @@
     if (!confirm(strings.database.localDbHint + ' ' + strings.database.clear + '?')) return;
     dbClearing = true;
     try {
-      await invoke('clear_database');
+      await invoke('clear_database', { path: dbPath || null });
       await loadDbSize();
       dbCleared = true;
       setTimeout(() => (dbCleared = false), 2000);

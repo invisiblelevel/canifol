@@ -17,7 +17,8 @@ export const pinouts = {
     pinNumber: '引脚',
     pinName: '名称',
     pinDesc: '描述',
-    nothingFound: '未找到'
+    nothingFound: '未找到',
+    noSchemeForBoard: '暂无此开发板的示意图'
   },
   pinoutsData: {
     'usb-a': { name: 'USB Type-A', desc: '标准 USB 2.0/3.0 端口', pins: { '1': { name: 'VBUS', desc: '+5V 供电' }, '2': { name: 'D-', desc: '数据负' }, '3': { name: 'D+', desc: '数据正' }, '4': { name: 'GND', desc: '地' } } },

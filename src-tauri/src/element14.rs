@@ -1,4 +1,3 @@
-use reqwest::Client;
 use serde::Serialize;
 use serde_json::Value;
 
@@ -31,11 +30,13 @@ fn get_api_key() -> Result<String, String> {
 pub async fn search_element14(query: String) -> Result<Vec<Element14Result>, String> {
     let api_key = get_api_key()?;
 
-    let client = Client::builder()
-        .user_agent("Canifol/1.5.0 (repair tool)")
-        .timeout(std::time::Duration::from_secs(15))
-        .build()
-        .map_err(|e| format!("Client error: {}", e))?;
+    let client = crate::net::api_client()?;
+
+    // The API uses a Lucene-like query; a raw quote would break the query syntax.
+    let query = query.replace('"', "");
+    if query.trim().is_empty() {
+        return Err("Enter a part number.".to_string());
+    }
 
     let res = client
         .get(ELEMENT14_URL)
@@ -55,7 +56,8 @@ pub async fn search_element14(query: String) -> Result<Vec<Element14Result>, Str
     if !res.status().is_success() {
         let status = res.status();
         let text = res.text().await.unwrap_or_default();
-        return Err(format!("Server returned {}: {}", status, &text[..std::cmp::min(200, text.len())]));
+        let snippet: String = text.chars().take(200).collect();
+        return Err(format!("Server returned {}: {}", status, snippet));
     }
 
     let json: Value = res.json().await.map_err(|e| format!("Parse error: {}", e))?;

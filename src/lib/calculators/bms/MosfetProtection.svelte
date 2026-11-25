@@ -67,7 +67,7 @@
       </div>
     {:else}
       <div class="error-note">
-        {strings.bms.labels.noMosfets} {Math.round(requiredCurrent)} {strings.units.a} и {Math.round(requiredVoltage)} {strings.units.v}.
+        {strings.bms.labels.noMosfets} {Math.round(requiredCurrent)} {strings.units.a} @ {Math.round(requiredVoltage)} {strings.units.v}.
         {strings.bms.labels.noMosfets2}
       </div>
     {/if}

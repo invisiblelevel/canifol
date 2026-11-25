@@ -16,6 +16,7 @@ export const common = {
     comingSoon: 'Скоро здесь будет калькулятор',
     comingSoonHint: 'Раздел в разработке. Пока переключайся на другие вкладки.',
     version: 'Версия', language: 'Язык', theme: 'Тема',
+    help: 'Помощь по разделу',
     themeDark: 'Тёмная', themeLight: 'Светлая',
     computed: 'вычислено', reset: 'Сброс',
     pcs: 'шт.', result: 'Результат', enterValues: 'Заполни поля', ready: 'Готово'
@@ -42,7 +43,8 @@ export const common = {
     uh: 'мкГн', nh: 'нГн', mh: 'мГн', h: 'Гн',
     v: 'В', a: 'А', w: 'Вт', mm: 'мм',
     ah: 'А·ч', wh: 'Вт·ч', ma: 'мА', uv: 'мкВ', mv: 'мВ',
-    b: 'Б', kb: 'КБ', mb: 'МБ', gb: 'ГБ'
+    b: 'Б', kb: 'КБ', mb: 'МБ', gb: 'ГБ',
+    sec: 'с', min: 'мин', hour: 'ч', kv: 'кВ', ua: 'мкА'
   },
   database: {
     title: 'База',
@@ -68,6 +70,8 @@ export const common = {
     skipped: 'Пропущено',
     failed: 'Ошибок',
     mobileInternal: 'На Android файлы скачиваются во внутреннюю папку приложения.',
+    internalFolderHint: 'Папка не выбрана — файлы будут сохранены во внутреннюю папку приложения. Продолжить?',
+    openInBrowser: 'Открыть в браузере',
     localDbTitle: 'Локальная база',
     localDbHint: 'Скачанные PDF и BoardView-файлы из Google Drive (для офлайн-просмотра).',
     size: 'Размер',

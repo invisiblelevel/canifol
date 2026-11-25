@@ -70,7 +70,7 @@
       class="tool-btn stamp-btn"
       class:active={activeStamp !== null}
       onclick={() => showStamps = !showStamps}
-      title="Штампы"
+      title={strings?.sketch?.stamps || 'Stamps'}
     >
       <Box size={16} />
       {#if activeStamp}
@@ -95,11 +95,11 @@
   <div class="divider"></div>
 
   <div class="group">
-    <button class="tool-btn" onclick={onLoadBackground} title="Загрузить фото платы">
+    <button class="tool-btn" onclick={onLoadBackground} title={strings?.sketch?.loadBoardPhoto || 'Load board photo'}>
       <Image size={16} />
     </button>
     {#if hasBg}
-      <button class="tool-btn danger" onclick={onRemoveBackground} title="Удалить фон">
+      <button class="tool-btn danger" onclick={onRemoveBackground} title={strings?.sketch?.removeBackground || 'Remove background'}>
         <ImageOff size={16} />
       </button>
     {/if}

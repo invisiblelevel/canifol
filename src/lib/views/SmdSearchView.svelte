@@ -10,8 +10,10 @@
   const F = $derived(strings.favorites);
 
   let query = $state('');
-  let index = $state(null);
-  let data = $state(null);
+  // Raw state: these are huge JSON documents (2.9 MB index, 50 MB data) and a
+  // deep reactive proxy made the first search allocate hundreds of MB.
+  let index = $state.raw(null);
+  let data = $state.raw(null);
   let loadingIndex = $state(false);
   let loadingData = $state(false);
   let indexError = $state('');
@@ -60,7 +62,18 @@
     }
     if (!index) return;
 
-    const idxs = index[q];
+    let idxs = index[q];
+    if (!idxs && q.length >= 2) {
+      // Exact key not found — fall back to a prefix scan so "A1" finds A1xx.
+      const matches = [];
+      for (const [code, list] of Object.entries(index)) {
+        if (code.startsWith(q)) {
+          matches.push(...list);
+          if (matches.length >= 200) break;
+        }
+      }
+      idxs = [...new Set(matches)].slice(0, 200);
+    }
     if (!idxs || idxs.length === 0) {
       results = [];
       searched = true;

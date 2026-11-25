@@ -1,7 +1,24 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
+use std::sync::LazyLock;
 use tauri::Manager;
+
+static ENTRY_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"(?s)<(?:[^>]*:)?entry[^>]*>(.*?)</(?:[^>]*:)?entry>").expect("valid entry regex")
+});
+static TITLE_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"(?s)<(?:[^>]*:)?title[^>]*>(.*?)</(?:[^>]*:)?title>").expect("valid title regex")
+});
+static PUBLISHED_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"(?s)<(?:[^>]*:)?published[^>]*>(.*?)</(?:[^>]*:)?published>").expect("valid published regex")
+});
+static LINK_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r#"<link[^>]*href="([^"]+)""#).expect("valid link regex")
+});
+static THUMB_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r#"<media:thumbnail[^>]*url="([^"]+)""#).expect("valid thumbnail regex")
+});
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Guide {
@@ -71,20 +88,15 @@ fn make_id(link: &str) -> String {
 
 fn parse_youtube_feed(xml: &str, source_name: &str) -> Vec<Guide> {
     let mut guides = Vec::new();
-    let entry_re = regex::Regex::new(r"(?s)<(?:[^>]*:)?entry[^>]*>(.*?)</(?:[^>]*:)?entry>").unwrap();
-    let title_re = regex::Regex::new(r"(?s)<(?:[^>]*:)?title[^>]*>(.*?)</(?:[^>]*:)?title>").unwrap();
-    let published_re = regex::Regex::new(r"(?s)<(?:[^>]*:)?published[^>]*>(.*?)</(?:[^>]*:)?published>").unwrap();
-    let link_re = regex::Regex::new(r#"<link[^>]*href="([^"]+)""#).unwrap();
-    let thumb_re = regex::Regex::new(r#"<media:thumbnail[^>]*url="([^"]+)""#).unwrap();
 
-    for cap in entry_re.captures_iter(xml) {
+    for cap in ENTRY_RE.captures_iter(xml) {
         if let Some(entry) = cap.get(1) {
             let entry_str = entry.as_str();
-            let title = title_re.captures(entry_str).and_then(|c| c.get(1)).map(|m| clean_cdata(m.as_str())).unwrap_or_default();
-            let published = published_re.captures(entry_str).and_then(|c| c.get(1)).map(|m| m.as_str().trim().to_string()).unwrap_or_default();
+            let title = TITLE_RE.captures(entry_str).and_then(|c| c.get(1)).map(|m| clean_cdata(m.as_str())).unwrap_or_default();
+            let published = PUBLISHED_RE.captures(entry_str).and_then(|c| c.get(1)).map(|m| m.as_str().trim().to_string()).unwrap_or_default();
             let mut link = String::new();
-            if let Some(cap) = link_re.captures(entry_str) { if let Some(m) = cap.get(1) { link = m.as_str().to_string(); } }
-            let image = thumb_re.captures(entry_str).and_then(|c| c.get(1)).map(|m| m.as_str().to_string());
+            if let Some(cap) = LINK_RE.captures(entry_str) { if let Some(m) = cap.get(1) { link = m.as_str().to_string(); } }
+            let image = THUMB_RE.captures(entry_str).and_then(|c| c.get(1)).map(|m| m.as_str().to_string());
 
             if !title.is_empty() && !link.is_empty() {
                 let embed_link = if let Some(vid) = link.split("v=").nth(1) {
@@ -130,7 +142,9 @@ fn parse_rss2json_feed(json: &str, source_name: &str) -> Vec<Guide> {
 }
 
 async fn fetch_youtube_feeds(channels: &[(&str, &str)]) -> Vec<Guide> {
-    let client = reqwest::Client::new();
+    let Ok(client) = crate::net::http_client() else {
+        return Vec::new();
+    };
     let mut all = Vec::new();
     for (name, channel_id) in channels {
         let yt_url = format!("https://www.youtube.com/feeds/videos.xml?channel_id={}", channel_id);
@@ -173,8 +187,16 @@ async fn fetch_youtube_feeds(channels: &[(&str, &str)]) -> Vec<Guide> {
 async fn fetch_bilibili_feeds(page: u32) -> Result<Vec<Guide>, String> {
     let mut all = Vec::new();
     let mut risk_control = false;
+
+    // One session for all channels: buvid + ticket + WBI keys used to be
+    // requested three times per channel (12 requests per refresh), which is
+    // exactly what triggers Bilibili's risk control.
+    let session = crate::bilibili::BiliSession::new()
+        .await
+        .map_err(|e| format!("Bilibili is unavailable: {}", e))?;
+
     for uid in BILI_UIDS {
-        match crate::bilibili::fetch_bilibili_videos(*uid, page).await {
+        match crate::bilibili::fetch_videos(&session, *uid, page).await {
             Ok(videos) => all.extend(videos),
             Err(e) => {
                 if e == "RISK_CONTROL" { risk_control = true; }
@@ -192,12 +214,20 @@ async fn fetch_bilibili_feeds(page: u32) -> Result<Vec<Guide>, String> {
 pub async fn fetch_guides(app: tauri::AppHandle, locale: String, force: Option<bool>, page: Option<u32>) -> Result<Vec<Guide>, String> {
     let force = force.unwrap_or(false);
     let page = page.unwrap_or(1);
-    let cache_path = cache_path_for_locale(&app, &locale)?;
+    // `locale` comes from the webview and is used in a file name — whitelist it
+    // so a tampered client cannot write outside the guides cache folder.
+    let locale = match locale.as_str() {
+        "ru" => "ru",
+        "zh" => "zh",
+        _ => "en",
+    };
+    let cache_path = cache_path_for_locale(&app, locale)?;
 
     if !force && page == 1 && cache_path.exists() {
         if let Ok(content) = fs::read_to_string(&cache_path) {
             if let Ok(cached) = serde_json::from_str::<CachedGuides>(&content) {
-                if now_secs() - cached.timestamp < CACHE_TTL_SECS && !cached.guides.is_empty() {
+                // saturating_sub: a clock rollback must not underflow/panic.
+                if now_secs().saturating_sub(cached.timestamp) < CACHE_TTL_SECS && !cached.guides.is_empty() {
                     return Ok(cached.guides);
                 }
             }
@@ -213,7 +243,7 @@ pub async fn fetch_guides(app: tauri::AppHandle, locale: String, force: Option<b
         guides.extend(fetch_youtube_feeds(YT_CHANNELS_EN).await);
     }
 
-    guides.sort_by(|a, b| b.published.cmp(&a.published));
+    guides.sort_by(|a, b| sort_key(&b.published).cmp(&sort_key(&a.published)));
 
     if !guides.is_empty() && page == 1 {
         let cached = CachedGuides { timestamp: now_secs(), guides: guides.clone() };
@@ -221,6 +251,17 @@ pub async fn fetch_guides(app: tauri::AppHandle, locale: String, force: Option<b
     }
 
     Ok(guides)
+}
+
+/// YouTube returns RFC-3339 strings, Bilibili returns a Unix timestamp as a
+/// string.  Comparing raw strings put "999" after "1712345678", i.e. old videos
+/// first.  Zero-padding numeric timestamps makes both kinds sort correctly.
+fn sort_key(published: &str) -> String {
+    if !published.is_empty() && published.bytes().all(|b| b.is_ascii_digit()) {
+        format!("{:0>20}", published)
+    } else {
+        published.to_string()
+    }
 }
 
 #[tauri::command]

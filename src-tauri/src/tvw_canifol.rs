@@ -88,7 +88,7 @@ impl TvwParser {
         if pins.is_empty() && comps.is_empty() {
             return Err("Unsupported TVW variant (not production binary, ASCII parse found nothing)".to_string());
         }
-        Ok(BoardData {
+        let mut board = BoardData {
             format: "tvw".to_string(),
             pins,
             lines: Vec::new(),
@@ -96,7 +96,9 @@ impl TvwParser {
             components: comps,
             pads: Vec::new(),
             routes: Vec::new(),
-        })
+        };
+        crate::boardview::ensure_outline(&mut board);
+        Ok(board)
     }
 
     pub fn is_binary(data: &[u8]) -> bool {
@@ -344,6 +346,8 @@ impl TvwParser {
             if s_bytes.iter().all(|&b| (32..=126).contains(&b)) {
                 names.push(String::from_utf8_lossy(s_bytes).into_owned());
                 cur += 1 + n;
+                // A hostile/garbage file must not make us allocate unboundedly.
+                if names.len() >= 200_000 { break; }
             } else {
                 break;
             }
@@ -370,8 +374,12 @@ impl TvwParser {
 
         cur = safe_window;
         let mut best_names: Vec<String> = Vec::new();
-        while cur + 4 < end {
-            let (names, _) = Self::scan_pascal_string_run(buf, cur, end);
+        // Exhaustive fallback, but with a work budget: a hostile/garbage file with
+        // long printable runs used to make this loop O(n²) and hang for minutes.
+        let mut budget: usize = 30_000_000;
+        while cur + 4 < end && budget > 0 {
+            let (names, run_end) = Self::scan_pascal_string_run(buf, cur, end);
+            budget = budget.saturating_sub((run_end.saturating_sub(cur)).max(1));
             if !names.is_empty() && names.len() >= best_names.len() {
                 best_names = names;
             }
@@ -997,7 +1005,7 @@ impl TvwParser {
             );
         }
 
-        Ok(BoardData {
+        let mut board = BoardData {
             format: "tvw".to_string(),
             pins: board_pins,
             lines: board_lines,
@@ -1005,7 +1013,9 @@ impl TvwParser {
             components: board_components,
             pads: Vec::new(),
             routes: Vec::new(),
-        })
+        };
+        crate::boardview::ensure_outline(&mut board);
+        Ok(board)
     }
 
     // ------------------------------------------------------------------
@@ -1017,6 +1027,7 @@ impl TvwParser {
         let mut components = Vec::new();
         let mut current_part: Option<String> = None;
         let mut current_side = "top".to_string();
+        let mut pin_bounds: HashMap<String, (f64, f64, f64, f64)> = HashMap::new();
 
         for line in text.lines() {
             let line = line.trim();
@@ -1045,10 +1056,18 @@ impl TvwParser {
                     let pin_name = toks[1].to_string();
                     if let (Ok(x), Ok(y)) = (toks[2].parse::<f64>(), toks[3].parse::<f64>()) {
                         let net = if toks[5] == "(NC)" { "".to_string() } else { toks[5].to_string() };
+                        let (px, py) = (x * 1000.0, y * 1000.0);
+                        let b = pin_bounds
+                            .entry(refdes.clone())
+                            .or_insert((f64::MAX, f64::MAX, f64::MIN, f64::MIN));
+                        b.0 = b.0.min(px);
+                        b.1 = b.1.min(py);
+                        b.2 = b.2.max(px);
+                        b.3 = b.3.max(py);
                         pins.push(BoardPin {
                             name: format!("{}.{}", refdes, pin_name),
-                            x: x * 1000.0,
-                            y: y * 1000.0,
+                            x: px,
+                            y: py,
                             net,
                             side: current_side.clone(),
                         });
@@ -1056,6 +1075,86 @@ impl TvwParser {
                 }
             }
         }
+        // The ASCII variant has no component bbox in the text, so derive it from
+        // the pins.  Components used to be emitted with a zero-size box at (0,0)
+        // and were effectively invisible in the viewer.
+        for comp in components.iter_mut() {
+            if let Some(&(min_x, min_y, max_x, max_y)) = pin_bounds.get(&comp.ref_name) {
+                if min_x > max_x || min_y > max_y {
+                    continue;
+                }
+                let pad = ((max_x - min_x).max(max_y - min_y) * 0.1).max(1.0);
+                let (mut x1, mut y1, mut x2, mut y2) =
+                    (min_x - pad, min_y - pad, max_x + pad, max_y + pad);
+                if (x2 - x1) < 2.0 {
+                    let cx = (x1 + x2) / 2.0;
+                    x1 = cx - 1.0;
+                    x2 = cx + 1.0;
+                }
+                if (y2 - y1) < 2.0 {
+                    let cy = (y1 + y2) / 2.0;
+                    y1 = cy - 1.0;
+                    y2 = cy + 1.0;
+                }
+                comp.bounds_x1 = x1;
+                comp.bounds_y1 = y1;
+                comp.bounds_x2 = x2;
+                comp.bounds_y2 = y2;
+                comp.x = (x1 + x2) / 2.0;
+                comp.y = (y1 + y2) / 2.0;
+            }
+        }
+        // Parts without any pin have no usable geometry; a zero-size box at (0,0)
+        // would draw a stray marker in the corner.
+        components.retain(|c| c.bounds_x2 > c.bounds_x1 && c.bounds_y2 > c.bounds_y1);
+
         (pins, components)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn deobfuscates_ascii_tvw() {
+        let encoded = b"0abcZ";
+        let decoded = TvwParser::deobfuscate_ascii(encoded);
+        assert_eq!(&decoded, b"7qrsP");
+    }
+
+    #[test]
+    fn finds_net_name_table() {
+        let mut buf = vec![0u8; 64];
+        let names = ["GND", "VCC_3V3"];
+        buf.extend_from_slice(&(names.len() as u32).to_le_bytes());
+        buf.extend_from_slice(&(names.len() as u32).to_le_bytes());
+        for name in names {
+            buf.push(name.len() as u8);
+            buf.extend_from_slice(name.as_bytes());
+        }
+        let scanned = TvwParser::scan_network_names(&buf);
+        assert_eq!(scanned, vec!["GND".to_string(), "VCC_3V3".to_string()]);
+    }
+
+    #[test]
+    fn garbage_net_scan_is_bounded_and_returns_nothing() {
+        let buf = vec![0x05u8; 500_000];
+        assert!(TvwParser::scan_network_names(&buf).is_empty());
+    }
+
+    #[test]
+    fn ascii_parser_derives_component_bounds_from_pins() {
+        let text = "Part U1 TOP\n1 A1 10 20 x GND\n2 A2 30 20 x VCC\nPart C1 BOTTOM\n1 1 5 5 x GND\n";
+        let (pins, comps) = TvwParser::parse_ascii(text);
+        assert_eq!(pins.len(), 3);
+        assert_eq!(comps.len(), 2);
+        let u1 = comps.iter().find(|c| c.ref_name == "U1").unwrap();
+        assert!(u1.bounds_x2 > u1.bounds_x1 && u1.bounds_y2 > u1.bounds_y1);
+        assert!((u1.x - 20000.0).abs() < 1.0); // (10000..30000) with padding
+        assert_eq!(u1.layer, "TOP");
+        let c1 = comps.iter().find(|c| c.ref_name == "C1").unwrap();
+        assert_eq!(c1.layer, "BOTTOM");
+        assert!(c1.bounds_x2 > c1.bounds_x1);
     }
 }

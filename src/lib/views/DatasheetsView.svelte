@@ -1,7 +1,7 @@
 <script>
   import { invoke } from '@tauri-apps/api/core';
   import { save } from '@tauri-apps/plugin-dialog';
-  import { writeFile } from '@tauri-apps/plugin-fs';
+  import { onDestroy } from 'svelte';
   import Input from '../components/Input.svelte';
   import Button from '../components/Button.svelte';
   import Card from '../components/Card.svelte';
@@ -93,16 +93,24 @@
     try {
       await invoke('open_url_in_browser', { url });
     } catch (e) {
-      pdfError = 'Не удалось открыть браузер: ' + e;
+      pdfError = (strings.datasheets.browserError || '') + e;
     }
   }
+
+  function releasePdf() {
+    if (currentPdf?.blobUrl) {
+      URL.revokeObjectURL(currentPdf.blobUrl);
+    }
+  }
+
+  onDestroy(releasePdf);
 
   async function openPdf(item) {
     if (!hasPdf(item)) {
       pdfError = "No datasheet available for this component.";
       return;
     }
-    pdfLoading = true; pdfError = ''; currentPdf = null;
+    pdfLoading = true; pdfError = ''; releasePdf(); currentPdf = null;
     try {
       let bytes;
       const readName = item.savedFilename || item.name;
@@ -135,11 +143,15 @@
         defaultPath: `${currentPdf.name}.pdf`
       });
       if (path) {
-        const bytes = await invoke('read_pdf', { filename: currentPdf.name });
-        await writeFile(path, new Uint8Array(bytes));
+        // Saving is done in Rust: the fs plugin only has an appdata write scope,
+        // so a browser-side writeFile() to Desktop/Downloads always failed.
+        await invoke('save_pdf_copy', {
+          dest: path,
+          filename: currentPdf.savedFilename || currentPdf.name
+        });
       }
     } catch (e) {
-      alert(strings.datasheets.labels.saveError + e);
+      alert((strings.datasheets.labels.saveError || '') + e);
     }
   }
 
@@ -196,7 +208,7 @@
 {#if currentPdf}
   <Card title={currentPdf.name}>
     <div class="pdf-header">
-      <Button variant="ghost" size="sm" onclick={() => currentPdf = null}>
+      <Button variant="ghost" size="sm" onclick={() => { releasePdf(); currentPdf = null; }}>
         <ArrowLeft size={16} /> {strings.datasheets.back}
       </Button>
       <Button variant="primary" size="sm" onclick={savePdf}>{strings.datasheets.download}</Button>
@@ -268,7 +280,7 @@
 
     {#if results.length > 0}
       <ul class="results-list">
-        {#each results as item (item.lcsc_code || item.name || item.manufacturer)}
+        {#each results as item, index (index)}
           {#if item}
             <li class="result-item">
               {#if hasPdf(item)}
@@ -296,7 +308,7 @@
               </div>
               {#if hasPdf(item) && isCloudflareProtected(item.datasheet_url)}
                 <Button variant="secondary" size="sm" onclick={() => openUrlInBrowser(item.datasheet_url)}>
-                  <ExternalLink size={14} /> Открыть в браузере
+                  <ExternalLink size={14} /> {strings.datasheets.openInBrowser}
                 </Button>
               {:else}
                 <Button variant="secondary" size="sm" onclick={() => openPdf(item)} disabled={!hasPdf(item)}>

@@ -213,6 +213,8 @@ export const calculators = {
       "parallelCountNeeded": "Параллельно штук",
       "calcFailed": "Не удалось рассчитать. Проверь значения (ток слишком большой или R_DS(on) слишком высокое).",
       "visualStrongHeat": "Сильный нагрев",
+      "visualModerateHeat": "Умеренный нагрев",
+      "visualNormalHeat": "Норма",
       "visualCurrent": "Ток"
     }
   },

@@ -1,8 +1,7 @@
 use serde::Serialize;
 use serde_json::Value;
 use std::collections::HashMap;
-use std::fs;
-use std::path::PathBuf;
+use std::sync::OnceLock;
 
 #[derive(Serialize, Clone, Debug)]
 pub struct SovietAnalog {
@@ -10,23 +9,16 @@ pub struct SovietAnalog {
     pub analogs: Vec<String>,
 }
 
-/// Загружает JSON и возвращает карту { нормализованное_имя: [нормализованные_аналоги] }
-fn load_analogs() -> Result<HashMap<String, Vec<String>>, String> {
-    // Путь к JSON: в dev — из src/lib/data, в prod — нужно будет встроить в bundle.
-    // Пока для простоты используем относительный путь от корня проекта.
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.pop(); // из src-tauri в корень
-    path.push("src");
-    path.push("lib");
-    path.push("data");
-    path.push("analogs.json");
+/// The database is compiled into the binary.  It used to be read from
+/// `env!("CARGO_MANIFEST_DIR")`, i.e. the build machine's source folder, so on
+/// every user's PC (and on Android) the whole Soviet-analog tab was dead.
+const ANALOGS_JSON: &str = include_str!("../../src/lib/data/analogs.json");
 
-    println!("[DEBUG] Загрузка аналогов из: {:?}", path);
+static ANALOGS: OnceLock<Result<HashMap<String, Vec<String>>, String>> = OnceLock::new();
 
-    let content = fs::read_to_string(&path)
-        .map_err(|e| format!("Не удалось прочитать analogs.json: {}", e))?;
-    let json: Value = serde_json::from_str(&content)
-        .map_err(|e| format!("Ошибка парсинга analogs.json: {}", e))?;
+fn build_analogs() -> Result<HashMap<String, Vec<String>>, String> {
+    let json: Value = serde_json::from_str(ANALOGS_JSON)
+        .map_err(|e| format!("Failed to parse the built-in analogs database: {}", e))?;
 
     let mut map: HashMap<String, Vec<String>> = HashMap::new();
 
@@ -55,13 +47,20 @@ fn load_analogs() -> Result<HashMap<String, Vec<String>>, String> {
     }
 
     // Убираем дубликаты
-    for (_, v) in map.iter_mut() {
-        v.sort();
-        v.dedup();
+    for value in map.values_mut() {
+        value.sort();
+        value.dedup();
     }
 
-    println!("[DEBUG] Загружено уникальных ключей: {}", map.len());
     Ok(map)
+}
+
+/// Parsed once per process instead of on every keystroke search.
+fn analogs_map() -> Result<&'static HashMap<String, Vec<String>>, String> {
+    match ANALOGS.get_or_init(build_analogs) {
+        Ok(map) => Ok(map),
+        Err(err) => Err(err.clone()),
+    }
 }
 
 /// Нормализация кракозябр от PyMuPDF
@@ -81,25 +80,29 @@ fn normalize(s: &str) -> String {
 
 #[tauri::command]
 pub async fn search_soviet_analog(query: String) -> Result<Vec<SovietAnalog>, String> {
-    let map = load_analogs()?;
     let clean_query = normalize(&query.to_uppercase());
+    // An empty query used to match every key (`key.contains("")` is always true)
+    // and return thousands of rows.
+    if clean_query.is_empty() {
+        return Ok(Vec::new());
+    }
 
-    // Ищем точное совпадение
+    let map = analogs_map()?;
     let mut results = Vec::new();
+
     if let Some(analogs) = map.get(&clean_query) {
         results.push(SovietAnalog {
             name: clean_query.clone(),
             analogs: analogs.clone(),
         });
     } else {
-        // Если точного нет — ищем частичное совпадение
-        for (key, analogs) in &map {
-            if key.contains(&clean_query) {
-                results.push(SovietAnalog {
-                    name: key.clone(),
-                    analogs: analogs.clone(),
-                });
-            }
+        let mut keys: Vec<&String> = map.keys().filter(|key| key.contains(&clean_query)).collect();
+        keys.sort();
+        for key in keys.into_iter().take(50) {
+            results.push(SovietAnalog {
+                name: key.clone(),
+                analogs: map[key].clone(),
+            });
         }
     }
 

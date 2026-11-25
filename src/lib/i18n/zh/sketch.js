@@ -1,4 +1,4 @@
-export const sketch = {
+const sketchStrings = {
   title: '草图',
   toolSelect: '选择 (V)',
   toolPencil: '铅笔 (P)',
@@ -38,10 +38,22 @@ export const sketch = {
   helpR: '旋转选中的元素',
   helpDel: '删除选中的元素',
   helpUndo: '撤销 / 重做',
-  helpZoom: '缩放',
   helpStamps: '图章：从调色板选择元素，点击画布放置。比手绘更快。',
   helpMobile: '手机端：单指绘画，双指缩放和移动画布。',
   helpZoom: '缩放：鼠标滚轮或键盘 + / −。',
   helpPan: '平移：Shift + 鼠标左键 或 鼠标中键。',
   helpMagnet: '导线会自动吸附到引脚。如果画得几乎水平或垂直，会自动对齐。',
+  helpCanvasTitle: '画布控制',
+  helpStampsTitle: '图章',
+  helpBgTitle: '背景（主板照片）',
+  helpBg: '点击图片按钮加载主板照片。在选择模式下可以拖动背景。Ctrl + 滚轮缩放背景。',
+  helpRecognizeTitle: '自动识别',
+  imageLoadError: '图片加载失败：',
+  cancel: '取消',
+  stamps: '图章',
+  storageFull: '浏览器存储空间不足，无法自动保存草图。请导出为 PNG 以保留工作。',
+  loadBoardPhoto: '加载主板照片',
+  removeBackground: '移除背景',
 };
+
+export const sketch = { sketch: sketchStrings };

@@ -45,9 +45,6 @@
 
   onMount(() => {
     detectSystemLocale();
-    // Применяем сохранённую тему
-    const savedTheme = localStorage.getItem('canifol_theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', savedTheme);
   });
 </script>
 

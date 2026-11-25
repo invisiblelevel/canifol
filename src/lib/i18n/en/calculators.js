@@ -213,6 +213,8 @@ export const calculators = {
       "parallelCountNeeded": "Parallel needed",
       "calcFailed": "Calculation failed. Check values (current too high or R_DS(on) too high).",
       "visualStrongHeat": "Strong heating",
+      "visualModerateHeat": "Moderate heating",
+      "visualNormalHeat": "Normal",
       "visualCurrent": "Current"
     }
   },

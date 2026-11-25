@@ -1,4 +1,5 @@
 <script>
+  import { onMount } from 'svelte';
   import Card from '../components/Card.svelte';
   import StarButton from '../components/StarButton.svelte';
   import { getStrings } from '../strings.svelte.js';
@@ -6,9 +7,34 @@
   import MicrochipScheme from '../components/pinouts/MicrochipScheme.svelte';
   import DevBoardScheme from '../components/pinouts/DevBoardScheme.svelte';
   import { favoritesStore } from '../stores/favorites.svelte.js';
+  import { navStore } from '../stores/navigation.svelte.js';
+  import { ru } from '../i18n/ru/index.js';
 
   const strings = $derived(getStrings());
   const F = $derived(strings.favorites);
+
+  /// Returns the localized pinout data, filling missing fields (notably the
+  /// EN/ZH pin tables for the newer dev boards) from the Russian table.  Without
+  /// this, an EN user saw only 2 of 20 pins on the Arduino Mega.
+  function dataFor(tab, id) {
+    const local = tab === 'soviet' ? strings.pinoutsSovietData?.[id]
+      : tab === 'devBoards' ? strings.pinoutsDevBoardsData?.[id]
+      : tab === 'ics' ? strings.pinoutsIcsData?.[id]
+      : strings.pinoutsData?.[id];
+    const fallback = tab === 'soviet' ? ru.pinoutsSovietData?.[id]
+      : tab === 'devBoards' ? ru.pinoutsDevBoardsData?.[id]
+      : tab === 'ics' ? ru.pinoutsIcsData?.[id]
+      : ru.pinoutsData?.[id];
+    if (!local) return fallback || null;
+    if (!fallback) return local;
+    return {
+      ...fallback,
+      ...local,
+      name: local.name || fallback.name,
+      desc: local.desc || fallback.desc,
+      pins: { ...(fallback.pins || {}), ...(local.pins || {}) }
+    };
+  }
 
   // Принимаем начальные значения из App.svelte
   let { initialTab = 'connectors', initialId = pinouts.connectors[0]?.id ?? '' } = $props();
@@ -17,31 +43,23 @@
   let activeId = $state(initialId);
   let search = $state('');
 
+  // The jump payload (from Favorites) has been consumed by the initial props;
+  // leaving it in the store made the next visit open the same part again.
+  onMount(() => navStore.clearPayload());
+
   const currentList = $derived(pinouts[activeTab] || []);
 
   const filteredList = $derived(currentList.filter(c => {
     if (!search) return true;
-    const name = activeTab === 'soviet' ? strings.pinoutsSovietData[c.id]?.name :
-                 activeTab === 'devBoards' ? strings.pinoutsDevBoardsData[c.id]?.name :
-                 strings.pinoutsData[c.id]?.name || strings.pinoutsIcsData[c.id]?.name;
+    const name = dataFor(activeTab, c.id)?.name;
     const query = search.toLowerCase();
     return c.id.toLowerCase().includes(query) || (name && name.toLowerCase().includes(query));
   }));
 
   const activeMeta = $derived(currentList.find(c => c.id === activeId));
-  const activeData = $derived(
-    activeTab === 'soviet' ? strings.pinoutsSovietData[activeId] :
-    activeTab === 'devBoards' ? strings.pinoutsDevBoardsData[activeId] :
-    activeTab === 'ics' ? strings.pinoutsIcsData[activeId] :
-    strings.pinoutsData[activeId]
-  );
+  const activeData = $derived(dataFor(activeTab, activeId));
   const activePins = $derived(activeMeta?.pins ?? []);
-  const activeName = $derived(
-    activeTab === 'soviet' ? strings.pinoutsSovietData[activeId]?.name :
-    activeTab === 'devBoards' ? strings.pinoutsDevBoardsData[activeId]?.name :
-    activeTab === 'ics' ? strings.pinoutsIcsData[activeId]?.name :
-    strings.pinoutsData[activeId]?.name
-  );
+  const activeName = $derived(dataFor(activeTab, activeId)?.name);
   const isActiveFav = $derived(activeId ? favoritesStore.isFavoritePinout(activeId) : false);
 
   function switchTab(tab) {
@@ -57,6 +75,10 @@
     
     if (filteredList.length > 0 && !filteredList.some(c => c.id === activeId)) {
       activeId = filteredList[0].id;
+    } else if (filteredList.length === 0 && activeId) {
+      // Nothing matches the search — do not keep showing a part that is no
+      // longer in the list.
+      activeId = '';
     }
   });
 
@@ -102,10 +124,7 @@
             class:active={activeId === conn.id}
             onclick={() => activeId = conn.id}
           >
-            {activeTab === 'soviet' ? strings.pinoutsSovietData[conn.id]?.name : 
-             activeTab === 'devBoards' ? strings.pinoutsDevBoardsData[conn.id]?.name : 
-             activeTab === 'ics' ? strings.pinoutsIcsData[conn.id]?.name || conn.id.toUpperCase() :
-             strings.pinoutsData[conn.id]?.name || conn.id}
+            {dataFor(activeTab, conn.id)?.name || (activeTab === 'ics' ? conn.id.toUpperCase() : conn.id)}
           </button>
         {:else}
           <div class="pinout-nav__empty">{strings.pinouts.nothingFound}</div>

@@ -16,6 +16,8 @@ export const guides = {
     empty: 'No entries yet. Try refreshing later.',
     emptySearch: 'Nothing found for query',
     emptyHint: 'Sources may be temporarily unavailable',
+    loadMore: 'Load more',
+    bilibiliUnavailable: 'Bilibili is temporarily unavailable. Please try again later.',
     source: 'Source',
     openArticle: 'Open in browser',
     openFailed: 'This site does not allow embedded viewing',

@@ -15,7 +15,7 @@ export const SECTIONS = [
   { id: 'smd',         icon: ScanLine },
   { id: 'boardview',   icon: Layers },
   { id: 'database',    icon: Database },
-  { id: 'guides',      icon: BookOpen, locales: ['ru', 'en'] }
+  { id: 'guides',      icon: BookOpen }
 ];
 
 let current = $state('transistors');

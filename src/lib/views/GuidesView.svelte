@@ -1,5 +1,4 @@
 <script>
-  import { onMount } from 'svelte';
   import { invoke } from '@tauri-apps/api/core';
   import { BookOpen, RefreshCw } from '@lucide/svelte';
   import { getStrings } from '../strings.svelte.js';
@@ -46,12 +45,12 @@
         const res = await invoke('fetch_guides', { locale, force });
         guides = Array.isArray(res) ? res.filter((g) => g && g.link && g.title) : [];
       }
-      if (!guides.length) error = strings.guides.empty || 'No results found.';
+      if (!guides.length) error = null;
     } catch (e) {
       console.error('Load error:', e);
       const msg = String(e);
       if (msg.includes('RISK_CONTROL') || msg.includes('риск-контроль') || msg.includes('Bilibili')) {
-        error = 'Bilibili временно недоступен. Попробуйте позже.';
+        error = strings.guides.bilibiliUnavailable || 'Bilibili is temporarily unavailable.';
       } else {
         error = msg;
       }
@@ -66,9 +65,12 @@
     if (loadingMore || !hasMore || locale !== 'zh') return;
     loadingMore = true;
     try {
-      zhPage++;
-      const res = await invoke('fetch_guides', { locale, page: zhPage });
+      const nextPage = zhPage + 1;
+      const res = await invoke('fetch_guides', { locale, page: nextPage });
       const newItems = Array.isArray(res) ? res.filter((g) => g && g.link && g.title) : [];
+      // Advance the page counter only after a successful request, otherwise a
+      // failed load silently skips a page on retry.
+      zhPage = nextPage;
       if (newItems.length === 0) {
         hasMore = false;
       } else {
@@ -91,7 +93,15 @@
     activeGuide = null;
   }
 
-  onMount(() => { load(); });
+  let loadedLocale = null;
+
+  $effect(() => {
+    const active = locale;
+    if (active === loadedLocale) return;
+    loadedLocale = active;
+    activeGuide = null;
+    load();
+  });
 </script>
 
 {#if activeGuide && activeGuide.link}
@@ -141,7 +151,7 @@
       {#if locale === 'zh' && hasMore && filtered.length === guides.length}
         <div class="guides__load-more">
           <Button variant="secondary" onclick={loadMore} loading={loadingMore}>
-            {loadingMore ? '...' : 'Загрузить ещё'}
+            {loadingMore ? '...' : (strings.guides.loadMore || 'Load more')}
           </Button>
         </div>
       {/if}

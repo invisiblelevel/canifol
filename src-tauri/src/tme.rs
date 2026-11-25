@@ -3,6 +3,7 @@ use base64::{engine::general_purpose, Engine as _};
 use std::collections::HashMap;
 
 #[derive(Deserialize, Debug)]
+#[allow(dead_code)]
 pub struct TmeTokenResponse {
     pub access_token: String,
     pub token_type: String,
@@ -10,6 +11,7 @@ pub struct TmeTokenResponse {
 }
 
 #[derive(Deserialize, Debug)]
+#[allow(dead_code)]
 struct TmeSearchResponse {
     pub status: String,
     pub data: Option<TmeSearchData>,
@@ -44,6 +46,7 @@ struct TmeManufacturer {
 }
 
 #[derive(Deserialize, Debug)]
+#[allow(dead_code)]
 struct TmeFilesResponse {
     pub status: String,
     pub data: Option<TmeFilesData>,
@@ -106,7 +109,7 @@ async fn get_oauth_token() -> Result<String, String> {
     let credentials = format!("{}:{}", token, secret);
     let encoded_auth = general_purpose::STANDARD.encode(credentials.as_bytes());
 
-    let client = reqwest::Client::new();
+    let client = crate::net::api_client()?;
     let resp = client.post(url)
         .header("Content-Type", "application/x-www-form-urlencoded")
         .header("Authorization", format!("Basic {}", encoded_auth))
@@ -134,7 +137,7 @@ pub async fn search_tme(query: String) -> Result<Vec<crate::digikey::DatasheetRe
         Err(e) => return Err(e),
     };
 
-    let client = reqwest::Client::new();
+    let client = crate::net::api_client()?;
 
     let search_url = format!(
         "https://api.tme.eu/products/search?country=PL&scope[]=products&limit=10&phrase={}",
@@ -187,8 +190,11 @@ pub async fn search_tme(query: String) -> Result<Vec<crate::digikey::DatasheetRe
             .header("Accept", "application/json")
             .send().await
         {
-            if let Ok(files_body) = files_resp.text().await {
-                if let Ok(parsed_files) = serde_json::from_str::<TmeFilesResponse>(&files_body) {
+            // The files endpoint is optional: if it fails we still return the
+            // products, just without datasheet links.
+            if files_resp.status().is_success() {
+                if let Ok(files_body) = files_resp.text().await {
+                    if let Ok(parsed_files) = serde_json::from_str::<TmeFilesResponse>(&files_body) {
                     if let Some(file_elems) = parsed_files.data.and_then(|d| d.elements) {
                         for fe in file_elems {
                             let Some(sym) = fe.symbol else { continue };
@@ -221,6 +227,7 @@ pub async fn search_tme(query: String) -> Result<Vec<crate::digikey::DatasheetRe
                 }
             }
         }
+    }
     }
 
     let mut results = Vec::new();

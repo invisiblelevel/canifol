@@ -189,7 +189,7 @@
   </svg>
 
 {:else}
-  <div class="scheme-placeholder">Нет схемы для этой платы</div>
+  <div class="scheme-placeholder">{strings.pinouts.noSchemeForBoard || 'No schematic for this board yet'}</div>
 {/if}
 
 <style>

@@ -100,7 +100,7 @@
     <div class="source-block">
       <div class="source-header">{strings.transistors.labels.digikeyAnalogs} ({results.digikey.length})</div>
       <div class="results-list">
-        {#each results.digikey as item (item.name)}
+        {#each results.digikey as item, i (i)}
           <div class="result-card">
             <div class="result-card__main">
               <div class="result-card__name">{item.name}</div>
@@ -127,7 +127,7 @@
     <div class="source-block">
       <div class="source-header">{strings.transistors.labels.lcscAnalogs} ({results.lcsc.length})</div>
       <div class="results-list">
-        {#each results.lcsc as item (item.name + item.source)}
+        {#each results.lcsc as item, i (i)}
           <div class="result-card">
             <div class="result-card__main">
               <div class="result-card__name">{item.name}</div>

@@ -16,6 +16,8 @@ export const guides = {
     empty: '暂无视频。请稍后刷新。',
     emptySearch: '未找到匹配的内容',
     emptyHint: '数据源可能暂时不可用',
+    loadMore: '加载更多',
+    bilibiliUnavailable: 'Bilibili 暂时不可用，请稍后再试。',
     source: '来源',
     openArticle: '在浏览器中打开',
     openFailed: '该网站不允许内嵌查看',

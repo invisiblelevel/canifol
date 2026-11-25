@@ -90,8 +90,10 @@ const KEY = 'canifol_sketch_v1';
 export function saveSketch(state) {
   try {
     localStorage.setItem(KEY, JSON.stringify({ version: 1, ...state }));
+    return true;
   } catch (e) {
     console.warn('Failed to save sketch', e);
+    return false;
   }
 }
 

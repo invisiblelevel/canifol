@@ -97,7 +97,7 @@ export function formatOhm(value, units) {
   if (value == null || isNaN(value)) return '—';
   
   // Если единицы не переданы, используем дефолтные русские (для обратной совместимости)
-  const u = units || { ohm: 'Ом', kohm: 'кОм', mohm: 'МОм' };
+  const u = units || { ohm: 'Ом', kohm: 'кОм', mohm: 'МОм', mohm_short: 'мОм' };
 
   if (value === 0) return `0 ${u.ohm}`;
 
@@ -106,7 +106,9 @@ export function formatOhm(value, units) {
   if (abs >= 1e6) return `${trimNum(value / 1e6)} ${u.mohm}`;
   if (abs >= 1e3) return `${trimNum(value / 1e3)} ${u.kohm}`;
   if (abs >= 1)   return `${trimNum(value)} ${u.ohm}`;
-  if (abs >= 1e-3) return `${trimNum(value * 1e3)} ${u.ohm}`; // временно, если нет миллиомов
+  // Milliohms (current-sense shunts, 0R22 → 220 mΩ). Printing "220 Ом" here
+  // showed a value 1000x too large.
+  if (abs >= 1e-3) return `${trimNum(value * 1e3)} ${u.mohm_short || 'mΩ'}`;
   return `${trimNum(value)} ${u.ohm}`;
 }
 
@@ -117,7 +119,7 @@ export function formatOhmCompact(value, units) {
   if (value == null || isNaN(value)) return '—';
   
   // Если единицы не переданы, используем дефолтные русские
-  const u = units || { ohm: 'R', kohm: 'к', mohm: 'М' };
+  const u = units || { ohm: 'R', kohm: 'к', mohm: 'М', mohm_short: 'м' };
 
   if (value === 0) return `0${u.ohm}`;
 
@@ -126,7 +128,7 @@ export function formatOhmCompact(value, units) {
   if (abs >= 1e6) return `${trimNum(value / 1e6)}${u.mohm}`;
   if (abs >= 1e3) return `${trimNum(value / 1e3)}${u.kohm}`;
   if (abs >= 1)   return `${trimNum(value)}${u.ohm}`;
-  if (abs >= 1e-3) return `${trimNum(value * 1e3)}м`; // временно
+  if (abs >= 1e-3) return `${trimNum(value * 1e3)}${u.mohm_short || 'м'}`;
   return `${trimNum(value)}${u.ohm}`;
 }
 

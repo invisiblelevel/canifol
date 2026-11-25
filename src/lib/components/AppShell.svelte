@@ -1,6 +1,7 @@
 <script>
   import { layoutStore } from '../stores/layout.svelte.js';
   import { localeStore } from '../stores/locale.svelte.js';
+  import { themeStore } from '../stores/theme.svelte.js';
   import { getStrings } from '../strings.svelte.js';
   const strings = $derived(getStrings());
   import Tabs from './Tabs.svelte';
@@ -11,7 +12,6 @@
   let { children, title = '', onOpenAbout = () => {} } = $props();
 
   let menuOpen = $state(false);
-  let theme = $state(localStorage.getItem('canifol_theme') || 'dark');
 
   function toggleMenu() { menuOpen = !menuOpen; }
   function closeMenu() { menuOpen = false; }
@@ -19,9 +19,7 @@
   function openSettings() { navStore.setSettings(); menuOpen = false; }
 
   function toggleTheme() {
-    theme = theme === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('canifol_theme', theme);
+    themeStore.toggle();
   }
 
   $effect(() => {
@@ -40,8 +38,8 @@
         <span class="topbar__title">{strings.app.name}</span>
       </div>
 
-      <button type="button" class="topbar__icon" aria-label="Theme" onclick={toggleTheme}>
-        {#if theme === 'dark'}<Sun size={20} strokeWidth={2} />{:else}<Moon size={20} strokeWidth={2} />{/if}
+      <button type="button" class="topbar__icon" aria-label={strings.common.theme} onclick={toggleTheme}>
+        {#if themeStore.isDark}<Sun size={20} strokeWidth={2} />{:else}<Moon size={20} strokeWidth={2} />{/if}
       </button>
 
       <button type="button" class="topbar__icon" aria-label="Info" onclick={handleOpenAbout}>
@@ -71,8 +69,8 @@
           
           <div class="footer-row">
             <!-- Тема: только иконка -->
-            <button type="button" class="drawer__link icon-only" onclick={toggleTheme} title="Theme">
-              {#if theme === 'dark'}<Sun size={16} strokeWidth={2} />{:else}<Moon size={16} strokeWidth={2} />{/if}
+            <button type="button" class="drawer__link icon-only" onclick={toggleTheme} title={strings.common.theme}>
+              {#if themeStore.isDark}<Sun size={16} strokeWidth={2} />{:else}<Moon size={16} strokeWidth={2} />{/if}
             </button>
             <button type="button" class="drawer__link" onclick={handleOpenAbout}>
               <Info size={16} strokeWidth={2} />
@@ -105,8 +103,8 @@
         
         <div class="footer-row">
           <!-- Тема: только иконка -->
-          <button type="button" class="sidebar__link icon-only" onclick={toggleTheme} title="Theme">
-            {#if theme === 'dark'}<Sun size={16} strokeWidth={2} />{:else}<Moon size={16} strokeWidth={2} />{/if}
+          <button type="button" class="sidebar__link icon-only" onclick={toggleTheme} title={strings.common.theme}>
+            {#if themeStore.isDark}<Sun size={16} strokeWidth={2} />{:else}<Moon size={16} strokeWidth={2} />{/if}
           </button>
           <button type="button" class="sidebar__link" onclick={handleOpenAbout}>
             <Info size={16} strokeWidth={2} />

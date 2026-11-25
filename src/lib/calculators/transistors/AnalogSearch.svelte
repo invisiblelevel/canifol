@@ -50,7 +50,7 @@
 
   <div class="search-bar">
     <div class="search-input">
-      <Input bind:value={query} label={strings.transistors.labels.model} placeholder={trType === 'mosfet' ? 'IRFZ44N' : 'BC547 или КТ315'} />
+      <Input bind:value={query} label={strings.transistors.labels.model} placeholder={trType === 'mosfet' ? 'IRFZ44N' : 'BC547 / KT315'} />
     </div>
     <Button variant="primary" onclick={search} loading={loading}>{strings.transistors.labels.searchAnalog}</Button>
   </div>
@@ -83,7 +83,7 @@
     <div class="source-block">
       <div class="source-header">{strings.transistors.labels.digikeyAnalogs} ({results.digikey.length})</div>
       <div class="results-list">
-        {#each results.digikey as item (item.name)}
+        {#each results.digikey as item, i (i)}
           <div class="result-card">
             <div class="result-card__main">
               <div class="result-card__name">{item.name}</div>
@@ -111,7 +111,7 @@
     <div class="source-block">
       <div class="source-header">{strings.transistors.labels.lcscAnalogs} ({results.lcsc.length})</div>
       <div class="results-list">
-        {#each results.lcsc as item (item.name + item.source)}
+        {#each results.lcsc as item, i (i)}
           <div class="result-card">
             <div class="result-card__main">
               <div class="result-card__name">{item.name}</div>

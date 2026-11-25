@@ -1,14 +1,17 @@
 <script>
   import { HelpCircle } from '@lucide/svelte';
+  import { getStrings } from '../strings.svelte.js';
 
   let { onclick = () => {} } = $props();
+  const strings = $derived(getStrings());
+  const label = $derived(strings.common.help);
 </script>
 
 <button
   type="button"
   class="help-btn"
-  aria-label="Помощь по разделу"
-  title="Помощь по разделу"
+  aria-label={label}
+  title={label}
   {onclick}
 >
   <HelpCircle size={18} strokeWidth={2} />

@@ -1,5 +1,6 @@
 <script>
   import { getPdfViewerContext } from 'svelte-pdf-view';
+  import { onDestroy } from 'svelte';
   import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize, Minimize } from '@lucide/svelte';
   import { getStrings } from '../strings.svelte.js';
 
@@ -40,6 +41,12 @@
       document.body.classList.remove('pdf-is-maximized');
     }
   }
+
+  // Leaving the PDF screen (or closing it while maximized) used to keep the
+  // body class forever, which removed the app's scroll containers.
+  onDestroy(() => {
+    document.body.classList.remove('pdf-is-maximized');
+  });
 </script>
 
 <div class="custom-toolbar">

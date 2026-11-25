@@ -1,8 +1,8 @@
-use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use tauri::ipc::Response;
 use tauri::Manager;
 
 const TOKEN_URL: &str = "https://api.digikey.com/v1/oauth2/token";
@@ -54,6 +54,18 @@ pub struct AnalogResult {
     pub tr_type: Option<String>,
 }
 
+#[tauri::command]
+pub async fn save_pdf_copy(app: tauri::AppHandle, dest: String, filename: String) -> Result<(), String> {
+    let path = PathBuf::from(dest);
+    crate::net::validate_destination(&path)?;
+    let bytes = tauri::async_runtime::spawn_blocking(move || read_pdf_bytes(&app, &filename))
+        .await
+        .map_err(|e| format!("Read task failed: {}", e))??;
+    tauri::async_runtime::spawn_blocking(move || crate::net::write_atomic(&path, &bytes))
+        .await
+        .map_err(|e| format!("Save task failed: {}", e))?
+}
+
 fn get_cache_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     let mut path = app.path().app_data_dir().map_err(|e| format!("Failed to find data dir: {}", e))?;
     path.push("datasheets");
@@ -76,6 +88,45 @@ fn sanitize_filename(name: &str) -> String {
     name.replace(|c: char| !c.is_alphanumeric() && c != '-' && c != '_', "_")
 }
 
+/// Cache key for a PDF.  The UI sometimes passes `savedFilename` with a `.pdf`
+/// suffix and sometimes a bare part number; both must resolve to the same file.
+/// (`sanitize_filename` turns dots into underscores, so "LM7805.pdf" used to
+/// become "LM7805_pdf.pdf" and the offline copy was never found.)
+fn cache_stem(filename: &str) -> String {
+    let trimmed = filename.trim();
+    let without_ext = trimmed
+        .strip_suffix(".pdf")
+        .or_else(|| trimmed.strip_suffix(".PDF"))
+        .unwrap_or(trimmed);
+    sanitize_filename(without_ext)
+}
+
+/// Some DigiKey answers contain protocol-relative or site-relative datasheet
+/// URLs.  Passing those to `reqwest` fails with a "builder error".
+fn normalize_datasheet_url(url: &str) -> String {
+    let url = url.trim();
+    if url.starts_with("//") {
+        format!("https:{}", url)
+    } else if url.starts_with('/') {
+        format!("https://www.digikey.com{}", url)
+    } else {
+        url.to_string()
+    }
+}
+
+/// Returns the cached path if it holds a structurally valid PDF, otherwise
+/// removes the corrupt file so the caller can download it again.
+fn valid_cached_pdf(path: &Path) -> bool {
+    if !path.exists() {
+        return false;
+    }
+    if crate::net::validate_file_on_disk(path, "cached.pdf").is_ok() {
+        return true;
+    }
+    let _ = fs::remove_file(path);
+    false
+}
+
 #[tauri::command]
 pub async fn download_pdf(
     app: tauri::AppHandle,
@@ -84,16 +135,19 @@ pub async fn download_pdf(
     save_to_favorites: Option<bool>,
 ) -> Result<String, String> {
     let save_to_favorites = save_to_favorites.unwrap_or(false);
-    let safe_name = sanitize_filename(&filename);
+    let safe_name = cache_stem(&filename);
 
     if url.is_empty() {
         return Err("No datasheet available for this component.".to_string());
     }
-    
+    if !crate::net::is_public_http_url(&url) {
+        return Err(format!("Invalid datasheet URL: \"{}\"", url));
+    }
+
     if save_to_favorites {
         let target_dir = get_favorites_dir(&app)?;
         let file_path = target_dir.join(format!("{}.pdf", safe_name));
-        if file_path.exists() {
+        if valid_cached_pdf(&file_path) {
             return Ok(file_path.to_string_lossy().to_string());
         }
         download_to_path(&url, &file_path).await?;
@@ -102,13 +156,13 @@ pub async fn download_pdf(
 
     let fav_dir = get_favorites_dir(&app)?;
     let fav_path = fav_dir.join(format!("{}.pdf", safe_name));
-    if fav_path.exists() {
+    if valid_cached_pdf(&fav_path) {
         return Ok(fav_path.to_string_lossy().to_string());
     }
 
     let cache_dir = get_cache_dir(&app)?;
     let cache_path = cache_dir.join(format!("{}.pdf", safe_name));
-    if cache_path.exists() {
+    if valid_cached_pdf(&cache_path) {
         return Ok(cache_path.to_string_lossy().to_string());
     }
 
@@ -117,8 +171,8 @@ pub async fn download_pdf(
 }
 
 async fn download_to_path(url: &str, file_path: &std::path::Path) -> Result<(), String> {
-    let client = Client::new();
-    
+    let client = crate::net::http_client()?;
+
     // Определяем Referer по домену
     let referer = if url.contains("lcsc.com") || url.contains("wmsc.lcsc.com") {
         "https://www.lcsc.com/"
@@ -132,7 +186,6 @@ async fn download_to_path(url: &str, file_path: &std::path::Path) -> Result<(), 
 
     let res = client
         .get(url)
-        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
         .header("Referer", referer)
         .header("Accept", "application/pdf, */*")
         .send()
@@ -140,50 +193,85 @@ async fn download_to_path(url: &str, file_path: &std::path::Path) -> Result<(), 
         .map_err(|e| format!("Download error: {}", e))?;
 
     let status = res.status();
-    
     if !status.is_success() {
-        let text = res.text().await.unwrap_or_default();
-        let snippet = if text.len() > 100 { &text[..100] } else { &text };
-        return Err(format!("Server returned error: {} — {}", status, snippet));
+        let body = res.bytes().await.map(|b| b.to_vec()).unwrap_or_default();
+        return Err(format!(
+            "Server returned HTTP {} ({})",
+            status.as_u16(),
+            crate::net::describe_payload(&body)
+        ));
     }
 
-    let bytes = res.bytes().await.map_err(|e| format!("Read error: {}", e))?;
-
-    if bytes.len() < 4 || &bytes[0..4] != b"%PDF" {
-        return Err("The datasheet is not available as a PDF file.".to_string());
-    }
-
-    fs::write(file_path, &bytes).map_err(|e| format!("Write error: {}", e))?;
+    let body = res
+        .bytes()
+        .await
+        .map_err(|e| format!("Read error: {}", e))?
+        .to_vec();
+    crate::net::validate_pdf_bytes(&body)
+        .map_err(|e| format!("The datasheet is not a valid PDF: {}", e))?;
+    crate::net::write_atomic(file_path, &body)?;
     Ok(())
 }
 
 #[tauri::command]
-pub fn read_pdf(app: tauri::AppHandle, filename: String) -> Result<Vec<u8>, String> {
-    let safe_name = sanitize_filename(&filename);
+pub async fn read_pdf(app: tauri::AppHandle, filename: String) -> Result<Response, String> {
+    let bytes = tauri::async_runtime::spawn_blocking(move || read_pdf_bytes(&app, &filename))
+        .await
+        .map_err(|e| format!("Read task failed: {}", e))??;
+    Ok(Response::new(bytes))
+}
 
-    if let Ok(fav_dir) = get_favorites_dir(&app) {
+fn read_pdf_bytes(app: &tauri::AppHandle, filename: &str) -> Result<Vec<u8>, String> {
+    let safe_name = cache_stem(filename);
+
+    if let Ok(fav_dir) = get_favorites_dir(app) {
         let path = fav_dir.join(format!("{}.pdf", safe_name));
         if path.exists() {
-            return fs::read(&path).map_err(|e| format!("Failed to read from favorites: {}", e));
+            if crate::net::validate_file_on_disk(&path, "cached.pdf").is_ok() {
+                return fs::read(&path)
+                    .map_err(|e| format!("Failed to read from favorites: {}", e));
+            }
+            let _ = fs::remove_file(&path);
         }
     }
 
-    let cache_dir = get_cache_dir(&app)?;
+    let cache_dir = get_cache_dir(app)?;
     let file_path = cache_dir.join(format!("{}.pdf", safe_name));
-    fs::read(&file_path).map_err(|e| format!("Failed to read from cache: {}", e))
+    if file_path.exists() {
+        if crate::net::validate_file_on_disk(&file_path, "cached.pdf").is_ok() {
+            return fs::read(&file_path).map_err(|e| format!("Failed to read from cache: {}", e));
+        }
+        let _ = fs::remove_file(&file_path);
+        return Err("The cached PDF was corrupt and has been removed. Please open it again.".to_string());
+    }
+    Err("PDF is not downloaded yet.".to_string())
 }
 
 #[tauri::command]
-pub fn read_favorite_pdf(app: tauri::AppHandle, filename: String) -> Result<Vec<u8>, String> {
-    let fav_dir = get_favorites_dir(&app)?;
-    let safe_name = sanitize_filename(&filename);
+pub async fn read_favorite_pdf(app: tauri::AppHandle, filename: String) -> Result<Response, String> {
+    let bytes = tauri::async_runtime::spawn_blocking(move || read_favorite_pdf_bytes(&app, &filename))
+        .await
+        .map_err(|e| format!("Read task failed: {}", e))??;
+    Ok(Response::new(bytes))
+}
+
+fn read_favorite_pdf_bytes(app: &tauri::AppHandle, filename: &str) -> Result<Vec<u8>, String> {
+    let fav_dir = get_favorites_dir(app)?;
+    let safe_name = cache_stem(filename);
     let file_path = fav_dir.join(format!("{}.pdf", safe_name));
+    if !file_path.exists() {
+        return Err("Not in the offline favorites.".to_string());
+    }
+    if crate::net::validate_file_on_disk(&file_path, "cached.pdf").is_err() {
+        let _ = fs::remove_file(&file_path);
+        return Err("The offline PDF was corrupt and has been removed.".to_string());
+    }
     fs::read(&file_path).map_err(|e| format!("Failed to read from favorites: {}", e))
 }
 
 async fn get_token() -> Result<String, String> {
     let (client_id, client_secret) = get_credentials()?;
-    let client = Client::new();
+    let client = crate::net::api_client()?;
     let params = [
         ("client_id", client_id.as_str()),
         ("client_secret", client_secret.as_str()),
@@ -205,7 +293,7 @@ async fn get_token() -> Result<String, String> {
 pub async fn search_datasheets(query: String) -> Result<Vec<DatasheetResult>, String> {
     let (client_id, _) = get_credentials()?;
     let token = get_token().await?;
-    let client = Client::new();
+    let client = crate::net::api_client()?;
 
     let body = serde_json::json!({
         "Keywords": query,
@@ -248,6 +336,7 @@ pub async fn search_datasheets(query: String) -> Result<Vec<DatasheetResult>, St
             }
 
             if !datasheet_url.is_empty() {
+                datasheet_url = normalize_datasheet_url(&datasheet_url);
                 results.push(DatasheetResult { name, manufacturer, datasheet_url });
             }
         }
@@ -267,8 +356,14 @@ fn parse_digikey_params(product: &Value, _tr_type: &str) -> Option<(Option<f64>,
     let mut ttype = None;
 
     for p in params {
-        let name = p.get("ParameterText")?.as_str()?;
-        let val = p.get("ValueText")?.as_str()?;
+        let (Some(name), Some(val)) = (
+            p.get("ParameterText").and_then(|v| v.as_str()),
+            p.get("ValueText").and_then(|v| v.as_str()),
+        ) else {
+            // A parameter without a text/value must not abort parsing of the
+            // whole product (previously `?` returned None for the entire item).
+            continue;
+        };
 
         match name {
             "Drain to Source Voltage (Vdss)" => {
@@ -310,7 +405,7 @@ fn parse_digikey_params(product: &Value, _tr_type: &str) -> Option<(Option<f64>,
 pub async fn find_analogs_digikey(query: String, tr_type: String) -> Result<Vec<AnalogResult>, String> {
     let (client_id, _) = get_credentials()?;
     let token = get_token().await?;
-    let client = Client::new();
+    let client = crate::net::api_client()?;
 
     let body = serde_json::json!({
         "Keywords": query,
@@ -329,6 +424,9 @@ pub async fn find_analogs_digikey(query: String, tr_type: String) -> Result<Vec<
         .await
         .map_err(|e| format!("Search error: {}", e))?;
 
+    if !res.status().is_success() {
+        return Err(format!("DigiKey search error: {}", res.status()));
+    }
     let json: Value = res.json().await.map_err(|e| format!("Parse error: {}", e))?;
     let product = json.get("Products").and_then(|p| p.as_array()).and_then(|a| a.first())
         .ok_or("Original component not found")?;
@@ -354,6 +452,9 @@ pub async fn find_analogs_digikey(query: String, tr_type: String) -> Result<Vec<
         .await
         .map_err(|e| format!("Analog search error: {}", e))?;
 
+    if !res.status().is_success() {
+        return Err(format!("DigiKey analog search error: {}", res.status()));
+    }
     let json: Value = res.json().await.map_err(|e| format!("Parse error: {}", e))?;
     let mut results = Vec::new();
 
@@ -363,7 +464,7 @@ pub async fn find_analogs_digikey(query: String, tr_type: String) -> Result<Vec<
             if name.is_empty() || name == query { continue; }
 
             let manufacturer = p.get("Manufacturer").and_then(|m| m.get("Name")).and_then(|v| v.as_str()).unwrap_or("").to_string();
-            let url = p.get("DatasheetUrl").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let url = normalize_datasheet_url(p.get("DatasheetUrl").and_then(|v| v.as_str()).unwrap_or(""));
 
             if let Some((vds, id, rds, vceo, ic, hfe, ttype)) = parse_digikey_params(p, &tr_type) {
                 results.push(AnalogResult {
@@ -389,7 +490,7 @@ pub async fn find_by_params_digikey(params: serde_json::Value) -> Result<Vec<Ana
     let hfe_min = params.get("hfe").and_then(|v| v.as_f64());
 
     let token = get_token().await?;
-    let client = Client::new();
+    let client = crate::net::api_client()?;
 
     let keyword = if tr_type == "mosfet" { "MOSFET" } else { "Bipolar Transistor" };
     let body = serde_json::json!({
@@ -409,6 +510,9 @@ pub async fn find_by_params_digikey(params: serde_json::Value) -> Result<Vec<Ana
         .await
         .map_err(|e| format!("Search error: {}", e))?;
 
+    if !res.status().is_success() {
+        return Err(format!("DigiKey search error: {}", res.status()));
+    }
     let json: Value = res.json().await.map_err(|e| format!("Parse error: {}", e))?;
     let mut results = Vec::new();
 
@@ -418,7 +522,7 @@ pub async fn find_by_params_digikey(params: serde_json::Value) -> Result<Vec<Ana
             if name.is_empty() { continue; }
 
             let manufacturer = p.get("Manufacturer").and_then(|m| m.get("Name")).and_then(|v| v.as_str()).unwrap_or("").to_string();
-            let url = p.get("DatasheetUrl").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let url = normalize_datasheet_url(p.get("DatasheetUrl").and_then(|v| v.as_str()).unwrap_or(""));
 
             if let Some((vds, id, rds, vceo, ic, hfe, ttype)) = parse_digikey_params(p, tr_type) {
                 let mut pass = true;

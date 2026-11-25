@@ -14,6 +14,7 @@ export const common = {
     comingSoon: '计算器即将推出',
     comingSoonHint: '此部分正在开发中。请切换到其他选项卡。',
     version: '版本', language: '语言', theme: '主题',
+    help: '本节帮助',
     themeDark: '深色', themeLight: '浅色',
     computed: '已计算', reset: '重置',
     pcs: '个', result: '结果', enterValues: '填写字段', ready: '就绪'
@@ -38,7 +39,8 @@ export const common = {
     uh: '微亨', nh: '纳亨', mh: '毫亨', h: '亨利',
     v: '伏特', a: '安培', w: '瓦特', mm: '毫米',
     ah: '安时', wh: '瓦时', ma: '毫安', uv: '微伏', mv: '毫伏',
-    b: '字节', kb: 'KB', mb: 'MB', gb: 'GB'
+    b: '字节', kb: 'KB', mb: 'MB', gb: 'GB',
+    sec: '秒', min: '分', hour: '小时', kv: '千伏', ua: '微安'
   },
   database: {
     title: '数据库',
@@ -64,6 +66,8 @@ export const common = {
     skipped: '已跳过',
     failed: '错误',
     mobileInternal: '在 Android 上，文件下载到应用内部文件夹。',
+    internalFolderHint: '未选择文件夹 — 文件将保存到应用内部文件夹。继续吗？',
+    openInBrowser: '在浏览器中打开',
     localDbTitle: '本地数据库',
     localDbHint: '从 Google Drive 下载的 PDF 和 BoardView 文件（供离线查看）。',
     size: '大小',

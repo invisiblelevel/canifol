@@ -1,5 +1,5 @@
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { invoke } from '@tauri-apps/api/core';
   import { listen } from '@tauri-apps/api/event';
   import { open } from '@tauri-apps/plugin-dialog';
@@ -34,6 +34,15 @@
   
   let loadingFileName = $state('');
   let fileLoading = $state(false);
+  let failedOpenId = $state('');
+
+  async function openInBrowser(id) {
+    try {
+      await invoke('open_url_in_browser', { url: `https://drive.google.com/file/d/${id}/view` });
+    } catch (e) {
+      error = String(e);
+    }
+  }
 
   let dbPath = $state(localStorage.getItem(LS_DB_PATH) || '');
   let downloading = $state(false);
@@ -95,12 +104,14 @@
     loading = true;
     error = '';
     try {
-      await invoke('delete_cached_file', { filename: 'catalog.json' }).catch(() => {});
+      // `force` re-downloads the catalog while keeping the old copy until the new
+      // one validates, so a failed refresh does not leave the section empty.
       let localPath;
       try {
         localPath = await invoke('download_gdrive_file', { 
           fileId: CATALOG_FILE_ID, 
-          filename: 'catalog.json' 
+          filename: 'catalog.json',
+          force: true
         });
       } catch (gdriveError) {
         localPath = await invoke('download_mega_file', {
@@ -121,11 +132,19 @@
     }
   }
 
+  function releasePdf() {
+    if (currentPdf?.blobUrl) {
+      URL.revokeObjectURL(currentPdf.blobUrl);
+    }
+  }
+
   async function openFile(file) {
     fileLoading = true;
     loadingFileName = file.name;
     error = '';
+    failedOpenId = '';
     currentBoard = null;
+    releasePdf();
     currentPdf = null;
     try {
       const localPath = await invoke('download_database_file', { 
@@ -143,6 +162,7 @@
       }
     } catch (e) {
       error = String(e);
+      failedOpenId = file.id;
     } finally {
       fileLoading = false;
       loadingFileName = '';
@@ -177,7 +197,7 @@
     }
 
     if (!dbPath && !isMobile) {
-      const ok = confirm(dbStrings.mobileInternal);
+      const ok = confirm(dbStrings.internalFolderHint);
       if (!ok) return;
     }
 
@@ -185,6 +205,7 @@
 
     downloading = true;
     downloadResult = null;
+    error = '';
     progress = { current: 0, total: allFiles.length, bytes_downloaded: 0, total_bytes: 0, current_file: '', speed_bps: 0, eta_secs: 0 };
 
     try {
@@ -201,6 +222,7 @@
   }
 
   function closeViewer() {
+    releasePdf();
     currentBoard = null;
     currentPdf = null;
   }
@@ -210,10 +232,26 @@
     closeViewer();
   }
 
+  onDestroy(releasePdf);
+
+  function escapeHtml(text) {
+    return String(text).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
+  // The catalog comes from a remote Google Drive file and is rendered with
+  // {@html}; escaping every fragment (not just the matched one) is what keeps a
+  // malicious file name like `<img src=x onerror=...>` inert.
   function highlight(text, query) {
-    if (!query.trim()) return text;
-    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-    return text.replace(regex, '<mark>$1</mark>');
+    const source = String(text ?? '');
+    const q = query.trim();
+    if (!q) return escapeHtml(source);
+    const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return source
+      .split(new RegExp(`(${escaped})`, 'gi'))
+      .map((part, index) => (index % 2 === 1 ? `<mark>${escapeHtml(part)}</mark>` : escapeHtml(part)))
+      .join('');
   }
 
   function formatBytes(bytes) {
@@ -224,10 +262,10 @@
   }
 
   function formatTime(secs) {
-    if (!secs || secs < 0) return '—';
-    if (secs < 60) return `${Math.round(secs)} ${strings.units.b}`;
-    if (secs < 3600) return `${Math.floor(secs / 60)} ${strings.units.b}`;
-    return `${Math.floor(secs / 3600)} ${strings.units.hz}`;
+    if (!Number.isFinite(secs) || secs <= 0) return '—';
+    if (secs < 60) return `${Math.round(secs)} ${strings.units.sec}`;
+    if (secs < 3600) return `${Math.floor(secs / 60)} ${strings.units.min}`;
+    return `${Math.floor(secs / 3600)} ${strings.units.hour}`;
   }
 
   const percent = $derived(progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0);
@@ -328,7 +366,7 @@
           </div>
           <div class="progress-details">
             <span>{formatBytes(progress.bytes_downloaded)} / {formatBytes(progress.total_bytes)}</span>
-            <span>{dbStrings.speed}: {formatBytes(progress.speed_bps)}/с</span>
+            <span>{dbStrings.speed}: {formatBytes(progress.speed_bps)}/{strings.units.sec}</span>
             <span>{dbStrings.eta}: {formatTime(progress.eta_secs)}</span>
           </div>
           {#if progress.current_file}
@@ -343,6 +381,9 @@
           ⏭ {dbStrings.skipped}: {downloadResult.skipped}, 
           ❌ {dbStrings.failed}: {downloadResult.failed}
         </div>
+        {#if downloadResult.last_error}
+          <div class="error-box">{downloadResult.last_error}</div>
+        {/if}
       {/if}
 
       {#if !searchQuery.trim() && activeCategory && catalog[activeCategory]}
@@ -366,7 +407,7 @@
           {/if}
           <div class="model-list">
             {#each Object.entries(models) as [modelName, files]}
-              <button class="model-item" onclick={() => { activeModel = modelName; activeCategory = catName; }}>
+              <button class="model-item" onclick={() => { activeModel = modelName; activeCategory = catName; error = ''; failedOpenId = ''; }}>
                 <span>{@html highlight(modelName, searchQuery)}</span>
                 <span class="badge">{files.length}</span>
               </button>
@@ -384,6 +425,15 @@
   <div class="modal-overlay" onclick={closeModal}>
     <div class="modal-content" onclick={(e) => e.stopPropagation()}>
       <h3>{activeModel}</h3>
+
+      {#if error}
+        <div class="error-box">{error}</div>
+        {#if failedOpenId}
+          <Button variant="secondary" size="sm" onclick={() => openInBrowser(failedOpenId)}>
+            {dbStrings.openInBrowser}
+          </Button>
+        {/if}
+      {/if}
       
       {#if fileLoading}
         <div class="loading-indicator">

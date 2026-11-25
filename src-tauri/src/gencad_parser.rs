@@ -94,10 +94,22 @@ struct ComponentRaw {
     device: String,
 }
 
+/// Parses a coordinate, rejecting NaN/inf so one bad token cannot poison bounds.
+fn num(s: &str) -> f64 {
+    s.parse::<f64>()
+        .ok()
+        .filter(|value| value.is_finite())
+        .unwrap_or(0.0)
+}
+
 pub fn parse_gencad(text: &str) -> Result<GenCadBoard, String> {
     let mut lines = Vec::new();
     let mut arcs = Vec::new();
     let mut units = 1000.0;
+    // GenCAD coordinates are in "user units", not millimetres.  `UNITS USER n`
+    // means n units per inch, so the scale to mm is 25.4 / n.  Files without an
+    // explicit UNITS line keep the previous behaviour (coordinates already mm).
+    let mut unit_scale = 1.0f64;
     let mut current_layer = "TOP".to_string();
 
     let mut shapes: HashMap<String, Vec<ShapePin>> = HashMap::new();
@@ -131,10 +143,29 @@ pub fn parse_gencad(text: &str) -> Result<GenCadBoard, String> {
 
         match section.as_str() {
             "$HEADER" => {
-                if line.starts_with("UNITS USER") {
+                if line.starts_with("UNITS ") {
                     let parts: Vec<&str> = line.split_whitespace().collect();
-                    if let Some(val) = parts.get(2) {
-                        units = val.parse().unwrap_or(1000.0);
+                    match parts.get(1).map(|s| s.to_ascii_uppercase()).as_deref() {
+                        Some("USER") => {
+                            if let Some(value) = parts
+                                .get(2)
+                                .and_then(|s| s.parse::<f64>().ok())
+                                .filter(|v| *v > 0.0)
+                            {
+                                units = value;
+                                unit_scale = 25.4 / value;
+                            }
+                        }
+                        Some("MM") | Some("MILLIMETER") | Some("MILLIMETERS") => {
+                            unit_scale = 1.0;
+                        }
+                        Some("INCH") | Some("INCHES") => {
+                            unit_scale = 25.4;
+                        }
+                        Some("MIL") | Some("MILS") => {
+                            unit_scale = 0.0254;
+                        }
+                        _ => {}
                     }
                 }
             }
@@ -147,21 +178,21 @@ pub fn parse_gencad(text: &str) -> Result<GenCadBoard, String> {
                 } else if line.starts_with("LINE ") {
                     let parts: Vec<&str> = line.split_whitespace().collect();
                     if parts.len() >= 5 {
-                        let x1 = parts[1].parse().unwrap_or(0.0);
-                        let y1 = parts[2].parse().unwrap_or(0.0);
-                        let x2 = parts[3].parse().unwrap_or(0.0);
-                        let y2 = parts[4].parse().unwrap_or(0.0);
+                        let x1 = num(parts[1]) * unit_scale;
+                        let y1 = num(parts[2]) * unit_scale;
+                        let x2 = num(parts[3]) * unit_scale;
+                        let y2 = num(parts[4]) * unit_scale;
                         lines.push(GenCadLine { x1, y1, x2, y2, layer: current_layer.clone() });
                     }
                 } else if line.starts_with("ARC ") {
                     let parts: Vec<&str> = line.split_whitespace().collect();
                     if parts.len() >= 7 {
-                        let x1 = parts[1].parse().unwrap_or(0.0);
-                        let y1 = parts[2].parse().unwrap_or(0.0);
-                        let x2 = parts[3].parse().unwrap_or(0.0);
-                        let y2 = parts[4].parse().unwrap_or(0.0);
-                        let x3 = parts[5].parse().unwrap_or(0.0);
-                        let y3 = parts[6].parse().unwrap_or(0.0);
+                        let x1 = num(parts[1]) * unit_scale;
+                        let y1 = num(parts[2]) * unit_scale;
+                        let x2 = num(parts[3]) * unit_scale;
+                        let y2 = num(parts[4]) * unit_scale;
+                        let x3 = num(parts[5]) * unit_scale;
+                        let y3 = num(parts[6]) * unit_scale;
                         arcs.push(GenCadArc { x1, y1, x2, y2, x3, y3, layer: current_layer.clone() });
                     }
                 }
@@ -176,14 +207,18 @@ pub fn parse_gencad(text: &str) -> Result<GenCadBoard, String> {
                     if let Some((shape, layer)) = &current_pad {
                         let parts: Vec<&str> = line.split_whitespace().collect();
                         if parts.len() >= 5 {
-                            let w = parts[3].parse().unwrap_or(0.0);
-                            let h = parts[4].parse().unwrap_or(0.0);
+                            // GenCAD: RECTANGLE <x> <y> <w> <h> — the centre used
+                            // to be ignored, so every pad was stacked at (0,0).
+                            let x = num(parts[1]) * unit_scale;
+                            let y = num(parts[2]) * unit_scale;
+                            let w = num(parts[3]) * unit_scale;
+                            let h = num(parts[4]) * unit_scale;
                             let half_w = w / 2.0;
                             let half_h = h / 2.0;
                             pads.push(GenCadPad {
                                 shape: shape.clone(),
-                                x1: -half_w, y1: -half_h,
-                                x2: half_w, y2: half_h,
+                                x1: x - half_w, y1: y - half_h,
+                                x2: x + half_w, y2: y + half_h,
                                 layer: layer.clone(),
                             });
                         }
@@ -192,11 +227,13 @@ pub fn parse_gencad(text: &str) -> Result<GenCadBoard, String> {
                     if let Some((shape, layer)) = &current_pad {
                         let parts: Vec<&str> = line.split_whitespace().collect();
                         if parts.len() >= 4 {
-                            let r = parts[3].parse().unwrap_or(0.0);
+                            let x = num(parts[1]) * unit_scale;
+                            let y = num(parts[2]) * unit_scale;
+                            let r = num(parts[3]) * unit_scale;
                             pads.push(GenCadPad {
                                 shape: shape.clone(),
-                                x1: -r, y1: -r,
-                                x2: r, y2: r,
+                                x1: x - r, y1: y - r,
+                                x2: x + r, y2: y + r,
                                 layer: layer.clone(),
                             });
                         }
@@ -208,10 +245,10 @@ pub fn parse_gencad(text: &str) -> Result<GenCadBoard, String> {
                 if line.starts_with("LINE ") {
                     let parts: Vec<&str> = line.split_whitespace().collect();
                     if parts.len() >= 5 {
-                        let x1 = parts[1].parse().unwrap_or(0.0);
-                        let y1 = parts[2].parse().unwrap_or(0.0);
-                        let x2 = parts[3].parse().unwrap_or(0.0);
-                        let y2 = parts[4].parse().unwrap_or(0.0);
+                        let x1 = num(parts[1]) * unit_scale;
+                        let y1 = num(parts[2]) * unit_scale;
+                        let x2 = num(parts[3]) * unit_scale;
+                        let y2 = num(parts[4]) * unit_scale;
                         routes.push(GenCadRoute { x1, y1, x2, y2, layer: current_layer.clone() });
                     }
                 }
@@ -226,8 +263,8 @@ pub fn parse_gencad(text: &str) -> Result<GenCadBoard, String> {
                         let parts: Vec<&str> = line.split_whitespace().collect();
                         if parts.len() >= 5 {
                             let name = parts[1].to_string();
-                            let x = parts[3].parse().unwrap_or(0.0);
-                            let y = parts[4].parse().unwrap_or(0.0);
+                            let x = num(parts[3]) * unit_scale;
+                            let y = num(parts[4]) * unit_scale;
                             if let Some(pins) = shapes.get_mut(shape) {
                                 pins.push(ShapePin { name, x, y });
                             }
@@ -255,8 +292,8 @@ pub fn parse_gencad(text: &str) -> Result<GenCadBoard, String> {
                     if let Some(ref mut comp) = current_component {
                         let parts: Vec<&str> = line.split_whitespace().collect();
                         if parts.len() >= 3 {
-                            comp.x = parts[1].parse().unwrap_or(0.0);
-                            comp.y = parts[2].parse().unwrap_or(0.0);
+                            comp.x = num(parts[1]) * unit_scale;
+                            comp.y = num(parts[2]) * unit_scale;
                         }
                     }
                 } else if line.starts_with("LAYER ") {
@@ -266,7 +303,7 @@ pub fn parse_gencad(text: &str) -> Result<GenCadBoard, String> {
                     }
                 } else if line.starts_with("ROTATION ") {
                     if let Some(ref mut comp) = current_component {
-                        let rot = line.strip_prefix("ROTATION ").unwrap_or("").trim().parse().unwrap_or(0.0);
+                        let rot = num(line.strip_prefix("ROTATION ").unwrap_or("").trim());
                         comp.rotation = rot;
                     }
                 } else if line.starts_with("SHAPE ") {
@@ -403,4 +440,47 @@ pub fn parse_gencad(text: &str) -> Result<GenCadBoard, String> {
     }
 
     Ok(GenCadBoard { lines, arcs, pins, components, pads, routes, units })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn board_with_header(header: &str, shape_pin: &str, place: &str) -> Result<GenCadBoard, String> {
+        let text = format!(
+            "$HEADER\n{header}\n$SHAPES\nSHAPE S\n{shape_pin}\n$COMPONENTS\nCOMPONENT U1\nPLACE {place}\nLAYER TOP\nSHAPE S\n$SIGNALS\nSIGNAL GND\nNODE U1 a\n"
+        );
+        parse_gencad(&text)
+    }
+
+    #[test]
+    fn units_user_1000_converts_mils_to_mm() {
+        // 1000 units per inch => 1 unit == 1 mil == 0.0254 mm.
+        let b = board_with_header("UNITS USER 1000", "PIN a THRU 1000 0", "2000 3000").unwrap();
+        assert_eq!(b.pins.len(), 1);
+        // pin is 1000 mil from the component centre at (2000, 3000) mil
+        assert!((b.pins[0].x - 76.2).abs() < 1e-9, "x={}", b.pins[0].x);
+        assert!((b.pins[0].y - 76.2).abs() < 1e-9, "y={}", b.pins[0].y);
+        assert!((b.components[0].x - 50.8).abs() < 1e-9);
+    }
+
+    #[test]
+    fn units_mm_keeps_coordinates_in_mm() {
+        let b = board_with_header("UNITS MM", "PIN a THRU 10 0", "100 200").unwrap();
+        assert!((b.pins[0].x - 110.0).abs() < 1e-9, "x={}", b.pins[0].x);
+        assert!((b.pins[0].y - 200.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn missing_units_line_keeps_legacy_behaviour() {
+        let b = board_with_header("TITLE test", "PIN a THRU 10 0", "100 200").unwrap();
+        assert!((b.pins[0].x - 110.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn nan_coordinates_do_not_poison_the_board() {
+        let b = board_with_header("UNITS MM", "PIN a THRU NaN 0", "100 200").unwrap();
+        assert!(b.pins[0].x.is_finite());
+        assert!(b.components[0].bounds_x1.is_finite());
+    }
 }

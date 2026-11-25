@@ -28,9 +28,13 @@ pub struct AnalogResult {
     pub tr_type: Option<String>,
 }
 
+fn truncate_for_error(text: &str) -> String {
+    text.chars().take(160).collect()
+}
+
 fn parse_lcsc_params(comp: &Value, _tr_type: &str) -> Option<(Option<f64>, Option<f64>, Option<f64>, Option<f64>, Option<f64>, Option<f64>, Option<String>)> {
     let attrs = comp.get("attributes")?.as_array()?;
-    
+
     let mut vds = None;
     let mut id = None;
     let mut rds_on = None;
@@ -40,8 +44,13 @@ fn parse_lcsc_params(comp: &Value, _tr_type: &str) -> Option<(Option<f64>, Optio
     let mut ttype = None;
 
     for attr in attrs {
-        let name = attr.get("attribute_name_en")?.as_str()?;
-        let value = attr.get("attribute_value_name")?.as_str()?;
+        let (Some(name), Some(value)) = (
+            attr.get("attribute_name_en").and_then(|v| v.as_str()),
+            attr.get("attribute_value_name").and_then(|v| v.as_str()),
+        ) else {
+            // Skip malformed attributes instead of dropping the whole product.
+            continue;
+        };
 
         match name {
             "Drain to Source Voltage" => {
@@ -95,115 +104,146 @@ fn find_components_array(value: &Value) -> Option<&Vec<Value>> {
     None
 }
 
-#[tauri::command]
-pub async fn search_lcsc(query: String) -> Result<Vec<LcscResult>, String> {
-    let client = Client::new();
-
+/// Single entry point for the JLCPCB search API.
+///
+/// It used to call `res.json()` directly, so an API-level failure
+/// (`{"success": false, ...}`) silently looked like "no results".  Now the real
+/// reason is returned to the UI.
+async fn jlcpcb_search(
+    client: &Client,
+    keyword: &str,
+    page_size: usize,
+) -> Result<Vec<Value>, String> {
     let body = serde_json::json!({
-        "keyword": query,
+        "keyword": keyword,
         "currentPage": 1,
-        "pageSize": 20
+        "pageSize": page_size
     });
 
     let res = client
         .post(JLCPCB_SEARCH_URL)
-        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+        .header("User-Agent", crate::net::BROWSER_USER_AGENT)
         .header("Content-Type", "application/json")
         .header("Accept", "application/json")
+        .header("Origin", "https://jlcpcb.com")
+        .header("Referer", "https://jlcpcb.com/parts")
         .json(&body)
         .send()
         .await
-        .map_err(|e| format!("JLCPCB search error: {}", e))?;
+        .map_err(|e| format!("JLCPCB request error: {}", e))?;
 
-    let json: Value = res.json().await.map_err(|e| format!("Parse error: {}", e))?;
+    let status = res.status();
+    let text = res
+        .text()
+        .await
+        .map_err(|e| format!("JLCPCB response error: {}", e))?;
 
-    let components = match find_components_array(&json) {
-        Some(arr) => arr,
-        None => return Ok(Vec::new()),
-    };
+    if !status.is_success() {
+        return Err(format!(
+            "JLCPCB API returned HTTP {}: {}",
+            status.as_u16(),
+            truncate_for_error(&text)
+        ));
+    }
 
-    let mut results = Vec::new();
+    let json: Value = serde_json::from_str(&text)
+        .map_err(|e| format!("JLCPCB parse error: {} ({})", e, truncate_for_error(&text)))?;
 
-    for comp in components {
+    if json.get("success").and_then(|v| v.as_bool()) == Some(false) {
+        let message = json.get("message").and_then(|v| v.as_str()).unwrap_or("unknown error");
+        let code = json.get("code").and_then(|v| v.as_i64()).unwrap_or(0);
+        return Err(format!("LCSC / JLCPCB API error (code {}): {}", code, message));
+    }
+
+    Ok(find_components_array(&json).cloned().unwrap_or_default())
+}
+
+/// Resolves the datasheet PDF URLs for all components concurrently.  It used to
+/// be one request per component inside a `for` loop (20–50 sequential HTTPS
+/// round-trips per search).
+async fn fetch_pdf_urls(client: &'static Client, codes: &[String]) -> Vec<String> {
+    let mut urls = vec![String::new(); codes.len()];
+    let mut tasks = Vec::new();
+    for (index, code) in codes.iter().enumerate() {
+        if code.is_empty() {
+            continue;
+        }
+        let code = code.clone();
+        tasks.push((index, tokio::spawn(async move { fetch_lcsc_pdf_url(client, &code).await })));
+    }
+    for (index, task) in tasks {
+        match task.await {
+            Ok(Some(url)) => urls[index] = url,
+            _ => {}
+        }
+    }
+    urls
+}
+
+#[tauri::command]
+pub async fn search_lcsc(query: String) -> Result<Vec<LcscResult>, String> {
+    let client = crate::net::api_client()?;
+    let components = jlcpcb_search(client, &query, 20).await?;
+
+    let mut items: Vec<(String, String, String)> = Vec::new();
+    for comp in &components {
         let lcsc_code = comp.get("componentCode").and_then(|v| v.as_str()).unwrap_or("").to_string();
-        if lcsc_code.is_empty() { continue; }
-
+        if lcsc_code.is_empty() {
+            continue;
+        }
         let name = comp.get("componentModelEn").and_then(|v| v.as_str()).unwrap_or("Unknown").to_string();
         let manufacturer = comp.get("componentBrandEn").and_then(|v| v.as_str()).unwrap_or("Unknown").to_string();
-        
-        let datasheet_url = fetch_lcsc_pdf_url(&client, &lcsc_code).await
-            .unwrap_or_default();
-
-        results.push(LcscResult { name, manufacturer, datasheet_url, lcsc_code });
+        items.push((lcsc_code, name, manufacturer));
     }
+
+    let codes: Vec<String> = items.iter().map(|(code, _, _)| code.clone()).collect();
+    let urls = fetch_pdf_urls(client, &codes).await;
+
+    let results = items
+        .into_iter()
+        .zip(urls)
+        .map(|((name, manufacturer, lcsc_code), datasheet_url)| LcscResult {
+            name,
+            manufacturer,
+            datasheet_url,
+            lcsc_code,
+        })
+        .collect();
 
     Ok(results)
 }
 
 #[tauri::command]
 pub async fn find_analogs_lcsc(query: String, tr_type: String) -> Result<Vec<AnalogResult>, String> {
-    let client = Client::new();
+    let client = crate::net::api_client()?;
 
-    let body = serde_json::json!({
-        "keyword": query,
-        "currentPage": 1,
-        "pageSize": 1
-    });
-
-    let res = client
-        .post(JLCPCB_SEARCH_URL)
-        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
-        .header("Content-Type", "application/json")
-        .header("Accept", "application/json")
-        .json(&body)
-        .send()
-        .await
-        .map_err(|e| format!("Search error: {}", e))?;
-
-    let json: Value = res.json().await.map_err(|e| format!("Parse error: {}", e))?;
-    let comp = find_components_array(&json).and_then(|arr| arr.first())
-        .ok_or("Original component not found")?;
-
-    let params = parse_lcsc_params(comp, &tr_type).ok_or("Failed to parse parameters")?;
+    let components = jlcpcb_search(client, &query, 1).await?;
+    let comp = components.first().ok_or("Original component not found")?;
+    let _params = parse_lcsc_params(comp, &tr_type).ok_or("Failed to parse parameters")?;
 
     let search_keyword = if tr_type == "mosfet" { "MOSFET" } else { "Bipolar Transistor" };
-    
-    let body = serde_json::json!({
-        "keyword": search_keyword,
-        "currentPage": 1,
-        "pageSize": 30
-    });
+    let components = jlcpcb_search(client, search_keyword, 30).await?;
+    let codes: Vec<String> = components
+        .iter()
+        .map(|c| c.get("componentCode").and_then(|v| v.as_str()).unwrap_or("").to_string())
+        .collect();
+    let urls = fetch_pdf_urls(client, &codes).await;
 
-    let res = client
-        .post(JLCPCB_SEARCH_URL)
-        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
-        .header("Content-Type", "application/json")
-        .header("Accept", "application/json")
-        .json(&body)
-        .send()
-        .await
-        .map_err(|e| format!("Analog search error: {}", e))?;
-
-    let json: Value = res.json().await.map_err(|e| format!("Parse error: {}", e))?;
     let mut results = Vec::new();
+    for (index, c) in components.iter().enumerate() {
+        let name = c.get("componentModelEn").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        if name.is_empty() || name == query {
+            continue;
+        }
 
-    if let Some(components) = find_components_array(&json) {
-        for c in components {
-            let name = c.get("componentModelEn").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            if name.is_empty() || name == query { continue; }
+        let manufacturer = c.get("componentBrandEn").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        let datasheet_url = urls.get(index).cloned().unwrap_or_default();
 
-            let lcsc_code = c.get("componentCode").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            let manufacturer = c.get("componentBrandEn").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            
-            let datasheet_url = fetch_lcsc_pdf_url(&client, &lcsc_code).await
-                .unwrap_or_default();
-
-            if let Some((vds, id, rds, vceo, ic, hfe, ttype)) = parse_lcsc_params(c, &tr_type) {
-                results.push(AnalogResult {
-                    name, manufacturer, datasheet_url, source: "LCSC".to_string(),
-                    vds, id, rds_on: rds, vceo, ic, hfe, tr_type: ttype,
-                });
-            }
+        if let Some((vds, id, rds, vceo, ic, hfe, ttype)) = parse_lcsc_params(c, &tr_type) {
+            results.push(AnalogResult {
+                name, manufacturer, datasheet_url, source: "LCSC".to_string(),
+                vds, id, rds_on: rds, vceo, ic, hfe, tr_type: ttype,
+            });
         }
     }
 
@@ -220,57 +260,42 @@ pub async fn find_by_params_lcsc(params: serde_json::Value) -> Result<Vec<Analog
     let ic_min = params.get("ic").and_then(|v| v.as_f64());
     let hfe_min = params.get("hfe").and_then(|v| v.as_f64());
 
-    let client = Client::new();
+    let client = crate::net::api_client()?;
     let search_keyword = if tr_type == "mosfet" { "MOSFET" } else { "Bipolar Transistor" };
-    
-    let body = serde_json::json!({
-        "keyword": search_keyword,
-        "currentPage": 1,
-        "pageSize": 50
-    });
+    let components = jlcpcb_search(client, search_keyword, 50).await?;
+    let codes: Vec<String> = components
+        .iter()
+        .map(|c| c.get("componentCode").and_then(|v| v.as_str()).unwrap_or("").to_string())
+        .collect();
+    let urls = fetch_pdf_urls(client, &codes).await;
 
-    let res = client
-        .post(JLCPCB_SEARCH_URL)
-        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
-        .header("Content-Type", "application/json")
-        .header("Accept", "application/json")
-        .json(&body)
-        .send()
-        .await
-        .map_err(|e| format!("Search error: {}", e))?;
-
-    let json: Value = res.json().await.map_err(|e| format!("Parse error: {}", e))?;
     let mut results = Vec::new();
+    for (index, c) in components.iter().enumerate() {
+        let name = c.get("componentModelEn").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        if name.is_empty() {
+            continue;
+        }
 
-    if let Some(components) = find_components_array(&json) {
-        for c in components {
-            let name = c.get("componentModelEn").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            if name.is_empty() { continue; }
+        let manufacturer = c.get("componentBrandEn").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        let datasheet_url = urls.get(index).cloned().unwrap_or_default();
 
-            let lcsc_code = c.get("componentCode").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            let manufacturer = c.get("componentBrandEn").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            
-            let datasheet_url = fetch_lcsc_pdf_url(&client, &lcsc_code).await
-                .unwrap_or_default();
+        if let Some((vds, id, rds, vceo, ic, hfe, ttype)) = parse_lcsc_params(c, tr_type) {
+            let mut pass = true;
+            if tr_type == "mosfet" {
+                if let Some(min) = vds_min { if vds.unwrap_or(0.0) < min { pass = false; } }
+                if let Some(min) = id_min { if id.unwrap_or(0.0) < min { pass = false; } }
+                if let Some(max) = rds_max { if let Some(r) = rds { if r > max { pass = false; } } else { pass = false; } }
+            } else {
+                if let Some(min) = vceo_min { if vceo.unwrap_or(0.0) < min { pass = false; } }
+                if let Some(min) = ic_min { if ic.unwrap_or(0.0) < min { pass = false; } }
+                if let Some(min) = hfe_min { if hfe.unwrap_or(0.0) < min { pass = false; } }
+            }
 
-            if let Some((vds, id, rds, vceo, ic, hfe, ttype)) = parse_lcsc_params(c, tr_type) {
-                let mut pass = true;
-                if tr_type == "mosfet" {
-                    if let Some(min) = vds_min { if vds.unwrap_or(0.0) < min { pass = false; } }
-                    if let Some(min) = id_min { if id.unwrap_or(0.0) < min { pass = false; } }
-                    if let Some(max) = rds_max { if let Some(r) = rds { if r > max { pass = false; } } else { pass = false; } }
-                } else {
-                    if let Some(min) = vceo_min { if vceo.unwrap_or(0.0) < min { pass = false; } }
-                    if let Some(min) = ic_min { if ic.unwrap_or(0.0) < min { pass = false; } }
-                    if let Some(min) = hfe_min { if hfe.unwrap_or(0.0) < min { pass = false; } }
-                }
-                
-                if pass {
-                    results.push(AnalogResult {
-                        name, manufacturer, datasheet_url, source: "LCSC".to_string(),
-                        vds, id, rds_on: rds, vceo, ic, hfe, tr_type: ttype,
-                    });
-                }
+            if pass {
+                results.push(AnalogResult {
+                    name, manufacturer, datasheet_url, source: "LCSC".to_string(),
+                    vds, id, rds_on: rds, vceo, ic, hfe, tr_type: ttype,
+                });
             }
         }
     }
@@ -282,17 +307,21 @@ async fn fetch_lcsc_pdf_url(client: &Client, lcsc_code: &str) -> Option<String> 
     let res = client
         .get(LCSC_DETAIL_URL)
         .query(&[("productCode", lcsc_code)])
-        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+        .header("User-Agent", crate::net::BROWSER_USER_AGENT)
         .header("Accept", "application/json")
         .send()
         .await
         .ok()?;
 
-    if !res.status().is_success() { return None; }
+    if !res.status().is_success() {
+        return None;
+    }
 
     let json: Value = res.json().await.ok()?;
     json.get("result")
         .and_then(|r| r.get("pdfUrl"))
         .and_then(|v| v.as_str())
+        .map(str::trim)
+        .filter(|url| !url.is_empty())
         .map(|s| s.to_string())
 }

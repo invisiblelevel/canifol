@@ -1,6 +1,6 @@
 [package]
 name = "canifol"
-version = "1.6.0"
+version = "1.6.1"
 description = "Canifol — Repairman's toolkit"
 authors = ["you"]
 edition = "2021"
@@ -44,7 +44,12 @@ flate2 = "1"
 
 # HTTP-запросы к DigiKey
 tauri-plugin-http = "2"
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+# cookies  — Google Drive confirmation flow
+# gzip     — providers (Google) compress HTML error pages; without this the body
+#            is saved as compressed garbage instead of being detected/rejected
+# system-proxy — honour the OS proxy, which is the only way Google Drive works
+#            for users behind a proxy (e.g. mainland China)
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "cookies", "gzip", "system-proxy"] }
 tauri-plugin-dialog = "2.8.3"
 quick-xml = "0.31"
 
@@ -52,5 +57,4 @@ quick-xml = "0.31"
 codegen-units = 1
 lto = true
 opt-level = 3
-panic = "abort"
 strip = true

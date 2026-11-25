@@ -17,7 +17,8 @@ export const pinouts = {
     pinNumber: 'Pin',
     pinName: 'Name',
     pinDesc: 'Description',
-    nothingFound: 'Nothing found'
+    nothingFound: 'Nothing found',
+    noSchemeForBoard: 'No schematic for this board yet'
   },
   pinoutsData: {
     'usb-a': { name: 'USB Type-A', desc: 'Standard USB 2.0/3.0 port', pins: { '1': { name: 'VBUS', desc: '+5V power' }, '2': { name: 'D-', desc: 'Data minus' }, '3': { name: 'D+', desc: 'Data plus' }, '4': { name: 'GND', desc: 'Ground' } } },

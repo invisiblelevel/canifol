@@ -55,7 +55,7 @@
   {:else if filePath && !errorMsg}
     <BoardViewer path={filePath} />
   {:else if errorMsg}
-    <div class="error-box">{strings.boardview.error || 'Ошибка'}: {errorMsg}</div>
+    <div class="error-box">{strings.boardview.error || 'Error'}: {errorMsg}</div>
     <div class="controls">
       <button class="btn-open" onclick={openFile}>
         {strings.boardview.openFile}

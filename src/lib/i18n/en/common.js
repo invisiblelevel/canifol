@@ -16,6 +16,7 @@ export const common = {
     comingSoon: 'Calculator coming soon',
     comingSoonHint: 'This section is under development. Switch to other tabs for now.',
     version: 'Version', language: 'Language', theme: 'Theme',
+    help: 'Section help',
     themeDark: 'Dark', themeLight: 'Light',
     computed: 'computed', reset: 'Reset',
     pcs: 'pcs', result: 'Result', enterValues: 'Fill the fields', ready: 'Done'
@@ -40,7 +41,8 @@ export const common = {
     uh: 'µH', nh: 'nH', mh: 'mH', h: 'H',
     v: 'V', a: 'A', w: 'W', mm: 'mm',
     ah: 'Ah', wh: 'Wh', ma: 'mA', uv: 'µV', mv: 'mV',
-    b: 'B', kb: 'KB', mb: 'MB', gb: 'GB'
+    b: 'B', kb: 'KB', mb: 'MB', gb: 'GB',
+    sec: 's', min: 'min', hour: 'h', kv: 'kV', ua: 'µA'
   },
   database: {
     title: 'Database',
@@ -66,6 +68,8 @@ export const common = {
     skipped: 'Skipped',
     failed: 'Failed',
     mobileInternal: 'On Android, files are downloaded to the app internal folder.',
+    internalFolderHint: 'No folder selected — files will be saved to the app internal folder. Continue?',
+    openInBrowser: 'Open in browser',
     localDbTitle: 'Local database',
     localDbHint: 'Downloaded PDF and BoardView files from Google Drive (for offline viewing).',
     size: 'Size',

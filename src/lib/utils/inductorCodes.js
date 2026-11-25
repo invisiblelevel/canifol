@@ -25,11 +25,11 @@ export function formatHenryCompact(value) {
 
   const abs = Math.abs(value);
 
-  if (abs >= 1)      return `${trimNum(value)}Г`;
-  if (abs >= 1e-3)   return `${trimNum(value * 1e3)}мг`;
-  if (abs >= 1e-6)   return `${trimNum(value * 1e6)}мкг`;
-  if (abs >= 1e-9)   return `${trimNum(value * 1e9)}нг`;
-  return `${trimNum(value * 1e9)}нг`;
+  if (abs >= 1)      return `${trimNum(value)}Гн`;
+  if (abs >= 1e-3)   return `${trimNum(value * 1e3)}мГн`;
+  if (abs >= 1e-6)   return `${trimNum(value * 1e6)}мкГн`;
+  if (abs >= 1e-9)   return `${trimNum(value * 1e9)}нГн`;
+  return `${trimNum(value * 1e9)}нГн`;
 }
 
 function trimNum(n) {
